@@ -1,4 +1,10 @@
-# ChatGPT in Slack
+# Collmbo
+
+A Slack app that lets end-users chat with AI. Forked from seratch/ChatGPT-in-Slack.
+
+Below is the original README from the forked repository:
+
+---
 
 Introducing a transformative app for Slack users, specifically designed to enhance your communication with [ChatGPT](https://openai.com/blog/chatgpt)!
 This app enables seamless interaction with ChatGPT via Slack channels, optimizing your planning and writing processes by leveraging AI technology.
