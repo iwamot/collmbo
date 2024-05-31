@@ -29,8 +29,7 @@ Collmbo, pronounced the same as "Colombo", is a Slack app that lets end-users ch
 #### For Amazon Bedrock
 
 ```sh
-$ docker build --build-arg USE_BEDROCK=true \
-               -t <your_repository_name>/collmbo .
+$ docker build -t <your_repository_name>/collmbo --build-arg USE_BEDROCK=true .
 ```
 
 *Note: This installs boto3.*
@@ -75,7 +74,6 @@ $ docker run -it --env-file ./env <your_repository_name>/collmbo
 
 ```sh
 $ cat env
-AWS_ACCESS_KEY_ID=...
 AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
 AWS_REGION_NAME=...
