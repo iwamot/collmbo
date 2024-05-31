@@ -1,15 +1,12 @@
-from typing import Optional
-from typing import List, Dict
+from typing import Dict, List, Optional
 
 import requests
-
-from slack_sdk.web import WebClient, SlackResponse
-from slack_sdk.errors import SlackApiError
+from litellm import supports_vision
 from slack_bolt import BoltContext
+from slack_sdk.errors import SlackApiError
+from slack_sdk.web import SlackResponse, WebClient
 
-from app.env import IMAGE_FILE_ACCESS_ENABLED
-from app.markdown_conversion import slack_to_markdown
-
+from app.env import IMAGE_FILE_ACCESS_ENABLED, LITELLM_MODEL_TYPE
 
 # ----------------------------
 # General operations in a channel
@@ -37,33 +34,6 @@ def is_this_app_mentioned(context: BoltContext, parent_message: dict) -> bool:
     return f"<@{context.bot_user_id}>" in parent_message_text
 
 
-def build_thread_replies_as_combined_text(
-    *,
-    context: BoltContext,
-    client: WebClient,
-    channel: str,
-    thread_ts: str,
-) -> str:
-    thread_content = ""
-    for page in client.conversations_replies(
-        channel=channel,
-        ts=thread_ts,
-        limit=1000,
-    ):
-        for reply in page.get("messages", []):
-            user = reply.get("user")
-            if user == context.bot_user_id:  # Skip replies by this app
-                continue
-            if user is None:
-                bot_response = client.bots_info(bot=reply.get("bot_id"))
-                user = bot_response.get("bot", {}).get("user_id")
-                if user is None or user == context.bot_user_id:
-                    continue
-            text = slack_to_markdown("".join(reply["text"].splitlines()))
-            thread_content += f"<@{user}>: {text}\n"
-    return thread_content
-
-
 # ----------------------------
 # WIP reply message stuff
 # ----------------------------
@@ -84,7 +54,7 @@ def post_wip_message(
         thread_ts=thread_ts,
         text=loading_text,
         metadata={
-            "event_type": "chat-gpt-convo",
+            "event_type": "litellm-convo",
             "event_payload": {"messages": system_messages, "user": user},
         },
     )
@@ -104,20 +74,10 @@ def update_wip_message(
         ts=ts,
         text=text,
         metadata={
-            "event_type": "chat-gpt-convo",
+            "event_type": "litellm-convo",
             "event_payload": {"messages": system_messages, "user": user},
         },
     )
-
-
-# ----------------------------
-# Modals
-# ----------------------------
-
-
-def extract_state_value(payload: dict, block_id: str, action_id: str = "input") -> dict:
-    state_values = payload["state"]["values"]
-    return state_values[block_id][action_id]
 
 
 # ----------------------------
@@ -125,18 +85,14 @@ def extract_state_value(payload: dict, block_id: str, action_id: str = "input") 
 # ----------------------------
 
 
-def can_send_image_url_to_openai(context: BoltContext) -> bool:
+def can_send_image_url_to_litellm(context: BoltContext) -> bool:
     if IMAGE_FILE_ACCESS_ENABLED is False:
         return False
     bot_scopes = context.authorize_result.bot_scopes or []
     can_access_files = context and "files:read" in bot_scopes
     if can_access_files is False:
         return False
-
-    openai_model = context.get("OPENAI_MODEL")
-    # More supported models will come. This logic will need to be updated then.
-    can_send_image_url = openai_model is not None and openai_model.startswith("gpt-4o")
-    return can_send_image_url
+    return supports_vision(model=LITELLM_MODEL_TYPE)
 
 
 def download_slack_image_content(image_url: str, bot_token: str) -> bytes:

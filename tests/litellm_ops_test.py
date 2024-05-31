@@ -1,7 +1,4 @@
-from app.openai_ops import (
-    format_assistant_reply,
-    format_openai_message_content,
-)
+from app.litellm_ops import format_assistant_reply, format_litellm_message_content
 
 
 def test_format_assistant_reply():
@@ -49,7 +46,7 @@ def test_format_assistant_reply():
         assert result == expected
 
 
-def test_format_openai_message_content():
+def test_format_litellm_message_content():
     # https://github.com/seratch/ChatGPT-in-Slack/pull/5
     for content, expected in [
         (
@@ -67,5 +64,5 @@ int main(int argc, char *argv[])
 }""",
         ),
     ]:
-        result = format_openai_message_content(content, False)
+        result = format_litellm_message_content(content, False)
         assert result == expected

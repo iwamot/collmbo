@@ -1,18 +1,13 @@
 display_information:
-  name: ChatGPT (dev)
+  name: Collmbo
 features:
   app_home:
-    home_tab_enabled: true
+    home_tab_enabled: false
     messages_tab_enabled: true
     messages_tab_read_only_enabled: false
   bot_user:
-    display_name: ChatGPT Bot (dev)
+    display_name: Collmbo
     always_online: true
-  shortcuts:
-    - name: Summarize this thread
-      type: message
-      callback_id: summarize-thread
-      description: Summarize the discussion in a thread
 oauth_config:
   scopes:
     bot:

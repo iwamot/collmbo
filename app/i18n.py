@@ -1,10 +1,9 @@
 from typing import Optional
 
-from openai import OpenAI
-from openai.lib.azure import AzureOpenAI
 from slack_bolt import BoltContext
 
-from .openai_constants import GPT_3_5_TURBO_0613_MODEL
+from app.env import LITELLM_MODEL
+from app.litellm_ops import call_litellm_completion
 
 # All the supported languages for Slack app as of March 2023
 _locale_to_lang = {
@@ -33,10 +32,7 @@ def from_locale_to_lang(locale: Optional[str]) -> Optional[str]:
 _translation_result_cache = {}
 
 
-def translate(*, openai_api_key: Optional[str], context: BoltContext, text: str) -> str:
-    if openai_api_key is None or len(openai_api_key.strip()) == 0:
-        return text
-
+def translate(*, context: BoltContext, text: str) -> str:
     lang = from_locale_to_lang(context.get("locale"))
     if lang is None or lang == "English":
         return text
@@ -44,20 +40,7 @@ def translate(*, openai_api_key: Optional[str], context: BoltContext, text: str)
     cached_result = _translation_result_cache.get(f"{lang}:{text}")
     if cached_result is not None:
         return cached_result
-    if context.get("OPENAI_API_TYPE") == "azure":
-        client = AzureOpenAI(
-            api_key=openai_api_key,
-            api_version=context.get("OPENAI_API_VERSION"),
-            azure_endpoint=context.get("OPENAI_API_BASE"),
-            azure_deployment=context.get("OPENAI_DEPLOYMENT_ID"),
-        )
-    else:
-        client = OpenAI(
-            api_key=openai_api_key,
-            base_url=context.get("OPENAI_API_BASE"),
-        )
-    response = client.chat.completions.create(
-        model=GPT_3_5_TURBO_0613_MODEL,
+    response = call_litellm_completion(
         messages=[
             {
                 "role": "system",
@@ -70,22 +53,17 @@ def translate(*, openai_api_key: Optional[str], context: BoltContext, text: str)
             },
             {
                 "role": "user",
-                "content": f"Can you translate the following text into {lang} in a professional tone? "
+                "content": f"<@U025BGF3AJF>: Can you translate the following text into {lang} in a professional tone? "
                 "Your response must omit any English version / pronunciation guide for the result. "
                 "Again, no need to append any English notes and guides about the result. "
                 "Just return the translation result. "
                 f"Here is the original sentence you need to translate:\n{text}",
             },
         ],
-        top_p=1,
-        n=1,
         max_tokens=1024,
         temperature=1,
-        presence_penalty=0,
-        frequency_penalty=0,
-        logit_bias={},
         user="system",
     )
-    translated_text = response.model_dump()["choices"][0]["message"].get("content")
+    translated_text = response["choices"][0]["message"].get("content")
     _translation_result_cache[f"{lang}:{text}"] = translated_text
     return translated_text
