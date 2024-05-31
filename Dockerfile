@@ -1,7 +1,12 @@
 FROM python:3.11.4-slim-buster as builder
+ARG USE_BEDROCK=false
 COPY requirements.txt /build/
 WORKDIR /build/
-RUN pip install -U pip && pip install -r requirements.txt
+RUN if [ "$USE_BEDROCK" = "true" ]; then \
+        echo boto3 >> requirements.txt; \
+    fi \
+    && pip install --no-cache-dir -U pip \
+    && pip install --no-cache-dir -r requirements.txt
 
 FROM python:3.11.4-slim-buster as app
 WORKDIR /app/
@@ -10,10 +15,4 @@ RUN mkdir /app/app/
 COPY app/*.py /app/app/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 COPY --from=builder /usr/local/lib/ /usr/local/lib/
-ENTRYPOINT python main.py
-
-# docker build . -t your-repo/chat-gpt-in-slack
-# export SLACK_APP_TOKEN=xapp-...
-# export SLACK_BOT_TOKEN=xoxb-...
-# export OPENAI_API_KEY=sk-...
-# docker run -e SLACK_APP_TOKEN=$SLACK_APP_TOKEN -e SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN -e OPENAI_API_KEY=$OPENAI_API_KEY -it your-repo/chat-gpt-in-slack
+ENTRYPOINT [ "python", "main.py" ]

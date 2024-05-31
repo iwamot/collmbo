@@ -1,7 +1,7 @@
-from app.env import OPENAI_TIMEOUT_SECONDS
+from app.env import LITELLM_TIMEOUT_SECONDS
 
 TIMEOUT_ERROR_MESSAGE = (
-    f":warning: Apologies! It seems that OpenAI didn't respond within the {OPENAI_TIMEOUT_SECONDS}-second timeframe. "
+    f":warning: Apologies! It seems that the AI didn't respond within the {LITELLM_TIMEOUT_SECONDS}-second timeframe. "
     "Please try your request again later. "
     "If you wish to extend the timeout limit, "
     "you may consider deploying this app with customized settings on your infrastructure. :bow:"

@@ -1,7 +1,7 @@
 import re
 
 
-# Conversion from Slack mrkdwn to OpenAI markdown
+# Conversion from Slack mrkdwn to Markdown
 # See also: https://api.slack.com/reference/surfaces/formatting#basics
 def slack_to_markdown(content: str) -> str:
     # Split the input string into parts based on code blocks and inline code
@@ -23,7 +23,7 @@ def slack_to_markdown(content: str) -> str:
     return result
 
 
-# Conversion from OpenAI markdown to Slack mrkdwn
+# Conversion from Markdown to Slack mrkdwn
 # See also: https://api.slack.com/reference/surfaces/formatting#basics
 def markdown_to_slack(content: str) -> str:
     # Split the input string into parts based on code blocks and inline code

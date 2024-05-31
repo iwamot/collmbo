@@ -1,7 +1,4 @@
-from app.markdown_conversion import (
-    markdown_to_slack,
-    slack_to_markdown,
-)
+from app.markdown_conversion import markdown_to_slack, slack_to_markdown
 
 
 def test_markdown_to_slack():

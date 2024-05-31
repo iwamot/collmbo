@@ -1,8 +1,10 @@
+import base64
+from io import BytesIO
+
 import pytest
 from PIL import Image
-from io import BytesIO
-import base64
-from app.openai_image_ops import encode_image_and_guess_format
+
+from app.litellm_image_ops import encode_image_and_guess_format
 
 # Constants
 IMAGE_DIMENSIONS = (100, 100)

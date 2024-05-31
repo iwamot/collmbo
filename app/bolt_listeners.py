@@ -1,82 +1,37 @@
-import json
 import logging
 import re
-import threading
 import time
-from typing import List
 
-import requests
-from openai import APITimeoutError
-from slack_bolt import App, Ack, BoltContext, BoltResponse
+from litellm import Timeout
+from slack_bolt import Ack, App, BoltContext, BoltResponse
 from slack_bolt.request.payload_utils import is_event
 from slack_sdk.web import WebClient
-from slack_sdk.errors import SlackApiError
 
 from app.env import (
-    OPENAI_TIMEOUT_SECONDS,
+    IMAGE_FILE_ACCESS_ENABLED,
+    LITELLM_TEMPERATURE,
+    LITELLM_TIMEOUT_SECONDS,
     SYSTEM_TEXT,
     TRANSLATE_MARKDOWN,
-    IMAGE_FILE_ACCESS_ENABLED,
-    OPENAI_IMAGE_GENERATION_MODEL,
 )
 from app.i18n import translate
-from app.openai_image_ops import (
-    append_image_content_if_exists,
-    generate_image,
-    generate_image_variations,
-)
-from app.openai_ops import (
-    start_receiving_openai_response,
-    format_openai_message_content,
-    consume_openai_stream_to_write_reply,
+from app.litellm_image_ops import append_image_content_if_exists
+from app.litellm_ops import (
     build_system_text,
+    consume_litellm_stream_to_write_reply,
+    format_litellm_message_content,
     messages_within_context_window,
-    generate_slack_thread_summary,
-    generate_proofreading_result,
-    generate_chatgpt_response,
+    start_receiving_litellm_response,
 )
+from app.sensitive_info_redaction import redact_string
 from app.slack_constants import DEFAULT_LOADING_TEXT, TIMEOUT_ERROR_MESSAGE
 from app.slack_ops import (
+    can_send_image_url_to_litellm,
     find_parent_message,
     is_this_app_mentioned,
     post_wip_message,
     update_wip_message,
-    extract_state_value,
-    build_thread_replies_as_combined_text,
-    can_send_image_url_to_openai,
 )
-
-from app.sensitive_info_redaction import redact_string
-from app.slack_ui import (
-    build_proofreading_input_modal,
-    build_proofreading_wip_modal,
-    build_summarize_option_modal,
-    build_summarize_wip_modal,
-    build_summarize_message_modal,
-    build_summarize_result_modal,
-    build_summarize_timeout_error_modal,
-    build_summarize_error_modal,
-    build_proofreading_result_modal,
-    build_proofreading_timeout_error_modal,
-    build_proofreading_error_modal,
-    build_proofreading_result_no_dm_button_modal,
-    build_from_scratch_modal,
-    build_from_scratch_wip_modal,
-    build_from_scratch_result_modal,
-    build_from_scratch_timeout_modal,
-    build_from_scratch_error_modal,
-    build_image_generation_input_modal,
-    build_image_generation_wip_modal,
-    build_image_generation_result_modal,
-    build_image_generation_text_modal,
-    build_image_generation_result_blocks,
-    build_image_variations_text_modal,
-    build_image_variations_result_blocks,
-    build_image_variations_result_modal,
-    build_image_variations_wip_modal,
-    build_image_variations_input_modal,
-)
-
 
 #
 # Listener functions
@@ -112,15 +67,7 @@ def respond_to_app_mention(
     system_text = build_system_text(SYSTEM_TEXT, TRANSLATE_MARKDOWN, context)
     messages = [{"role": "system", "content": system_text}]
 
-    openai_api_key = context.get("OPENAI_API_KEY")
     try:
-        if openai_api_key is None:
-            client.chat_postMessage(
-                channel=context.channel_id,
-                text="To use this app, please configure your OpenAI API key first",
-            )
-            return
-
         user_id = context.actor_user_id or context.user_id
         if thread_ts is not None:
             # Mentioning the bot user in a thread
@@ -135,11 +82,11 @@ def respond_to_app_mention(
                 message_text_item = {
                     "type": "text",
                     "text": f"<@{reply['user'] if 'user' in reply else reply['username']}>: "
-                    + format_openai_message_content(reply_text, TRANSLATE_MARKDOWN),
+                    + format_litellm_message_content(reply_text, TRANSLATE_MARKDOWN),
                 }
                 content = [message_text_item]
 
-                if reply.get("bot_id") is None and can_send_image_url_to_openai(
+                if reply.get("bot_id") is None and can_send_image_url_to_litellm(
                     context
                 ):
                     append_image_content_if_exists(
@@ -149,14 +96,15 @@ def respond_to_app_mention(
                         logger=context.logger,
                     )
 
+                role = (
+                    "assistant"
+                    if "user" in reply and reply["user"] == context.bot_user_id
+                    else "user"
+                )
                 messages.append(
                     {
-                        "role": (
-                            "assistant"
-                            if "user" in reply and reply["user"] == context.bot_user_id
-                            else "user"
-                        ),
-                        "content": content,
+                        "role": role,
+                        "content": (content if role == "user" else content[0]["text"]),
                     }
                 )
         else:
@@ -166,11 +114,11 @@ def respond_to_app_mention(
             message_text_item = {
                 "type": "text",
                 "text": f"<@{user_id}>: "
-                + format_openai_message_content(msg_text, TRANSLATE_MARKDOWN),
+                + format_litellm_message_content(msg_text, TRANSLATE_MARKDOWN),
             }
             content = [message_text_item]
 
-            if payload.get("bot_id") is None and can_send_image_url_to_openai(context):
+            if payload.get("bot_id") is None and can_send_image_url_to_litellm(context):
                 append_image_content_if_exists(
                     bot_token=context.bot_token,
                     files=payload.get("files"),
@@ -180,9 +128,7 @@ def respond_to_app_mention(
 
             messages.append({"role": "user", "content": content})
 
-        loading_text = translate(
-            openai_api_key=openai_api_key, context=context, text=DEFAULT_LOADING_TEXT
-        )
+        loading_text = translate(context=context, text=DEFAULT_LOADING_TEXT)
         wip_reply = post_wip_message(
             client=client,
             channel=context.channel_id,
@@ -196,7 +142,7 @@ def respond_to_app_mention(
             messages,
             num_context_tokens,
             max_context_tokens,
-        ) = messages_within_context_window(messages, context=context)
+        ) = messages_within_context_window(messages)
         num_messages = len([msg for msg in messages if msg.get("role") != "system"])
         if num_messages == 0:
             update_wip_message(
@@ -208,31 +154,23 @@ def respond_to_app_mention(
                 user=context.user_id,
             )
         else:
-            stream = start_receiving_openai_response(
-                openai_api_key=openai_api_key,
-                model=context["OPENAI_MODEL"],
-                temperature=context["OPENAI_TEMPERATURE"],
+            stream = start_receiving_litellm_response(
+                temperature=LITELLM_TEMPERATURE,
                 messages=messages,
                 user=context.user_id,
-                openai_api_type=context["OPENAI_API_TYPE"],
-                openai_api_base=context["OPENAI_API_BASE"],
-                openai_api_version=context["OPENAI_API_VERSION"],
-                openai_deployment_id=context["OPENAI_DEPLOYMENT_ID"],
-                openai_organization_id=context["OPENAI_ORG_ID"],
-                function_call_module_name=context["OPENAI_FUNCTION_CALL_MODULE_NAME"],
             )
-            consume_openai_stream_to_write_reply(
+            consume_litellm_stream_to_write_reply(
                 client=client,
                 wip_reply=wip_reply,
                 context=context,
                 user_id=user_id,
                 messages=messages,
                 stream=stream,
-                timeout_seconds=OPENAI_TIMEOUT_SECONDS,
+                timeout_seconds=LITELLM_TIMEOUT_SECONDS,
                 translate_markdown=TRANSLATE_MARKDOWN,
             )
 
-    except (APITimeoutError, TimeoutError):
+    except (Timeout, TimeoutError):
         if wip_reply is not None:
             text = (
                 (
@@ -242,7 +180,6 @@ def respond_to_app_mention(
                 )
                 + "\n\n"
                 + translate(
-                    openai_api_key=openai_api_key,
                     context=context,
                     text=TIMEOUT_ERROR_MESSAGE,
                 )
@@ -261,9 +198,8 @@ def respond_to_app_mention(
             )
             + "\n\n"
             + translate(
-                openai_api_key=openai_api_key,
                 context=context,
-                text=f":warning: Failed to start a conversation with ChatGPT: {e}",
+                text=f":warning: Failed to start a conversation with AI: {e}",
             )
         )
         logger.exception(text, e)
@@ -283,10 +219,6 @@ def respond_to_new_message(
 ):
     if payload.get("bot_id") is not None and payload.get("bot_id") != context.bot_id:
         # Skip a new message by a different app
-        return
-
-    openai_api_key = context.get("OPENAI_API_KEY")
-    if openai_api_key is None:
         return
 
     wip_reply = None
@@ -349,7 +281,7 @@ def respond_to_new_message(
         indices_to_remove = []
         for idx, reply in enumerate(messages_in_context):
             maybe_event_type = reply.get("metadata", {}).get("event_type")
-            if maybe_event_type == "chat-gpt-convo":
+            if maybe_event_type == "litellm":
                 if context.bot_id != reply.get("bot_id"):
                     # Remove messages by a different app
                     indices_to_remove.append(idx)
@@ -397,10 +329,10 @@ def respond_to_new_message(
                 {
                     "type": "text",
                     "text": f"<@{msg_user_id}>: "
-                    + format_openai_message_content(reply_text, TRANSLATE_MARKDOWN),
+                    + format_litellm_message_content(reply_text, TRANSLATE_MARKDOWN),
                 }
             ]
-            if reply.get("bot_id") is None and can_send_image_url_to_openai(context):
+            if reply.get("bot_id") is None and can_send_image_url_to_litellm(context):
                 append_image_content_if_exists(
                     bot_token=context.bot_token,
                     files=reply.get("files"),
@@ -408,20 +340,19 @@ def respond_to_new_message(
                     logger=context.logger,
                 )
 
+            role = (
+                "assistant"
+                if "user" in reply and reply["user"] == context.bot_user_id
+                else "user"
+            )
             messages.append(
                 {
-                    "content": content,
-                    "role": (
-                        "assistant"
-                        if "user" in reply and reply["user"] == context.bot_user_id
-                        else "user"
-                    ),
+                    "content": (content if role == "user" else content[0]["text"]),
+                    "role": role,
                 }
             )
 
-        loading_text = translate(
-            openai_api_key=openai_api_key, context=context, text=DEFAULT_LOADING_TEXT
-        )
+        loading_text = translate(context=context, text=DEFAULT_LOADING_TEXT)
         wip_reply = post_wip_message(
             client=client,
             channel=context.channel_id,
@@ -435,7 +366,7 @@ def respond_to_new_message(
             messages,
             num_context_tokens,
             max_context_tokens,
-        ) = messages_within_context_window(messages, context=context)
+        ) = messages_within_context_window(messages)
         num_messages = len([msg for msg in messages if msg.get("role") != "system"])
         if num_messages == 0:
             update_wip_message(
@@ -447,18 +378,10 @@ def respond_to_new_message(
                 user=context.user_id,
             )
         else:
-            stream = start_receiving_openai_response(
-                openai_api_key=openai_api_key,
-                model=context["OPENAI_MODEL"],
-                temperature=context["OPENAI_TEMPERATURE"],
+            stream = start_receiving_litellm_response(
+                temperature=LITELLM_TEMPERATURE,
                 messages=messages,
                 user=user_id,
-                openai_api_type=context["OPENAI_API_TYPE"],
-                openai_api_base=context["OPENAI_API_BASE"],
-                openai_api_version=context["OPENAI_API_VERSION"],
-                openai_deployment_id=context["OPENAI_DEPLOYMENT_ID"],
-                openai_organization_id=context["OPENAI_ORG_ID"],
-                function_call_module_name=context["OPENAI_FUNCTION_CALL_MODULE_NAME"],
             )
 
             latest_replies = client.conversations_replies(
@@ -478,18 +401,18 @@ def respond_to_new_message(
                 )
                 return
 
-            consume_openai_stream_to_write_reply(
+            consume_litellm_stream_to_write_reply(
                 client=client,
                 wip_reply=wip_reply,
                 context=context,
                 user_id=user_id,
                 messages=messages,
                 stream=stream,
-                timeout_seconds=OPENAI_TIMEOUT_SECONDS,
+                timeout_seconds=LITELLM_TIMEOUT_SECONDS,
                 translate_markdown=TRANSLATE_MARKDOWN,
             )
 
-    except (APITimeoutError, TimeoutError):
+    except (Timeout, TimeoutError):
         if wip_reply is not None:
             text = (
                 (
@@ -499,7 +422,6 @@ def respond_to_new_message(
                 )
                 + "\n\n"
                 + translate(
-                    openai_api_key=openai_api_key,
                     context=context,
                     text=TIMEOUT_ERROR_MESSAGE,
                 )
@@ -528,528 +450,7 @@ def respond_to_new_message(
             )
 
 
-#
-# Summarize a thread
-#
-
-
-def show_summarize_option_modal(
-    ack: Ack,
-    client: WebClient,
-    body: dict,
-    context: BoltContext,
-):
-    client.views_open(
-        trigger_id=body.get("trigger_id"),
-        view=build_summarize_option_modal(context=context, body=body),
-    )
-    ack()
-
-
-def ack_summarize_options_modal_submission(
-    ack: Ack,
-    payload: dict,
-):
-    where_to_display = (
-        extract_state_value(payload, "where-to-share-summary")
-        .get("selected_option")
-        .get("value", "modal")
-    )
-    if where_to_display == "modal":
-        ack(response_action="update", view=build_summarize_wip_modal())
-    else:
-        ack(response_action="update", view=build_summarize_message_modal())
-
-
-def prepare_and_share_thread_summary(
-    payload: dict,
-    client: WebClient,
-    context: BoltContext,
-    logger: logging.Logger,
-):
-    try:
-        openai_api_key = context.get("OPENAI_API_KEY")
-        where_to_display = (
-            extract_state_value(payload, "where-to-share-summary")
-            .get("selected_option")
-            .get("value", "modal")
-        )
-        prompt = extract_state_value(payload, "prompt").get("value")
-        private_metadata = json.loads(payload.get("private_metadata"))
-        thread_content = build_thread_replies_as_combined_text(
-            context=context,
-            client=client,
-            channel=private_metadata.get("channel"),
-            thread_ts=private_metadata.get("thread_ts"),
-        )
-        here_is_summary = translate(
-            openai_api_key=openai_api_key,
-            context=context,
-            text="Here is the summary:",
-        )
-        summary = generate_slack_thread_summary(
-            context=context,
-            logger=logger,
-            openai_api_key=openai_api_key,
-            prompt=prompt,
-            thread_content=thread_content,
-            timeout_seconds=OPENAI_TIMEOUT_SECONDS,
-        )
-
-        if where_to_display == "modal":
-            client.views_update(
-                view_id=payload["id"],
-                view=build_summarize_result_modal(
-                    here_is_summary=here_is_summary,
-                    summary=summary,
-                ),
-            )
-        else:
-            client.chat_postMessage(
-                channel=private_metadata.get("channel"),
-                thread_ts=private_metadata.get("thread_ts"),
-                text=f"{here_is_summary}\n\n{summary}",
-            )
-    except (APITimeoutError, TimeoutError):
-        client.views_update(
-            view_id=payload["id"],
-            view=build_summarize_timeout_error_modal(),
-        )
-    except Exception as e:
-        logger.exception(f"Failed to share a thread summary: {e}")
-        client.views_update(
-            view_id=payload["id"],
-            view=build_summarize_error_modal(e),
-        )
-
-
-#
-# Proofread user inputs
-#
-
-
-def start_proofreading(client: WebClient, body: dict, payload: dict):
-    client.views_open(
-        trigger_id=body.get("trigger_id"),
-        view=build_proofreading_input_modal(payload.get("value"), None),
-    )
-
-
-def ack_proofreading_modal_submission(
-    ack: Ack,
-    payload: dict,
-    context: BoltContext,
-):
-    original_text = extract_state_value(payload, "original_text").get("value")
-    text = "\n".join(map(lambda s: f">{s}", original_text.split("\n")))
-    view = build_proofreading_wip_modal(
-        payload=payload,
-        context=context,
-        text=text,
-    )
-    ack(response_action="update", view=view)
-
-
-def display_proofreading_result(
-    client: WebClient,
-    context: BoltContext,
-    logger: logging.Logger,
-    payload: dict,
-):
-    text = ""
-    try:
-        openai_api_key = context.get("OPENAI_API_KEY")
-        original_text = extract_state_value(payload, "original_text").get("value")
-        tone_and_voice = extract_state_value(payload, "tone_and_voice")
-        tone_and_voice = (
-            tone_and_voice.get("selected_option").get("value")
-            if tone_and_voice.get("selected_option")
-            else None
-        )
-        text = "\n".join(map(lambda s: f">{s}", original_text.split("\n")))
-        result = generate_proofreading_result(
-            context=context,
-            logger=logger,
-            openai_api_key=openai_api_key,
-            original_text=original_text,
-            tone_and_voice=tone_and_voice,
-            timeout_seconds=OPENAI_TIMEOUT_SECONDS,
-        )
-        view = build_proofreading_result_modal(
-            context=context,
-            payload=payload,
-            result=result,
-        )
-        client.views_update(view_id=payload["id"], view=view)
-
-    except (APITimeoutError, TimeoutError):
-        client.views_update(
-            view_id=payload["id"],
-            view=build_proofreading_timeout_error_modal(payload=payload, text=text),
-        )
-    except Exception as e:
-        logger.exception(f"Failed to share a proofreading result: {e}")
-        client.views_update(
-            view_id=payload["id"],
-            view=build_proofreading_error_modal(payload=payload, text=text, e=e),
-        )
-
-
-def display_proofreading_modal_again(ack: Ack, payload):
-    private_metadata = json.loads(payload["private_metadata"])
-    ack(
-        response_action="update",
-        view=build_proofreading_input_modal(
-            private_metadata["prompt"], private_metadata.get("tone_and_voice")
-        ),
-    )
-
-
-def send_proofreading_result_in_dm(
-    body: dict,
-    client: WebClient,
-    context: BoltContext,
-    logger: logging.Logger,
-):
-    view = body["view"]
-    view_blocks = view["blocks"]
-    if view_blocks is None or len(view_blocks) == 0:
-        return
-    try:
-        result = view_blocks[1].get("text", {}).get("text")
-        if result is not None:
-            client.chat_postMessage(
-                channel=context.actor_user_id,
-                text=":wave: Here is the proofreading result:\n" + result,
-            )
-            # Remove the last block that displays the button
-            view_blocks.pop((len(view_blocks) - 1))
-            client.views_update(
-                view_id=body["view"]["id"],
-                view=build_proofreading_result_no_dm_button_modal(
-                    private_metadata=view["private_metadata"],
-                    blocks=view_blocks,
-                ),
-            )
-    except Exception as e:
-        logger.exception(f"Failed to send a DM: {e}")
-
-
-#
-# Image generation
-#
-
-
-def start_image_generation(client: WebClient, body: dict, payload: dict):
-    client.views_open(
-        trigger_id=body.get("trigger_id"),
-        view=build_image_generation_input_modal(payload.get("value")),
-    )
-
-
-def ack_image_generation_modal_submission(ack: Ack):
-    ack(response_action="update", view=build_image_generation_wip_modal())
-
-
-def display_image_generation_result(
-    client: WebClient,
-    context: BoltContext,
-    logger: logging.Logger,
-    payload: dict,
-):
-    text = ""
-    try:
-        prompt = extract_state_value(payload, "image_generation_prompt").get("value")
-        size = extract_state_value(payload, "size").get("selected_option").get("value")
-        quality = (
-            extract_state_value(payload, "quality").get("selected_option").get("value")
-        )
-        style = (
-            extract_state_value(payload, "style").get("selected_option").get("value")
-        )
-        model = context.get(
-            "OPENAI_IMAGE_GENERATION_MODEL", OPENAI_IMAGE_GENERATION_MODEL
-        )
-
-        start_time = time.time()
-        image_url = generate_image(
-            context=context,
-            prompt=prompt,
-            size=size,
-            quality=quality,
-            style=style,
-            timeout_seconds=OPENAI_TIMEOUT_SECONDS,
-        )
-        spent_seconds = str(round((time.time() - start_time), 2))
-        logger.debug(
-            f"Image generated (url: {image_url} , spent time: {spent_seconds})"
-        )
-
-        image_content = requests.get(image_url).content
-        users = [context.actor_user_id]
-        dm_id = client.conversations_open(users=users)["channel"]["id"]
-        text = "\n".join(map(lambda s: f">{s}", prompt.split("\n")))
-        message_text = (
-            "Here's a new image generated using this prompt:\n"
-            f"{text}\n"
-            f"model: {model}, size: {size}, quality: {quality}, style: {style}, time spent: {spent_seconds} s"
-        )
-        upload = client.files_upload_v2(
-            filename="generated_image.png",
-            file=image_content,
-            alt_txt=f"Generated using {model}",
-            title=f"Generated using {model}",
-            initial_comment=message_text,
-            channel=dm_id,
-        )
-        file_id = upload["files"][0]["id"]
-        uploaded_file_url = upload["files"][0]["url_private"]
-        shared = False
-        time.sleep(1.5)
-        while not shared:
-            latest_file_info = client.files_info(file=file_id)
-            shares = latest_file_info.get("file").get("shares")
-            shared = shares and len(shares.get("private")) > 0
-            if not shared:
-                time.sleep(0.5)
-
-        blocks = build_image_generation_result_blocks(
-            text=message_text, image_url=uploaded_file_url, model=model
-        )
-        client.views_update(
-            view_id=payload["id"],
-            view=build_image_generation_result_modal(blocks),
-        )
-
-    except (APITimeoutError, TimeoutError):
-        client.chat_postMessage(
-            channel=context.actor_user_id,
-            text=TIMEOUT_ERROR_MESSAGE,
-        )
-        client.views_update(
-            view_id=payload["id"],
-            view=build_image_generation_text_modal(TIMEOUT_ERROR_MESSAGE),
-        )
-    except SlackApiError as e:
-        logger.exception(f"Failed to call Slack APIs for image generation: {e}")
-        client.views_update(
-            view_id=payload["id"],
-            view=build_image_generation_text_modal(
-                f"{text}\n\n:warning: *My apologies!* "
-                f"An error occurred while calling Slack APIs: `{e}`"
-            ),
-        )
-    except Exception as e:
-        logger.exception(f"Failed to share a generated image: {e}")
-        error = (
-            f"{text}\n\n:warning: *My apologies!* "
-            f"An error occurred while generating an image: `{e}`"
-        )
-        client.chat_postMessage(
-            channel=context.actor_user_id,
-            text=error,
-        )
-        client.views_update(
-            view_id=payload["id"],
-            view=build_image_generation_text_modal(error),
-        )
-
-
-def start_image_variations(client: WebClient, body: dict, payload: dict):
-    client.views_open(
-        trigger_id=body.get("trigger_id"),
-        view=build_image_variations_input_modal(payload.get("value")),
-    )
-
-
-def ack_image_variations_modal_submission(ack: Ack):
-    ack(response_action="update", view=build_image_variations_wip_modal())
-
-
-def display_image_variations_result(
-    client: WebClient,
-    context: BoltContext,
-    logger: logging.Logger,
-    payload: dict,
-):
-    try:
-        # https://platform.openai.com/docs/guides/images/variations-dall-e-2-only
-        model = "dall-e-2"  # DALL·E 2 only
-        size = extract_state_value(payload, "size").get("selected_option").get("value")
-        image_files = extract_state_value(payload, "input_files").get("files")
-
-        start_time = time.time()
-        threads = []
-        file_uploads: List[dict] = []
-        try:
-            for image_file in image_files:
-
-                def generate_variations():
-                    uploaded_image_url = image_file["url_private"]
-                    image_data: bytes = requests.get(
-                        uploaded_image_url,
-                        headers={"Authorization": f"Bearer {context.bot_token}"},
-                    ).content
-
-                    image_url = generate_image_variations(
-                        context=context,
-                        image=image_data,
-                        size=size,
-                        timeout_seconds=OPENAI_TIMEOUT_SECONDS,
-                    )
-                    image_content = requests.get(image_url).content
-                    file_uploads.append(
-                        {"file": image_content, "filename": image_file["name"]}
-                    )
-
-                thread = threading.Thread(target=generate_variations)
-                thread.daemon = True
-                thread.start()
-                threads.append(thread)
-
-        finally:
-            for t in threads:
-                try:
-                    if t.is_alive():
-                        t.join()
-                except Exception:
-                    pass
-
-        spent_seconds = str(round((time.time() - start_time), 2))
-
-        if len(file_uploads) == 0:
-            logger.error("Failed to prepare any upload content")
-            client.views_update(
-                view_id=payload["id"],
-                view=build_image_variations_text_modal(
-                    "Failed to generate variations. Please check your OpenAI platform usage."
-                ),
-            )
-            return
-
-        users = [context.actor_user_id]
-        dm_id = client.conversations_open(users=users)["channel"]["id"]
-        message_text = (
-            "Here are the generated image variations for your inputs:\n"
-            f"model: {model}, size: {size}, time spent: {spent_seconds} s"
-        )
-        upload = client.files_upload_v2(
-            initial_comment=message_text,
-            channel=dm_id,
-            file_uploads=file_uploads,
-        )
-        uploaded_files = upload["files"]
-        file_id = upload["files"][0]["id"]
-        shared = False
-        time.sleep(1.5)
-        while not shared:
-            latest_file_info = client.files_info(file=file_id)
-            shares = latest_file_info.get("file").get("shares")
-            shared = shares and len(shares.get("private")) > 0
-            if not shared:
-                time.sleep(0.5)
-
-        blocks = build_image_variations_result_blocks(
-            text=message_text,
-            generated_image_urls=[f["url_private"] for f in upload["files"]],
-            model=model,
-        )
-        client.views_update(
-            view_id=payload["id"],
-            view=build_image_variations_result_modal(blocks),
-        )
-
-    except (APITimeoutError, TimeoutError):
-        client.chat_postMessage(
-            channel=context.actor_user_id,
-            text=TIMEOUT_ERROR_MESSAGE,
-        )
-        client.views_update(
-            view_id=payload["id"],
-            view=build_image_variations_text_modal(TIMEOUT_ERROR_MESSAGE),
-        )
-    except SlackApiError as e:
-        logger.exception(f"Failed to call Slack APIs for image variations: {e}")
-        client.views_update(
-            view_id=payload["id"],
-            view=build_image_variations_text_modal(
-                f":warning: *My apologies!* "
-                f"An error occurred while calling Slack APIs: `{e}`"
-            ),
-        )
-    except Exception as e:
-        logger.exception(f"Failed to share a generated image: {e}")
-        error = (
-            f"\n\n:warning: *My apologies!* "
-            f"An error occurred while generating image variations: `{e}`"
-        )
-        client.chat_postMessage(
-            channel=context.actor_user_id,
-            text=error,
-        )
-        client.views_update(
-            view_id=payload["id"],
-            view=build_image_variations_text_modal(error),
-        )
-
-
-#
-# Chat from scratch
-#
-
-
-def start_chat_from_scratch(client: WebClient, body: dict):
-    client.views_open(
-        trigger_id=body.get("trigger_id"),
-        view=build_from_scratch_modal(),
-    )
-
-
-def ack_chat_from_scratch_modal_submission(
-    ack: Ack,
-    payload: dict,
-):
-    prompt = extract_state_value(payload, "prompt").get("value")
-    text = "\n".join(map(lambda s: f">{s}", prompt.split("\n")))
-    view = build_from_scratch_wip_modal(text)
-    ack(response_action="update", view=view)
-
-
-def display_chat_from_scratch_result(
-    client: WebClient,
-    context: BoltContext,
-    logger: logging.Logger,
-    payload: dict,
-):
-    text = ""
-    openai_api_key = context.get("OPENAI_API_KEY")
-    try:
-        prompt = extract_state_value(payload, "prompt").get("value")
-        text = "\n".join(map(lambda s: f">{s}", prompt.split("\n")))
-        result = generate_chatgpt_response(
-            context=context,
-            logger=logger,
-            openai_api_key=openai_api_key,
-            prompt=prompt,
-            timeout_seconds=OPENAI_TIMEOUT_SECONDS,
-        )
-        view = build_from_scratch_result_modal(text=text, result=result)
-        client.views_update(view_id=payload["id"], view=view)
-    except (APITimeoutError, TimeoutError):
-        client.views_update(
-            view_id=payload["id"],
-            view=build_from_scratch_timeout_modal(text),
-        )
-    except Exception as e:
-        logger.exception(f"Failed to share a thread summary: {e}")
-        client.views_update(
-            view_id=payload["id"],
-            view=build_from_scratch_error_modal(text=text, e=e),
-        )
-
-
 def register_listeners(app: App):
-
     # TODO: remove this workaround once bolt-python attaches scopes to context under the hood
     @app.middleware
     def attach_bot_scopes(client: WebClient, context: BoltContext, next_):
@@ -1067,58 +468,6 @@ def register_listeners(app: App):
     # Chat with the bot
     app.event("app_mention")(ack=just_ack, lazy=[respond_to_app_mention])
     app.event("message")(ack=just_ack, lazy=[respond_to_new_message])
-
-    # Summarize a thread
-    app.shortcut("summarize-thread")(show_summarize_option_modal)
-    app.view("request-thread-summary")(
-        ack=ack_summarize_options_modal_submission,
-        lazy=[prepare_and_share_thread_summary],
-    )
-
-    # Use templates
-
-    # Proofreading
-    app.action("templates-proofread")(
-        ack=just_ack,
-        lazy=[start_proofreading],
-    )
-    app.view("proofread")(
-        ack=ack_proofreading_modal_submission,
-        lazy=[display_proofreading_result],
-    )
-    app.view("proofread-result")(display_proofreading_modal_again)
-    app.action("send-proofread-result-in-dm")(
-        ack=just_ack,
-        lazy=[send_proofreading_result_in_dm],
-    )
-
-    # Image generation
-    app.action("templates-image-generation")(
-        ack=just_ack,
-        lazy=[start_image_generation],
-    )
-    app.view("image-generation")(
-        ack=ack_image_generation_modal_submission,
-        lazy=[display_image_generation_result],
-    )
-    app.action("templates-image-variations")(
-        ack=just_ack,
-        lazy=[start_image_variations],
-    )
-    app.view("image-variations")(
-        ack=ack_image_variations_modal_submission,
-        lazy=[display_image_variations_result],
-    )
-
-    # Free format chat
-    app.action("templates-from-scratch")(
-        ack=just_ack,
-        lazy=[start_chat_from_scratch],
-    )
-    app.view("chat-from-scratch")(
-        ack=ack_chat_from_scratch_modal_submission,
-        lazy=[display_chat_from_scratch_result],
-    )
 
 
 MESSAGE_SUBTYPES_TO_SKIP = ["message_changed", "message_deleted"]
