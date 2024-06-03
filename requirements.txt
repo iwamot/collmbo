@@ -1,5 +1,5 @@
 slack-bolt>=1.18.1,<2
 slack-sdk>=3.27.1,<4
-litellm>=1.38.10,<2
+litellm>=1.40.0,<2
 pillow>=10.3.0,<11
 requests>=2.13,<3
