@@ -10,10 +10,10 @@ Collmbo, pronounced the same as "Colombo", is a Slack app that lets end-users ch
 - Redaction (`REDACTION_ENABLED=true`)
 - Image reading (`IMAGE_FILE_ACCESS_ENABLED=true`, for supported models only)
 - Tools/Function calling (`LITELLM_TOOLS_MODULE_NAME=tests.tools_example`, for supported models only)
+- Customizable logger function (`LITELLM_LOGGER_FN_MODULE_NAME=tests.logger_fn_example`)
 
 ### Planned
 
-- Logging LLM requests in JSON
 - IAM role-based authentication for Amazon Bedrock
 
 ### Will Not Be Supported
