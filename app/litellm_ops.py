@@ -10,6 +10,7 @@ from slack_bolt import BoltContext
 from slack_sdk.web import SlackResponse, WebClient
 
 from app.env import (
+    LITELLM_LOGGER_FN_MODULE_NAME,
     LITELLM_MAX_TOKENS,
     LITELLM_MODEL,
     LITELLM_MODEL_TYPE,
@@ -102,6 +103,11 @@ def call_litellm_completion(
     stream: bool = False,
     tools: Optional[List] = None,
 ) -> Union[litellm.ModelResponse, litellm.CustomStreamWrapper]:
+    if LITELLM_LOGGER_FN_MODULE_NAME is not None:
+        logger_fn = import_module(LITELLM_LOGGER_FN_MODULE_NAME).logger_fn
+    else:
+        logger_fn = None
+
     litellm.drop_params = True
     return litellm.completion(
         model=LITELLM_MODEL,
@@ -116,6 +122,7 @@ def call_litellm_completion(
         user=user,
         stream=stream,
         tools=tools,
+        logger_fn=logger_fn,
     )
 
 
