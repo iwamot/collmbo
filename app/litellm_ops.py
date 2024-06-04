@@ -1,19 +1,29 @@
+import json
 import re
 import threading
 import time
+from importlib import import_module
 from typing import Dict, List, Optional, Tuple, Union
 
 import litellm
 from slack_bolt import BoltContext
 from slack_sdk.web import SlackResponse, WebClient
 
-from app.env import LITELLM_MAX_TOKENS, LITELLM_MODEL, LITELLM_MODEL_TYPE
+from app.env import (
+    LITELLM_MAX_TOKENS,
+    LITELLM_MODEL,
+    LITELLM_MODEL_TYPE,
+    LITELLM_TEMPERATURE,
+    LITELLM_TOOLS_MODULE_NAME,
+)
 from app.markdown_conversion import markdown_to_slack, slack_to_markdown
 from app.slack_ops import update_wip_message
 
 # ----------------------------
 # Internal functions
 # ----------------------------
+
+_prompt_tokens_used_by_tools_cache: Optional[int] = None
 
 
 # Format message from Slack to send to LiteLLM
@@ -38,7 +48,11 @@ def format_litellm_message_content(
 def messages_within_context_window(
     messages: List[Dict[str, Union[str, Dict[str, str]]]],
 ) -> Tuple[List[Dict[str, Union[str, Dict[str, str]]]], int, int]:
-    max_context_tokens = litellm.get_max_tokens(LITELLM_MODEL_TYPE)
+    max_context_tokens = (
+        litellm.get_max_tokens(LITELLM_MODEL_TYPE) - LITELLM_MAX_TOKENS - 1
+    )
+    if LITELLM_TOOLS_MODULE_NAME is not None:
+        max_context_tokens -= calculate_tokens_necessary_for_tools()
     num_context_tokens = 0  # Number of tokens in the context window just before the earliest message is deleted
     while (
         num_tokens := litellm.token_counter(model=LITELLM_MODEL_TYPE, messages=messages)
@@ -65,22 +79,28 @@ def start_receiving_litellm_response(
     messages: List[Dict[str, Union[str, Dict[str, str]]]],
     user: str,
 ) -> Union[litellm.ModelResponse, litellm.CustomStreamWrapper]:
+    if LITELLM_TOOLS_MODULE_NAME is not None:
+        tools = import_module(LITELLM_TOOLS_MODULE_NAME).tools
+    else:
+        tools = None
     return call_litellm_completion(
         messages=messages,
         max_tokens=LITELLM_MAX_TOKENS,
         temperature=temperature,
         user=user,
         stream=True,
+        tools=tools,
     )
 
 
 def call_litellm_completion(
     *,
     messages: List[Dict[str, Union[str, Dict[str, str]]]],
-    max_tokens: int,
-    temperature: float,
     user: str,
+    max_tokens: int = 1024,
+    temperature: float = 0,
     stream: bool = False,
+    tools: Optional[List] = None,
 ) -> Union[litellm.ModelResponse, litellm.CustomStreamWrapper]:
     litellm.drop_params = True
     return litellm.completion(
@@ -95,6 +115,7 @@ def call_litellm_completion(
         logit_bias={},
         user=user,
         stream=stream,
+        tools=tools,
     )
 
 
@@ -117,13 +138,15 @@ def consume_litellm_stream_to_write_reply(
     messages.append(assistant_reply)
     word_count = 0
     threads = []
+    chunks: List = []
     try:
         loading_character = " ... :writing_hand:"
         for chunk in stream:
             spent_seconds = time.time() - start_time
             if timeout_seconds < spent_seconds:
                 raise TimeoutError()
-            item = chunk.choices[0].model_dump()
+            chunks.append(chunk)
+            item = chunk.choices[0]
             if item.get("finish_reason") is not None:
                 break
             delta = item.get("delta")
@@ -158,6 +181,43 @@ def consume_litellm_stream_to_write_reply(
                     t.join()
             except Exception:
                 pass
+
+        response = litellm.stream_chunk_builder(chunks)
+        if hasattr(response.choices[0].message, "tool_calls"):
+            tools_module = import_module(LITELLM_TOOLS_MODULE_NAME)
+            assistant_reply["tool_calls"] = response.choices[0].message.model_dump()[
+                "tool_calls"
+            ]
+            for tool_call in response.choices[0].message.tool_calls:
+                function_name = tool_call.function.name
+                function_to_call = getattr(tools_module, function_name)
+                function_args = json.loads(tool_call.function.arguments)
+                function_response = function_to_call(**function_args)
+                messages.append(
+                    {
+                        "tool_call_id": tool_call.id,
+                        "role": "tool",
+                        "name": function_name,
+                        "content": function_response,
+                    }
+                )
+            messages_within_context_window(messages)
+            sub_stream = start_receiving_litellm_response(
+                temperature=LITELLM_TEMPERATURE,
+                messages=messages,
+                user=user_id,
+            )
+            consume_litellm_stream_to_write_reply(
+                client=client,
+                wip_reply=wip_reply,
+                context=context,
+                user_id=user_id,
+                messages=messages,
+                stream=sub_stream,
+                timeout_seconds=int(timeout_seconds - (time.time() - start_time)),
+                translate_markdown=translate_markdown,
+            )
+            return
 
         assistant_reply_text = format_assistant_reply(
             assistant_reply["content"], translate_markdown
@@ -236,3 +296,28 @@ def build_system_text(
     if translate_markdown is True:
         system_text = slack_to_markdown(system_text)
     return system_text
+
+
+def calculate_tokens_necessary_for_tools() -> int:
+    """Calculates the estimated number of prompt tokens necessary for loading Tools stuff"""
+    tools_module_name = LITELLM_TOOLS_MODULE_NAME
+    if tools_module_name is None:
+        return 0
+
+    global _prompt_tokens_used_by_tools_cache
+    if _prompt_tokens_used_by_tools_cache is not None:
+        return _prompt_tokens_used_by_tools_cache
+
+    def _calculate_prompt_tokens(tools) -> int:
+        return call_litellm_completion(
+            messages=[{"role": "user", "content": "hello"}],
+            user="system",
+            tools=tools,
+        )["usage"]["prompt_tokens"]
+
+    # TODO: If there is a better way to calculate this, replace the logic with it
+    module = import_module(tools_module_name)
+    _prompt_tokens_used_by_tools_cache = _calculate_prompt_tokens(
+        module.tools
+    ) - _calculate_prompt_tokens(None)
+    return _prompt_tokens_used_by_tools_cache

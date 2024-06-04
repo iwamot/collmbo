@@ -60,7 +60,6 @@ def translate(*, context: BoltContext, text: str) -> str:
                 f"Here is the original sentence you need to translate:\n{text}",
             },
         ],
-        max_tokens=1024,
         temperature=1,
         user="system",
     )
