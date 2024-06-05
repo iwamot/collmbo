@@ -13,7 +13,7 @@ def logger_fn(model_call_dict):
         "tools",
     ]
     log_data = {
-        k: v for k, v in copy.deepcopy(model_call_dict).items() if k in keys_to_keep
+        k: copy.deepcopy(v) for k, v in model_call_dict.items() if k in keys_to_keep
     }
     if "messages" in log_data:
         for message in log_data["messages"]:
