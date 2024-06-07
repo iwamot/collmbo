@@ -12,10 +12,6 @@ Collmbo, pronounced the same as "Colombo", is a Slack app that lets end-users ch
 - Tools / Function calling (`LITELLM_TOOLS_MODULE_NAME=tests.tools_example`, for supported models only)
 - Custom callbacks (`LITELLM_CALLBACK_MODULE_NAME=tests.callback_example`)
 
-### Planned
-
-- IAM role-based authentication for Amazon Bedrock
-
 ### Will Not Be Supported
 
 - Home tab
@@ -74,8 +70,7 @@ $ docker run -it --env-file ./env <your_repository_name>/collmbo
 
 ```sh
 $ cat env
-AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
+# Recommend using IAM roles for authentication
 AWS_REGION_NAME=...
 LITELLM_MODEL=bedrock/anthropic.claude-3-opus-20240229-v1:0
 SLACK_APP_TOKEN=...
