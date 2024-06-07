@@ -10,7 +10,7 @@ from slack_bolt import BoltContext
 from slack_sdk.web import SlackResponse, WebClient
 
 from app.env import (
-    LITELLM_LOGGER_FN_MODULE_NAME,
+    LITELLM_CALLBACK_MODULE_NAME,
     LITELLM_MAX_TOKENS,
     LITELLM_MODEL,
     LITELLM_MODEL_TYPE,
@@ -23,6 +23,12 @@ from app.slack_ops import update_wip_message
 # ----------------------------
 # Internal functions
 # ----------------------------
+
+litellm.drop_params = True
+
+if LITELLM_CALLBACK_MODULE_NAME is not None:
+    callback_module = import_module(LITELLM_CALLBACK_MODULE_NAME)
+    litellm.callbacks = [callback_module.CallbackHandler()]
 
 _prompt_tokens_used_by_tools_cache: Optional[int] = None
 
@@ -103,12 +109,6 @@ def call_litellm_completion(
     stream: bool = False,
     tools: Optional[List] = None,
 ) -> Union[litellm.ModelResponse, litellm.CustomStreamWrapper]:
-    if LITELLM_LOGGER_FN_MODULE_NAME is not None:
-        logger_fn = import_module(LITELLM_LOGGER_FN_MODULE_NAME).logger_fn
-    else:
-        logger_fn = None
-
-    litellm.drop_params = True
     return litellm.completion(
         model=LITELLM_MODEL,
         messages=messages,
@@ -122,7 +122,6 @@ def call_litellm_completion(
         user=user,
         stream=stream,
         tools=tools,
-        logger_fn=logger_fn,
     )
 
 
