@@ -11,22 +11,20 @@ features:
 oauth_config:
   scopes:
     bot:
-      - commands
       - app_mentions:read
       - channels:history
-      - groups:history
-      - im:history
-      - mpim:history
-      - chat:write.public
       - chat:write
-      - users:read
+      - chat:write.public
       - files:read
       - files:write
+      - groups:history
+      - im:history
       - im:write
+      - mpim:history
+      - users:read
 settings:
   event_subscriptions:
     bot_events:
-      - app_home_opened
       - app_mention
       - message.channels
       - message.groups
