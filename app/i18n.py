@@ -53,7 +53,7 @@ def translate(*, context: BoltContext, text: str) -> str:
             },
             {
                 "role": "user",
-                "content": f"<@U025BGF3AJF>: Can you translate the following text into {lang} in a professional tone? "
+                "content": f"Can you translate the following text into {lang} in a professional tone? "
                 "Your response must omit any English version / pronunciation guide for the result. "
                 "Again, no need to append any English notes and guides about the result. "
                 "Just return the translation result. "
