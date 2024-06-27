@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import threading
 import time
@@ -122,6 +123,7 @@ def call_litellm_completion(
         user=user,
         stream=stream,
         tools=tools,
+        aws_region_name=os.environ.get("AWS_REGION_NAME"),
     )
 
 
