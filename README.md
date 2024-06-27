@@ -65,14 +65,14 @@ SLACK_BOT_TOKEN=...
 $ docker run -it --env-file ./env <your_repository_name>/collmbo
 ```
 
-#### Amazon Bedrock (Claude 3 Opus)
+#### Amazon Bedrock (Claude 3.5 Sonnet)
 
 
 ```sh
 $ cat env
 # Recommend using IAM roles for authentication
 AWS_REGION_NAME=...
-LITELLM_MODEL=bedrock/anthropic.claude-3-opus-20240229-v1:0
+LITELLM_MODEL=bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0
 SLACK_APP_TOKEN=...
 SLACK_BOT_TOKEN=...
 
