@@ -189,6 +189,7 @@ def consume_litellm_stream_to_write_reply(
                                 "name": "",
                                 "arguments": "",
                             },
+                            "type": tool_call.type,
                         }
                     )
                 function = tool_calls[tool_call.index]["function"]
