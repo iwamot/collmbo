@@ -78,6 +78,13 @@ def messages_within_context_window(
     else:
         num_context_tokens = num_tokens
 
+    # Remove any non-user messages at the beginning of the list
+    while messages and messages[0]["role"] != "user":
+        num_context_tokens = litellm.token_counter(
+            model=LITELLM_MODEL_TYPE, messages=messages
+        )
+        del messages[0]
+
     return messages, num_context_tokens, max_context_tokens
 
 
