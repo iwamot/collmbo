@@ -153,13 +153,14 @@ def consume_litellm_stream_to_write_reply(
     messages.append(assistant_reply)
     word_count = 0
     threads = []
-    tool_calls = []
+    chunks: List = []
     try:
         loading_character = " ... :writing_hand:"
         for chunk in stream:
             spent_seconds = time.time() - start_time
             if timeout_seconds < spent_seconds:
                 raise TimeoutError()
+            chunks.append(chunk)
             item = chunk.choices[0]
             if item.get("finish_reason") is not None:
                 break
@@ -188,22 +189,6 @@ def consume_litellm_stream_to_write_reply(
                     thread.start()
                     threads.append(thread)
                     word_count = 0
-            if delta.get("tool_calls") is not None:
-                tool_call = delta.get("tool_calls")[0]
-                if len(tool_calls) <= tool_call.index:
-                    tool_calls.append(
-                        {
-                            "id": tool_call.id,
-                            "function": {
-                                "name": "",
-                                "arguments": "",
-                            },
-                            "type": tool_call.type,
-                        }
-                    )
-                function = tool_calls[tool_call.index]["function"]
-                function["name"] += tool_call.function.name or ""
-                function["arguments"] += tool_call.function.arguments or ""
 
         for t in threads:
             try:
@@ -212,17 +197,20 @@ def consume_litellm_stream_to_write_reply(
             except Exception:
                 pass
 
-        if len(tool_calls) > 0:
-            assistant_reply["tool_calls"] = tool_calls
+        response = litellm.stream_chunk_builder(chunks)
+        response_message = response.choices[0].message
+        tool_calls = response.choices[0].message.tool_calls
+        if tool_calls:
+            assistant_reply["tool_calls"] = response_message.model_dump()["tool_calls"]
             tools_module = import_module(LITELLM_TOOLS_MODULE_NAME)
             for tool_call in tool_calls:
-                function_name = tool_call["function"]["name"]
+                function_name = tool_call.function.name
                 function_to_call = getattr(tools_module, function_name)
-                function_args = json.loads(tool_call["function"]["arguments"])
+                function_args = json.loads(tool_call.function.arguments)
                 function_response = function_to_call(**function_args)
                 messages.append(
                     {
-                        "tool_call_id": tool_call["id"],
+                        "tool_call_id": tool_call.id,
                         "role": "tool",
                         "name": function_name,
                         "content": function_response,
