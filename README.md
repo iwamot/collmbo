@@ -2,6 +2,8 @@
 
 Collmbo, pronounced the same as "Colombo", is a Slack app that lets end-users chat with AI. Powered by LiteLLM for flexible model selection. Forked from [seratch/ChatGPT-in-Slack](https://github.com/seratch/ChatGPT-in-Slack).
 
+![](https://github.com/user-attachments/assets/fc078de0-406e-4d4d-abb1-f6e30a0dbeab)
+
 ## Quick Start: OpenAI (gpt-4o)
 
 ```sh
