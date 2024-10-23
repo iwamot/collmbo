@@ -40,13 +40,13 @@ LITELLM_MODEL_TYPE=azure/gpt-4-0613
 $ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-slim
 ```
 
-### Amazon Bedrock (Claude 3.5 Sonnet)
+### Amazon Bedrock (Claude 3.5 Sonnet v2)
 
 ```sh
 $ cat env
 SLACK_APP_TOKEN=...
 SLACK_BOT_TOKEN=...
-LITELLM_MODEL=bedrock/anthropic.claude-3-5-sonnet-20240620-v1:0
+LITELLM_MODEL=bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0
 # Recommend using IAM roles for authentication
 
 $ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-full
