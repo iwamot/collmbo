@@ -1,10 +1,12 @@
 # Collmbo
 
-Collmbo, pronounced the same as "Colombo", is a Slack app that lets end-users chat with AI. Powered by LiteLLM for flexible model selection. Forked from [seratch/ChatGPT-in-Slack](https://github.com/seratch/ChatGPT-in-Slack).
+**A Slack app that lets end-users chat with AI, offering flexible model selection powered by LiteLLM.** Pronounced the same as "Colombo". Forked from [seratch/ChatGPT-in-Slack](https://github.com/seratch/ChatGPT-in-Slack).
 
 ![](https://github.com/user-attachments/assets/fc078de0-406e-4d4d-abb1-f6e30a0dbeab)
 
-## Quick Start: OpenAI (gpt-4o)
+## Quick Start
+
+### OpenAI (gpt-4o)
 
 ```sh
 $ cat env
@@ -22,8 +24,6 @@ LITELLM_MODEL=gpt-4o
 
 $ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-slim
 ```
-
-## Advanced Usage
 
 ### Azure OpenAI (gpt-4-0613)
 
@@ -47,6 +47,7 @@ $ cat env
 SLACK_APP_TOKEN=...
 SLACK_BOT_TOKEN=...
 LITELLM_MODEL=bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0
+AWS_REGION_NAME=us-west-2  # Optional: Set if Bedrock Claude region is different from application region
 # Recommend using IAM roles for authentication
 
 $ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-full
