@@ -6,6 +6,8 @@
 
 ## Quick Start
 
+Below are quick setup instructions for Collmbo using some popular AI models. These are representative examples, and Collmbo supports many other models through LiteLLM.
+
 ### OpenAI (gpt-4o)
 
 ```sh
