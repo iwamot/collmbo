@@ -85,6 +85,13 @@ def messages_within_context_window(
         )
         del messages[0]
 
+    # Remove any assistant messages at the end of the list
+    while messages and messages[-1]["role"] == "assistant":
+        num_context_tokens = litellm.token_counter(
+            model=LITELLM_MODEL_TYPE, messages=messages
+        )
+        del messages[-1]
+
     return messages, num_context_tokens, max_context_tokens
 
 
