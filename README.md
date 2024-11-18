@@ -42,6 +42,18 @@ LITELLM_MODEL_TYPE=azure/gpt-4-0613
 $ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-slim
 ```
 
+### Gemini - Google AI Studio (Gemini 1.5 Flash)
+
+```sh
+$ cat env
+SLACK_APP_TOKEN=...
+SLACK_BOT_TOKEN=...
+GEMINI_API_KEY=...
+LITELLM_MODEL=gemini/gemini-1.5-flash
+
+$ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-slim
+```
+
 ### Amazon Bedrock (Claude 3.5 Sonnet v2)
 
 ```sh
