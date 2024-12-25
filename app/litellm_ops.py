@@ -133,7 +133,6 @@ def call_litellm_completion(
         temperature=temperature,
         presence_penalty=0,
         frequency_penalty=0,
-        logit_bias={},
         user=user,
         stream=stream,
         tools=tools,
