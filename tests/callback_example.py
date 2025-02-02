@@ -32,16 +32,10 @@ class CallbackHandler(CustomLogger):
     def log_post_api_call(self, kwargs, response_obj, start_time, end_time):
         pass
 
-    def log_stream_event(self, kwargs, response_obj, start_time, end_time):
-        pass
-
     def log_success_event(self, kwargs, response_obj, start_time, end_time):
         pass
 
     def log_failure_event(self, kwargs, response_obj, start_time, end_time):
-        pass
-
-    async def async_log_stream_event(self, kwargs, response_obj, start_time, end_time):
         pass
 
     async def async_log_success_event(self, kwargs, response_obj, start_time, end_time):
