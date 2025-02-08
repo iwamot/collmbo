@@ -124,12 +124,6 @@ def call_litellm_completion(
     stream: bool = False,
     tools: Optional[List] = None,
 ) -> Union[litellm.ModelResponse, litellm.CustomStreamWrapper]:
-    # litellm.drop_params=True should ignore temperature, but it doesn't yet, so remove it here.
-    if LITELLM_MODEL.startswith("o3-mini") or LITELLM_MODEL.startswith("azure/o3-mini"):
-        kwargs = {}
-    else:
-        kwargs = {"temperature": temperature}
-
     return litellm.completion(
         model=LITELLM_MODEL,
         messages=messages,
@@ -143,7 +137,6 @@ def call_litellm_completion(
         stream=stream,
         tools=tools,
         aws_region_name=os.environ.get("AWS_REGION_NAME"),
-        **kwargs,
     )
 
 
