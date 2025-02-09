@@ -1,6 +1,7 @@
 from typing import Optional
 
 from slack_bolt import BoltContext
+from litellm.types.utils import ModelResponse
 
 from app.env import LITELLM_MODEL
 from app.litellm_ops import call_litellm_completion
@@ -29,7 +30,7 @@ def from_locale_to_lang(locale: Optional[str]) -> Optional[str]:
     return _locale_to_lang.get(locale)
 
 
-_translation_result_cache = {}
+_translation_result_cache: dict[str, str] = {}
 
 
 def translate(*, context: BoltContext, text: str) -> str:
@@ -63,6 +64,8 @@ def translate(*, context: BoltContext, text: str) -> str:
         temperature=1,
         user="system",
     )
+    if not isinstance(response, ModelResponse):
+        raise TypeError("Expected ModelResponse when streaming is disabled")
     translated_text = response["choices"][0]["message"].get("content")
     _translation_result_cache[f"{lang}:{text}"] = translated_text
     return translated_text

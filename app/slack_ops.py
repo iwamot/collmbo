@@ -1,7 +1,7 @@
-from typing import Dict, List, Optional
+from typing import Optional
+from urllib.request import Request, urlopen
 
-import requests
-from litellm import supports_vision
+from litellm.utils import supports_vision
 from slack_bolt import BoltContext
 from slack_sdk.errors import SlackApiError
 from slack_sdk.web import SlackResponse, WebClient
@@ -19,7 +19,7 @@ def find_parent_message(
     if channel_id is None or thread_ts is None:
         return None
 
-    messages = client.conversations_history(
+    messages: list[dict] = client.conversations_history(
         channel=channel_id,
         latest=thread_ts,
         limit=1,
@@ -45,7 +45,7 @@ def post_wip_message(
     channel: str,
     thread_ts: str,
     loading_text: str,
-    messages: List[Dict[str, str]],
+    messages: list[dict],
     user: str,
 ) -> SlackResponse:
     system_messages = [msg for msg in messages if msg["role"] == "system"]
@@ -65,7 +65,7 @@ def update_wip_message(
     channel: str,
     ts: str,
     text: str,
-    messages: List[Dict[str, str]],
+    messages: list[dict],
     user: str,
 ) -> SlackResponse:
     system_messages = [msg for msg in messages if msg["role"] == "system"]
@@ -88,23 +88,24 @@ def update_wip_message(
 def can_send_image_url_to_litellm(context: BoltContext) -> bool:
     if IMAGE_FILE_ACCESS_ENABLED is False:
         return False
-    bot_scopes = context.authorize_result.bot_scopes or []
-    can_access_files = context and "files:read" in bot_scopes
-    if can_access_files is False:
+    if context.authorize_result is None or context.authorize_result.bot_scopes is None:
+        return False
+    if "files:read" not in context.authorize_result.bot_scopes:
         return False
     return supports_vision(model=LITELLM_MODEL_TYPE)
 
 
 def download_slack_image_content(image_url: str, bot_token: str) -> bytes:
-    response = requests.get(
+    request = Request(
         image_url,
         headers={"Authorization": f"Bearer {bot_token}"},
     )
-    if response.status_code != 200:
-        error = f"Request to {image_url} failed with status code {response.status_code}"
+    response = urlopen(request)
+    if response.getcode() != 200:
+        error = f"Request to {image_url} failed with status code {response.status}"
         raise SlackApiError(error, response)
 
-    content_type = response.headers["content-type"]
+    content_type = response.info().get("Content-Type")
     if content_type.startswith("text/html"):
         error = f"You don't have the permission to download this file: {image_url}"
         raise SlackApiError(error, response)
@@ -113,4 +114,4 @@ def download_slack_image_content(image_url: str, bot_token: str) -> bytes:
         error = f"The responded content-type is not for image data: {content_type}"
         raise SlackApiError(error, response)
 
-    return response.content
+    return response.read()

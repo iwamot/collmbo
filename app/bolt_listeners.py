@@ -1,8 +1,9 @@
 import logging
 import re
 import time
+from typing import Optional
 
-from litellm import Timeout
+from litellm.exceptions import Timeout
 from slack_bolt import Ack, App, BoltContext, BoltResponse
 from slack_bolt.request.payload_utils import is_event
 from slack_sdk.web import WebClient
@@ -65,20 +66,22 @@ def respond_to_app_mention(
     wip_reply = None
     # Replace placeholder for Slack user ID in the system prompt
     system_text = build_system_text(SYSTEM_TEXT, TRANSLATE_MARKDOWN, context)
-    messages = [{"role": "system", "content": system_text}]
+    messages: list[dict] = [{"role": "system", "content": system_text}]
 
     try:
         user_id = context.actor_user_id or context.user_id
         if thread_ts is not None:
             # Mentioning the bot user in a thread
-            replies_in_thread = client.conversations_replies(
+            if context.channel_id is None:
+                raise ValueError("context.channel_id cannot be None")
+            replies_in_thread: list[dict] = client.conversations_replies(
                 channel=context.channel_id,
                 ts=thread_ts,
                 include_all_metadata=True,
                 limit=1000,
             ).get("messages", [])
             for reply in replies_in_thread:
-                reply_text = redact_string(reply.get("text"))
+                reply_text = redact_string(reply.get("text") or "")
                 message_text_item = {
                     "type": "text",
                     "text": f"<@{reply['user'] if 'user' in reply else reply['username']}>: "
@@ -89,6 +92,8 @@ def respond_to_app_mention(
                 if reply.get("bot_id") is None and can_send_image_url_to_litellm(
                     context
                 ):
+                    if context.bot_token is None:
+                        raise ValueError("context.bot_token cannot be None")
                     append_image_content_if_exists(
                         bot_token=context.bot_token,
                         files=reply.get("files"),
@@ -119,6 +124,8 @@ def respond_to_app_mention(
             content = [message_text_item]
 
             if payload.get("bot_id") is None and can_send_image_url_to_litellm(context):
+                if context.bot_token is None:
+                    raise ValueError("context.bot_token cannot be None")
                 append_image_content_if_exists(
                     bot_token=context.bot_token,
                     files=payload.get("files"),
@@ -129,6 +136,10 @@ def respond_to_app_mention(
             messages.append({"role": "user", "content": content})
 
         loading_text = translate(context=context, text=DEFAULT_LOADING_TEXT)
+        if context.channel_id is None:
+            raise ValueError("context.channel_id cannot be None")
+        if context.user_id is None:
+            raise ValueError("user_id cannot be None")
         wip_reply = post_wip_message(
             client=client,
             channel=context.channel_id,
@@ -145,6 +156,10 @@ def respond_to_app_mention(
         ) = messages_within_context_window(messages)
         num_messages = len([msg for msg in messages if msg.get("role") != "system"])
         if num_messages == 0:
+            if context.channel_id is None:
+                raise ValueError("context.channel_id cannot be None")
+            if context.user_id is None:
+                raise ValueError("context.user_id cannot be None")
             update_wip_message(
                 client=client,
                 channel=context.channel_id,
@@ -154,11 +169,15 @@ def respond_to_app_mention(
                 user=context.user_id,
             )
         else:
+            if context.user_id is None:
+                raise ValueError("context.user_id cannot be None")
             stream = start_receiving_litellm_response(
                 temperature=LITELLM_TEMPERATURE,
                 messages=messages,
                 user=context.user_id,
             )
+            if user_id is None:
+                raise ValueError("user_id cannot be None")
             consume_litellm_stream_to_write_reply(
                 client=client,
                 wip_reply=wip_reply,
@@ -168,34 +187,31 @@ def respond_to_app_mention(
                 stream=stream,
                 timeout_seconds=LITELLM_TIMEOUT_SECONDS,
                 translate_markdown=TRANSLATE_MARKDOWN,
+                logger=context.logger,
             )
 
     except (Timeout, TimeoutError):
         if wip_reply is not None:
+            message_dict: dict = wip_reply.get("message", {})
             text = (
-                (
-                    wip_reply.get("message", {}).get("text", "")
-                    if wip_reply is not None
-                    else ""
-                )
+                (message_dict.get("text", "") if wip_reply is not None else "")
                 + "\n\n"
                 + translate(
                     context=context,
                     text=TIMEOUT_ERROR_MESSAGE,
                 )
             )
+            if context.channel_id is None:
+                raise ValueError("context.channel_id cannot be None")
             client.chat_update(
                 channel=context.channel_id,
                 ts=wip_reply["message"]["ts"],
                 text=text,
             )
     except Exception as e:
+        message_dict = wip_reply.get("message", {}) if wip_reply is not None else {}
         text = (
-            (
-                wip_reply.get("message", {}).get("text", "")
-                if wip_reply is not None
-                else ""
-            )
+            message_dict.get("text", "")
             + "\n\n"
             + translate(
                 context=context,
@@ -204,6 +220,8 @@ def respond_to_app_mention(
         )
         logger.exception(text, e)
         if wip_reply is not None:
+            if context.channel_id is None:
+                raise ValueError("context.channel_id cannot be None")
             client.chat_update(
                 channel=context.channel_id,
                 ts=wip_reply["message"]["ts"],
@@ -232,7 +250,9 @@ def respond_to_new_message(
         messages_in_context = []
         if is_in_dm_with_bot is True and thread_ts is None:
             # In the DM with the bot; this is not within a thread
-            past_messages = client.conversations_history(
+            if context.channel_id is None:
+                raise ValueError("context.channel_id cannot be None")
+            past_messages: list[dict] = client.conversations_history(
                 channel=context.channel_id,
                 include_all_metadata=True,
                 limit=100,
@@ -240,12 +260,20 @@ def respond_to_new_message(
             past_messages.reverse()
             # Remove old messages
             for message in past_messages:
-                seconds = time.time() - float(message.get("ts"))
+                ts: Optional[str] = message.get("ts")
+                if ts is None:
+                    logger.warning("The message does not have a timestamp")
+                    continue
+                seconds = time.time() - float(ts)
                 if seconds < 86400:  # less than 1 day
                     messages_in_context.append(message)
             is_thread_for_this_app = True
         else:
             # Within a thread
+            if context.channel_id is None:
+                raise ValueError("context.channel_id cannot be None")
+            if thread_ts is None:
+                raise ValueError("thread_ts cannot be None")
             messages_in_context = client.conversations_replies(
                 channel=context.channel_id,
                 ts=thread_ts,
@@ -275,7 +303,7 @@ def respond_to_new_message(
         if is_thread_for_this_app is False:
             return
 
-        messages = []
+        messages: list[dict] = []
         user_id = context.actor_user_id or context.user_id
         last_assistant_idx = -1
         indices_to_remove = []
@@ -324,7 +352,7 @@ def respond_to_new_message(
 
         for reply in filtered_messages_in_context:
             msg_user_id = reply.get("user")
-            reply_text = redact_string(reply.get("text"))
+            reply_text = redact_string(reply.get("text") or "")
             content = [
                 {
                     "type": "text",
@@ -333,6 +361,8 @@ def respond_to_new_message(
                 }
             ]
             if reply.get("bot_id") is None and can_send_image_url_to_litellm(context):
+                if context.bot_token is None:
+                    raise ValueError("context.bot_token cannot be None")
                 append_image_content_if_exists(
                     bot_token=context.bot_token,
                     files=reply.get("files"),
@@ -353,10 +383,17 @@ def respond_to_new_message(
             )
 
         loading_text = translate(context=context, text=DEFAULT_LOADING_TEXT)
+        if context.channel_id is None:
+            raise ValueError("context.channel_id cannot be None")
+        if user_id is None:
+            raise ValueError("user_id cannot be None")
+        thread_ts = payload.get("thread_ts") if is_in_dm_with_bot else payload["ts"]
+        if thread_ts is None:
+            raise ValueError("thread_ts cannot be None")
         wip_reply = post_wip_message(
             client=client,
             channel=context.channel_id,
-            thread_ts=payload.get("thread_ts") if is_in_dm_with_bot else payload["ts"],
+            thread_ts=thread_ts,
             loading_text=loading_text,
             messages=messages,
             user=user_id,
@@ -369,6 +406,10 @@ def respond_to_new_message(
         ) = messages_within_context_window(messages)
         num_messages = len([msg for msg in messages if msg.get("role") != "system"])
         if num_messages == 0:
+            if context.channel_id is None:
+                raise ValueError("context.channel_id cannot be None")
+            if context.user_id is None:
+                raise ValueError("context.user_id cannot be None")
             update_wip_message(
                 client=client,
                 channel=context.channel_id,
@@ -384,16 +425,21 @@ def respond_to_new_message(
                 user=user_id,
             )
 
+            if context.channel_id is None:
+                raise ValueError("context.channel_id cannot be None")
+            ts = wip_reply.get("ts")
+            if ts is None:
+                raise ValueError("ts cannot be None")
             latest_replies = client.conversations_replies(
                 channel=context.channel_id,
-                ts=wip_reply.get("ts"),
+                ts=ts,
                 include_all_metadata=True,
                 limit=1000,
             )
-            if (
-                latest_replies.get("messages", [])[-1]["ts"]
-                != wip_reply["message"]["ts"]
-            ):
+            latest_replies_messages: list[dict] = latest_replies.get("messages", [])
+            if not latest_replies_messages:
+                return
+            if latest_replies_messages[-1]["ts"] != wip_reply["message"]["ts"]:
                 # Since a new reply will come soon, this app abandons this reply
                 client.chat_delete(
                     channel=context.channel_id,
@@ -410,39 +456,34 @@ def respond_to_new_message(
                 stream=stream,
                 timeout_seconds=LITELLM_TIMEOUT_SECONDS,
                 translate_markdown=TRANSLATE_MARKDOWN,
+                logger=context.logger,
             )
 
     except (Timeout, TimeoutError):
         if wip_reply is not None:
+            message_dict: dict = wip_reply.get("message", {})
             text = (
-                (
-                    wip_reply.get("message", {}).get("text", "")
-                    if wip_reply is not None
-                    else ""
-                )
+                (message_dict.get("text", "") if wip_reply is not None else "")
                 + "\n\n"
                 + translate(
                     context=context,
                     text=TIMEOUT_ERROR_MESSAGE,
                 )
             )
+            if context.channel_id is None:
+                raise ValueError("context.channel_id cannot be None")
             client.chat_update(
                 channel=context.channel_id,
                 ts=wip_reply["message"]["ts"],
                 text=text,
             )
     except Exception as e:
-        text = (
-            (
-                wip_reply.get("message", {}).get("text", "")
-                if wip_reply is not None
-                else ""
-            )
-            + "\n\n"
-            + f":warning: Failed to reply: {e}"
-        )
+        message_dict = wip_reply.get("message", {}) if wip_reply is not None else {}
+        text = message_dict.get("text", "") + "\n\n" + f":warning: Failed to reply: {e}"
         logger.exception(text, e)
         if wip_reply is not None:
+            if context.channel_id is None:
+                raise ValueError("context.channel_id cannot be None")
             client.chat_update(
                 channel=context.channel_id,
                 ts=wip_reply["message"]["ts"],

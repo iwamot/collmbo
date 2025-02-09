@@ -1,4 +1,4 @@
-FROM python:3.12.8-slim-bookworm AS builder
+FROM python:3.13.2-slim-bookworm AS builder
 ARG USE_BEDROCK=false
 COPY requirements.txt /build/
 WORKDIR /build/
@@ -8,7 +8,7 @@ RUN if [ "$USE_BEDROCK" = "true" ]; then \
     fi
 RUN pip install --no-cache-dir -r requirements.txt
 
-FROM python:3.12.8-slim-bookworm AS app
+FROM python:3.13.2-slim-bookworm AS app
 WORKDIR /app/
 COPY *.py /app/
 COPY app/*.py /app/app/
