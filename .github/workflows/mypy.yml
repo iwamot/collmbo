@@ -19,4 +19,4 @@ jobs:
       - name: Run pytype verification
         run: |
           pip install -r requirements.txt
-          pip install "mypy==1.15.0" boto3 && mypy *.py app/*.py tests/*.py
+          pip install "mypy==1.15.0" boto3 pytest && mypy *.py app/*.py tests/*.py
