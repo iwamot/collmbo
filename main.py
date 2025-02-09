@@ -31,8 +31,12 @@ if __name__ == "__main__":
             next_,
         ):
             user_id = context.actor_user_id or context.user_id
-            user_info = client.users_info(user=user_id, include_locale=True)
-            context["locale"] = user_info.get("user", {}).get("locale")
+            if user_id:
+                user_info = client.users_info(user=user_id, include_locale=True)
+                user: dict = user_info.get("user", {})
+                context["locale"] = user.get("locale")
+            else:
+                context["locale"] = None
             next_()
 
     handler = SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"])
