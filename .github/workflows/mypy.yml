@@ -16,7 +16,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Run pytype verification
+      - name: Run mypy verification
         run: |
           pip install -r requirements.txt
           pip install "mypy==1.15.0" boto3 pytest && mypy *.py app/*.py tests/*.py

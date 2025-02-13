@@ -388,8 +388,6 @@ def respond_to_new_message(
         if user_id is None:
             raise ValueError("user_id cannot be None")
         thread_ts = payload.get("thread_ts") if is_in_dm_with_bot else payload["ts"]
-        if thread_ts is None:
-            raise ValueError("thread_ts cannot be None")
         wip_reply = post_wip_message(
             client=client,
             channel=context.channel_id,

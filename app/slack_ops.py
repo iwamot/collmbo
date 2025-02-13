@@ -43,7 +43,7 @@ def post_wip_message(
     *,
     client: WebClient,
     channel: str,
-    thread_ts: str,
+    thread_ts: Optional[str],
     loading_text: str,
     messages: list[dict],
     user: str,
