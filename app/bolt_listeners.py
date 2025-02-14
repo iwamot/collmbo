@@ -218,7 +218,7 @@ def respond_to_app_mention(
                 text=f":warning: Failed to start a conversation with AI: {e}",
             )
         )
-        logger.exception(text, e)
+        logger.exception(text)
         if wip_reply is not None:
             if context.channel_id is None:
                 raise ValueError("context.channel_id cannot be None")
@@ -478,7 +478,7 @@ def respond_to_new_message(
     except Exception as e:
         message_dict = wip_reply.get("message", {}) if wip_reply is not None else {}
         text = message_dict.get("text", "") + "\n\n" + f":warning: Failed to reply: {e}"
-        logger.exception(text, e)
+        logger.exception(text)
         if wip_reply is not None:
             if context.channel_id is None:
                 raise ValueError("context.channel_id cannot be None")
