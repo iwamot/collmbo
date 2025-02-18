@@ -22,7 +22,7 @@ from app.env import (
     LITELLM_TOOLS_MODULE_NAME,
 )
 from app.markdown_conversion import markdown_to_slack, slack_to_markdown
-from app.slack_ops import update_wip_message
+from app.slack_ops import post_wip_message, update_wip_message
 
 # ----------------------------
 # Internal functions
@@ -152,10 +152,15 @@ def consume_litellm_stream_to_write_reply(
     user_id: str,
     messages: list[dict],
     stream: CustomStreamWrapper,
+    thread_ts: Optional[str],
+    loading_text: str,
     timeout_seconds: int,
     translate_markdown: bool,
     logger: logging.Logger,
 ):
+    if context.channel_id is None:
+        raise ValueError("context.channel_id cannot be None")
+
     start_time = time.time()
     assistant_reply = {
         "role": "assistant",
@@ -186,8 +191,6 @@ def consume_litellm_stream_to_write_reply(
                             assistant_reply["content"], translate_markdown
                         )
                         wip_reply["message"]["text"] = assistant_reply_text
-                        if context.channel_id is None:
-                            raise ValueError("context.channel_id cannot be None")
                         update_wip_message(
                             client=client,
                             channel=context.channel_id,
@@ -203,12 +206,54 @@ def consume_litellm_stream_to_write_reply(
                     threads.append(thread)
                     word_count = 0
 
+                    # If the response is too long, post a new message instead
+                    if len(wip_reply["message"]["text"].encode("utf-8")) > 3500:
+                        sub_wip_reply = post_wip_message(
+                            client=client,
+                            channel=context.channel_id,
+                            thread_ts=thread_ts,
+                            loading_text=loading_character,
+                            messages=messages,
+                            user=user_id,
+                        )
+                        consume_litellm_stream_to_write_reply(
+                            client=client,
+                            wip_reply=sub_wip_reply,
+                            context=context,
+                            user_id=user_id,
+                            messages=messages,
+                            stream=stream,
+                            thread_ts=thread_ts,
+                            loading_text=loading_text,
+                            timeout_seconds=int(
+                                timeout_seconds - (time.time() - start_time)
+                            ),
+                            translate_markdown=translate_markdown,
+                            logger=logger,
+                        )
+                        break
+
         for t in threads:
             try:
                 if t.is_alive():
                     t.join()
             except Exception:
                 pass
+
+        # Append any remaining text to the message
+        if len(assistant_reply["content"]) > 0:
+            assistant_reply_text = format_assistant_reply(
+                assistant_reply["content"], translate_markdown
+            )
+            wip_reply["message"]["text"] = assistant_reply_text
+            update_wip_message(
+                client=client,
+                channel=context.channel_id,
+                ts=wip_reply["message"]["ts"],
+                text=assistant_reply_text,
+                messages=messages,
+                user=user_id,
+            )
 
         response = litellm.stream_chunk_builder(chunks)
         if response is None:
@@ -249,6 +294,16 @@ def consume_litellm_stream_to_write_reply(
                 messages=messages,
                 user=user_id,
             )
+            # If the message has already been updated, post a new one
+            if wip_reply["message"]["text"] != loading_text:
+                wip_reply = post_wip_message(
+                    client=client,
+                    channel=context.channel_id,
+                    thread_ts=thread_ts,
+                    loading_text=loading_text,
+                    messages=messages,
+                    user=user_id,
+                )
             consume_litellm_stream_to_write_reply(
                 client=client,
                 wip_reply=wip_reply,
@@ -256,26 +311,13 @@ def consume_litellm_stream_to_write_reply(
                 user_id=user_id,
                 messages=messages,
                 stream=sub_stream,
+                thread_ts=thread_ts,
+                loading_text=loading_text,
                 timeout_seconds=int(timeout_seconds - (time.time() - start_time)),
                 translate_markdown=translate_markdown,
                 logger=logger,
             )
-            return
 
-        assistant_reply_text = format_assistant_reply(
-            assistant_reply["content"], translate_markdown
-        )
-        wip_reply["message"]["text"] = assistant_reply_text
-        if context.channel_id is None:
-            raise ValueError("context.channel_id cannot be None")
-        update_wip_message(
-            client=client,
-            channel=context.channel_id,
-            ts=wip_reply["message"]["ts"],
-            text=assistant_reply_text,
-            messages=messages,
-            user=user_id,
-        )
     finally:
         for t in threads:
             try:
