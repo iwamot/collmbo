@@ -293,6 +293,17 @@ def consume_litellm_stream_to_write_reply(
             and response_message.tool_calls is not None
             and LITELLM_TOOLS_MODULE_NAME is not None
         ):
+            # If the message has already been updated, post a new one
+            if wip_reply["message"]["text"] != loading_text:
+                wip_reply = post_wip_message(
+                    client=client,
+                    channel=context.channel_id,
+                    thread_ts=thread_ts,
+                    loading_text=loading_text,
+                    messages=messages,
+                    user=user_id,
+                )
+
             tool_calls = response_message.tool_calls
             assistant_reply["tool_calls"] = response_message.model_dump()["tool_calls"]
             tools_module = import_module(LITELLM_TOOLS_MODULE_NAME)
@@ -321,16 +332,6 @@ def consume_litellm_stream_to_write_reply(
                 messages=messages,
                 user=user_id,
             )
-            # If the message has already been updated, post a new one
-            if wip_reply["message"]["text"] != loading_text:
-                wip_reply = post_wip_message(
-                    client=client,
-                    channel=context.channel_id,
-                    thread_ts=thread_ts,
-                    loading_text=loading_text,
-                    messages=messages,
-                    user=user_id,
-                )
             consume_litellm_stream_to_write_reply(
                 client=client,
                 wip_reply=wip_reply,
