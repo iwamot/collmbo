@@ -73,7 +73,8 @@ $ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-full
 
 - Flexible model selection
 - Redaction (`REDACTION_ENABLED=true`)
-- Image reading (`IMAGE_FILE_ACCESS_ENABLED=true`, for supported models only)
+- Image input (`IMAGE_FILE_ACCESS_ENABLED=true`, for supported models only)
+- PDF input (`IMAGE_PDF_ACCESS_ENABLED=true`, Day 1 support, for supported models only)
 - Tools / Function calling (`LITELLM_TOOLS_MODULE_NAME=tests.tools_example`, for supported models only)
 - Custom callbacks (`LITELLM_CALLBACK_MODULE_NAME=tests.callback_example`)
 

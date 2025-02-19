@@ -12,6 +12,7 @@ from app.env import (
     IMAGE_FILE_ACCESS_ENABLED,
     LITELLM_TEMPERATURE,
     LITELLM_TIMEOUT_SECONDS,
+    PDF_FILE_ACCESS_ENABLED,
     SYSTEM_TEXT,
     TRANSLATE_MARKDOWN,
 )
@@ -23,11 +24,14 @@ from app.litellm_ops import (
     format_litellm_message_content,
     messages_within_context_window,
     start_receiving_litellm_response,
+    trim_pdf_content,
 )
+from app.litellm_pdf_ops import append_pdf_content_if_exists
 from app.sensitive_info_redaction import redact_string
 from app.slack_constants import DEFAULT_LOADING_TEXT, TIMEOUT_ERROR_MESSAGE
 from app.slack_ops import (
     can_send_image_url_to_litellm,
+    can_send_pdf_url_to_litellm,
     find_parent_message,
     is_this_app_mentioned,
     post_wip_message,
@@ -101,6 +105,16 @@ def respond_to_app_mention(
                         logger=context.logger,
                     )
 
+                if reply.get("bot_id") is None and can_send_pdf_url_to_litellm(context):
+                    if context.bot_token is None:
+                        raise ValueError("context.bot_token cannot be None")
+                    append_pdf_content_if_exists(
+                        bot_token=context.bot_token,
+                        files=reply.get("files"),
+                        content=content,
+                        logger=context.logger,
+                    )
+
                 role = (
                     "assistant"
                     if "user" in reply and reply["user"] == context.bot_user_id
@@ -132,6 +146,15 @@ def respond_to_app_mention(
                     content=content,
                     logger=context.logger,
                 )
+            if payload.get("bot_id") is None and can_send_pdf_url_to_litellm(context):
+                if context.bot_token is None:
+                    raise ValueError("context.bot_token cannot be None")
+                append_pdf_content_if_exists(
+                    bot_token=context.bot_token,
+                    files=payload.get("files"),
+                    content=content,
+                    logger=context.logger,
+                )
 
             messages.append({"role": "user", "content": content})
 
@@ -149,6 +172,7 @@ def respond_to_app_mention(
             user=context.user_id,
         )
 
+        trim_pdf_content(messages)
         (
             messages,
             num_context_tokens,
@@ -371,6 +395,15 @@ def respond_to_new_message(
                     content=content,
                     logger=context.logger,
                 )
+            if reply.get("bot_id") is None and can_send_pdf_url_to_litellm(context):
+                if context.bot_token is None:
+                    raise ValueError("context.bot_token cannot be None")
+                append_pdf_content_if_exists(
+                    bot_token=context.bot_token,
+                    files=reply.get("files"),
+                    content=content,
+                    logger=context.logger,
+                )
 
             role = (
                 "assistant"
@@ -399,6 +432,7 @@ def respond_to_new_message(
             user=user_id,
         )
 
+        trim_pdf_content(messages)
         (
             messages,
             num_context_tokens,
@@ -498,8 +532,8 @@ def register_listeners(app: App):
     @app.middleware
     def attach_bot_scopes(client: WebClient, context: BoltContext, next_):
         if (
-            # the bot_scopes is used for #can_access_file_content method calls
-            IMAGE_FILE_ACCESS_ENABLED is True
+            # the bot_scopes is used for #can_send_*_url_to_litellm method calls
+            (IMAGE_FILE_ACCESS_ENABLED is True or PDF_FILE_ACCESS_ENABLED is True)
             and context.authorize_result is not None
             and context.authorize_result.bot_scopes is None
         ):

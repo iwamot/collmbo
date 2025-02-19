@@ -52,6 +52,8 @@ IMAGE_FILE_ACCESS_ENABLED = (
     os.environ.get("IMAGE_FILE_ACCESS_ENABLED", "false") == "true"
 )
 
+PDF_FILE_ACCESS_ENABLED = os.environ.get("PDF_FILE_ACCESS_ENABLED", "false") == "true"
+
 # Redaction patterns
 #
 REDACT_EMAIL_PATTERN = os.environ.get(
