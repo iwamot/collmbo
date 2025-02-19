@@ -197,6 +197,7 @@ def consume_litellm_stream_to_write_reply(
     word_count = 0
     threads = []
     chunks: list = []
+    is_response_too_long = False
     try:
         loading_character = " ... :writing_hand:"
         for chunk in stream:
@@ -233,31 +234,8 @@ def consume_litellm_stream_to_write_reply(
                     threads.append(thread)
                     word_count = 0
 
-                    # If the response is too long, post a new message instead
                     if len(wip_reply["message"]["text"].encode("utf-8")) > 3500:
-                        sub_wip_reply = post_wip_message(
-                            client=client,
-                            channel=context.channel_id,
-                            thread_ts=thread_ts,
-                            loading_text=loading_character,
-                            messages=messages,
-                            user=user_id,
-                        )
-                        consume_litellm_stream_to_write_reply(
-                            client=client,
-                            wip_reply=sub_wip_reply,
-                            context=context,
-                            user_id=user_id,
-                            messages=messages,
-                            stream=stream,
-                            thread_ts=thread_ts,
-                            loading_text=loading_text,
-                            timeout_seconds=int(
-                                timeout_seconds - (time.time() - start_time)
-                            ),
-                            translate_markdown=translate_markdown,
-                            logger=logger,
-                        )
+                        is_response_too_long = True
                         break
 
         for t in threads:
@@ -280,6 +258,30 @@ def consume_litellm_stream_to_write_reply(
                 text=assistant_reply_text,
                 messages=messages,
                 user=user_id,
+            )
+
+        # If the response is too long, post a new message instead
+        if is_response_too_long:
+            next_wip_reply = post_wip_message(
+                client=client,
+                channel=context.channel_id,
+                thread_ts=thread_ts,
+                loading_text=loading_character,
+                messages=messages,
+                user=user_id,
+            )
+            consume_litellm_stream_to_write_reply(
+                client=client,
+                wip_reply=next_wip_reply,
+                context=context,
+                user_id=user_id,
+                messages=messages,
+                stream=stream,
+                thread_ts=thread_ts,
+                loading_text=loading_text,
+                timeout_seconds=int(timeout_seconds - (time.time() - start_time)),
+                translate_markdown=translate_markdown,
+                logger=logger,
             )
 
         response = litellm.stream_chunk_builder(chunks)
