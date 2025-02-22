@@ -1,27 +1,27 @@
 # Collmbo
 
-**A Slack app that lets end-users chat with AI, offering flexible model selection powered by LiteLLM.** Pronounced the same as "Colombo". Forked from [seratch/ChatGPT-in-Slack](https://github.com/seratch/ChatGPT-in-Slack).
+**A Slack app for AI chat with flexible model selection powered by LiteLLM.** Pronounced the same as "Colombo".
 
 ![](https://github.com/user-attachments/assets/fc078de0-406e-4d4d-abb1-f6e30a0dbeab)
 
+*Forked from [seratch/ChatGPT-in-Slack](https://github.com/seratch/ChatGPT-in-Slack).*
+
 ## Quick Start
 
-Below are quick setup instructions for Collmbo using some popular AI models. These are representative examples, and Collmbo supports many other models through LiteLLM.
+First, create a new Slack app using `manifest.yml` and obtain required tokens:
+
+- App-level token (`xapp-1-...` from Basic Information > App-Level Tokens)
+- Bot token (`xoxb-...` from OAuth & Permissions after installing the app)
+
+Then, pick your favorite model from [LiteLLM's supported models](https://docs.litellm.ai/docs/providers) and run Collmbo. Here are some examples:
 
 ### OpenAI (gpt-4o)
 
 ```sh
 $ cat env
-# Create a new Slack app using manifest.yml and grab the app-level token
 SLACK_APP_TOKEN=xapp-1-...
-
-# Install the app into your workspace to grab this token
 SLACK_BOT_TOKEN=xoxb-...
-
-# Visit https://platform.openai.com/api-keys for this token
 OPENAI_API_KEY=sk-...
-
-# Specify a model name supported by LiteLLM
 LITELLM_MODEL=gpt-4o
 
 $ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-slim
@@ -31,8 +31,8 @@ $ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-slim
 
 ```sh
 $ cat env
-SLACK_APP_TOKEN=...
-SLACK_BOT_TOKEN=...
+SLACK_APP_TOKEN=xapp-1-...
+SLACK_BOT_TOKEN=xoxb-...
 AZURE_API_KEY=...
 AZURE_API_BASE=...
 AZURE_API_VERSION=...
@@ -46,8 +46,8 @@ $ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-slim
 
 ```sh
 $ cat env
-SLACK_APP_TOKEN=...
-SLACK_BOT_TOKEN=...
+SLACK_APP_TOKEN=xapp-1-...
+SLACK_BOT_TOKEN=xoxb-...
 GEMINI_API_KEY=...
 LITELLM_MODEL=gemini/gemini-1.5-flash
 
@@ -61,27 +61,32 @@ $ cat env
 SLACK_APP_TOKEN=...
 SLACK_BOT_TOKEN=...
 LITELLM_MODEL=bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0
-AWS_REGION_NAME=us-west-2  # Optional: Set if Bedrock Claude region is different from application region
-# Recommend using IAM roles for authentication
+
+# You can specify a Bedrock region if it's different from your default AWS region
+AWS_REGION_NAME=us-west-2
+
+# You can use your access key for authentication, but IAM roles are recommended
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
 
 $ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-full
 ```
 
 *Note: `full` flavor images include boto3.*
 
-## Supported Features
+## Features
 
 - Flexible model selection
 - Redaction (`REDACTION_ENABLED=true`)
-- Image input (`IMAGE_FILE_ACCESS_ENABLED=true`, for supported models only)
-- PDF input (`IMAGE_PDF_ACCESS_ENABLED=true`, Day 1 support, for supported models only)
-- Tools / Function calling (`LITELLM_TOOLS_MODULE_NAME=tests.tools_example`, for supported models only)
+- Image input (`IMAGE_FILE_ACCESS_ENABLED=true`)
+- PDF input (`IMAGE_PDF_ACCESS_ENABLED=true`)
+- Tools / Function calling (`LITELLM_TOOLS_MODULE_NAME=tests.tools_example`)
 - Custom callbacks (`LITELLM_CALLBACK_MODULE_NAME=tests.callback_example`)
 
 ## Contributing
 
-We welcome contributions to Collmbo! If you have any feature requests, bug reports, or other issues, please feel free to open an issue on this repository. Your feedback and contributions help make Collmbo better for everyone.
+Questions and suggestions welcome! Feel free to open an issue.
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+MIT
