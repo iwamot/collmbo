@@ -216,7 +216,7 @@ def respond_to_app_mention(
                 logger=context.logger,
             )
 
-    except (Timeout, TimeoutError):
+    except (Timeout, TimeoutError) as e:
         if wip_reply is not None:
             message_dict: dict = wip_reply.get("message", {})
             text = (
@@ -228,7 +228,7 @@ def respond_to_app_mention(
                 )
             )
             if context.channel_id is None:
-                raise ValueError("context.channel_id cannot be None")
+                raise ValueError("context.channel_id cannot be None") from e
             client.chat_update(
                 channel=context.channel_id,
                 ts=wip_reply["message"]["ts"],
@@ -247,7 +247,7 @@ def respond_to_app_mention(
         logger.exception(text)
         if wip_reply is not None:
             if context.channel_id is None:
-                raise ValueError("context.channel_id cannot be None")
+                raise ValueError("context.channel_id cannot be None") from e
             client.chat_update(
                 channel=context.channel_id,
                 ts=wip_reply["message"]["ts"],
@@ -270,14 +270,14 @@ def respond_to_new_message(
         is_in_dm_with_bot = payload.get("channel_type") == "im"
         is_thread_for_this_app = False
         thread_ts = payload.get("thread_ts")
-        if is_in_dm_with_bot is False and thread_ts is None:
+        if not is_in_dm_with_bot and thread_ts is None:
             return
 
+        if context.channel_id is None:
+            raise ValueError("context.channel_id cannot be None")
         messages_in_context = []
-        if is_in_dm_with_bot is True and thread_ts is None:
-            # In the DM with the bot; this is not within a thread
-            if context.channel_id is None:
-                raise ValueError("context.channel_id cannot be None")
+        # In the DM with the bot; this is not within a thread
+        if is_in_dm_with_bot and thread_ts is None:
             past_messages: list[dict] = client.conversations_history(
                 channel=context.channel_id,
                 include_all_metadata=True,
@@ -294,10 +294,8 @@ def respond_to_new_message(
                 if seconds < 86400:  # less than 1 day
                     messages_in_context.append(message)
             is_thread_for_this_app = True
+        # Within a thread
         else:
-            # Within a thread
-            if context.channel_id is None:
-                raise ValueError("context.channel_id cannot be None")
             if thread_ts is None:
                 raise ValueError("thread_ts cannot be None")
             messages_in_context = client.conversations_replies(
@@ -306,7 +304,7 @@ def respond_to_new_message(
                 include_all_metadata=True,
                 limit=1000,
             ).get("messages", [])
-            if is_in_dm_with_bot is True:
+            if is_in_dm_with_bot:
                 # In the DM with this bot
                 is_thread_for_this_app = True
             else:
@@ -355,14 +353,13 @@ def respond_to_new_message(
                     messages = maybe_new_messages
                     last_assistant_idx = idx
 
-        if is_in_dm_with_bot is True or last_assistant_idx == -1:
-            # To know whether this app needs to start a new convo
-            if not next(filter(lambda msg: msg["role"] == "system", messages), None):
-                # Replace placeholder for Slack user ID in the system prompt
-                system_text = build_system_text(
-                    SYSTEM_TEXT, TRANSLATE_MARKDOWN, context
-                )
-                messages.insert(0, {"role": "system", "content": system_text})
+        # To know whether this app needs to start a new convo
+        if (is_in_dm_with_bot or last_assistant_idx == -1) and not next(
+            filter(lambda msg: msg["role"] == "system", messages), None
+        ):
+            # Replace placeholder for Slack user ID in the system prompt
+            system_text = build_system_text(SYSTEM_TEXT, TRANSLATE_MARKDOWN, context)
+            messages.insert(0, {"role": "system", "content": system_text})
 
         filtered_messages_in_context = []
         for idx, reply in enumerate(messages_in_context):
@@ -373,7 +370,7 @@ def respond_to_new_message(
                 )
             if idx not in indices_to_remove:
                 filtered_messages_in_context.append(reply)
-        if len(filtered_messages_in_context) == 0:
+        if not filtered_messages_in_context:
             return
 
         for reply in filtered_messages_in_context:
@@ -495,7 +492,7 @@ def respond_to_new_message(
                 logger=context.logger,
             )
 
-    except (Timeout, TimeoutError):
+    except (Timeout, TimeoutError) as e:
         if wip_reply is not None:
             message_dict: dict = wip_reply.get("message", {})
             text = (
@@ -507,7 +504,7 @@ def respond_to_new_message(
                 )
             )
             if context.channel_id is None:
-                raise ValueError("context.channel_id cannot be None")
+                raise ValueError("context.channel_id cannot be None") from e
             client.chat_update(
                 channel=context.channel_id,
                 ts=wip_reply["message"]["ts"],
@@ -519,7 +516,7 @@ def respond_to_new_message(
         logger.exception(text)
         if wip_reply is not None:
             if context.channel_id is None:
-                raise ValueError("context.channel_id cannot be None")
+                raise ValueError("context.channel_id cannot be None") from e
             client.chat_update(
                 channel=context.channel_id,
                 ts=wip_reply["message"]["ts"],

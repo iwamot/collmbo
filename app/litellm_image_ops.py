@@ -56,7 +56,7 @@ def encode_image_and_guess_format(image_data: bytes) -> Tuple[str, Optional[str]
         image = Image.open(BytesIO(image_data))
         image_format = image.format
     except Exception as e:
-        raise RuntimeError(f"Failed to open an image data: {e}")
+        raise RuntimeError(f"Failed to open an image data: {e}") from e
 
     base64encoded_image_data = base64.b64encode(image_data).decode("utf-8")
     return base64encoded_image_data, image_format

@@ -25,9 +25,7 @@ _locale_to_lang = {
 
 
 def from_locale_to_lang(locale: Optional[str]) -> Optional[str]:
-    if locale is None:
-        return None
-    return _locale_to_lang.get(locale)
+    return None if locale is None else _locale_to_lang.get(locale)
 
 
 _translation_result_cache: dict[str, str] = {}
