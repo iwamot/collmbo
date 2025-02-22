@@ -10,16 +10,14 @@ def slack_to_markdown(content: str) -> str:
     # Apply the bold, italic, and strikethrough formatting to text not within code
     result = ""
     for part in parts:
-        if part.startswith("```") or part.startswith("`"):
-            result += part
-        else:
+        if not part.startswith("```") and not part.startswith("`"):
             for o, n in [
                 (r"\*(?!\s)([^\*\n]+?)(?<!\s)\*", r"**\1**"),  # *bold* to **bold**
                 (r"_(?!\s)([^_\n]+?)(?<!\s)_", r"*\1*"),  # _italic_ to *italic*
                 (r"~(?!\s)([^~\n]+?)(?<!\s)~", r"~~\1~~"),  # ~strike~ to ~~strike~~
             ]:
                 part = re.sub(o, n, part)
-            result += part
+        result += part
     return result
 
 
@@ -32,9 +30,7 @@ def markdown_to_slack(content: str) -> str:
     # Apply the bold, italic, and strikethrough formatting to text not within code
     result = ""
     for part in parts:
-        if part.startswith("```") or part.startswith("`"):
-            result += part
-        else:
+        if not part.startswith("```") and not part.startswith("`"):
             for o, n in [
                 (
                     r"\*\*\*(?!\s)([^\*\n]+?)(?<!\s)\*\*\*",
@@ -49,5 +45,5 @@ def markdown_to_slack(content: str) -> str:
                 (r"~~(?!\s)([^~\n]+?)(?<!\s)~~", r"~\1~"),  # ~~strike~~ to ~strike~
             ]:
                 part = re.sub(o, n, part)
-            result += part
+        result += part
     return result

@@ -406,7 +406,7 @@ def build_system_text(
 ):
     system_text = system_text_template.format(bot_user_id=context.bot_user_id)
     # Translate format hint in system prompt
-    if translate_markdown is True:
+    if translate_markdown:
         system_text = slack_to_markdown(system_text)
     return system_text
 
