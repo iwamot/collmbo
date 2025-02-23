@@ -2,9 +2,7 @@
 
 **A Slack app for AI chat with flexible model selection powered by LiteLLM.** Pronounced the same as "Colombo".
 
-![](https://github.com/user-attachments/assets/fc078de0-406e-4d4d-abb1-f6e30a0dbeab)
-
-*Forked from [seratch/ChatGPT-in-Slack](https://github.com/seratch/ChatGPT-in-Slack).*
+> ![](https://github.com/user-attachments/assets/a377b868-3673-4798-b415-44e674cf7ae6)
 
 ## Quick Start
 
@@ -77,15 +75,19 @@ $ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-full
 ## Features
 
 - Flexible model selection
-- Redaction (`REDACTION_ENABLED=true`)
-- Image input (`IMAGE_FILE_ACCESS_ENABLED=true`)
-- PDF input (`IMAGE_PDF_ACCESS_ENABLED=true`)
-- Tools / Function calling (`LITELLM_TOOLS_MODULE_NAME=tests.tools_example`)
-- Custom callbacks (`LITELLM_CALLBACK_MODULE_NAME=tests.callback_example`)
+- [Tools (Function Calling)](https://github.com/iwamot/collmbo/wiki/Tools-(Function-Calling)): `LITELLM_TOOLS_MODULE_NAME=tests/tools_example`
+- Custom callbacks: `LITELLM_CALLBACK_MODULE_NAME=tests.callback_example`
+- Redaction: `REDACTION_ENABLED=true`
+- Image input: `IMAGE_FILE_ACCESS_ENABLED=true`
+- PDF input:`IMAGE_PDF_ACCESS_ENABLED=true`
 
 ## Contributing
 
 Questions and suggestions welcome! Feel free to open an issue.
+
+## Related Projects
+
+- [seratch/ChatGPT-in-Slack](https://github.com/seratch/ChatGPT-in-Slack) – The original project by @seratch.
 
 ## License
 
