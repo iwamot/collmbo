@@ -3,7 +3,6 @@ from typing import Optional
 from slack_bolt import BoltContext
 from litellm.types.utils import ModelResponse
 
-from app.env import LITELLM_MODEL
 from app.litellm_ops import call_litellm_completion
 
 # All the supported languages for Slack app as of March 2023
