@@ -6,9 +6,9 @@
 
 **A Slack app for AI chat with flexible model selection powered by LiteLLM.** Pronounced the same as "Colombo".
 
-## Quick Start
-
 > ![](https://github.com/user-attachments/assets/a377b868-3673-4798-b415-44e674cf7ae6)
+
+## Quick Start
 
 First, create a new Slack app using `manifest.yml` and obtain required tokens:
 
@@ -78,12 +78,11 @@ $ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-full
 
 ## Features
 
-- Flexible model selection
-- [Tools (Function Calling)](https://github.com/iwamot/collmbo/wiki/Tools-(Function-Calling)): `LITELLM_TOOLS_MODULE_NAME=tests.tools_example`
-- [Custom callbacks](https://github.com/iwamot/collmbo/wiki/Custom-callbacks): `LITELLM_CALLBACK_MODULE_NAME=tests.callback_example`
-- [Redaction](https://github.com/iwamot/collmbo/wiki/Redaction): `REDACTION_ENABLED=true`
-- [Image input](https://github.com/iwamot/collmbo/wiki/Image-input): `IMAGE_FILE_ACCESS_ENABLED=true`
-- [PDF input](https://github.com/iwamot/collmbo/wiki/PDF-input): `PDF_FILE_ACCESS_ENABLED=true`
+- **[Tools (Function Calling)](https://github.com/iwamot/collmbo/wiki/Tools-(Function-Calling))** – Extends functionality with function calling.
+- **[Custom callbacks](https://github.com/iwamot/collmbo/wiki/Custom-callbacks)** – Hooks into requests and responses for custom processing.
+- **[Redaction](https://github.com/iwamot/collmbo/wiki/Redaction)** – Masks sensitive information before sending requests.
+- **[Image input](https://github.com/iwamot/collmbo/wiki/Image-input)** – Enables AI models to analyze uploaded images.
+- **[PDF input](https://github.com/iwamot/collmbo/wiki/PDF-input)** – Enables AI models to analyze uploaded PDFs.
 
 ## Contributing
 
