@@ -23,6 +23,13 @@ def append_pdf_content_if_exists(
                 logger.warning("Skipped a PDF file due to missing 'url_private'")
                 continue
             pdf_bytes = download_slack_pdf_content(file_url, bot_token)
+            if not pdf_bytes.startswith(b"%PDF-"):
+                skipped_file_message = (
+                    f"Skipped a file because it does not have a valid PDF header "
+                    f"(url: {file_url})"
+                )
+                logger.warning(skipped_file_message)
+                continue
             encoded_pdf = base64.b64encode(pdf_bytes).decode("utf-8")
 
             image_url_item = {
