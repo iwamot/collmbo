@@ -137,7 +137,7 @@ def download_slack_pdf_content(pdf_url: str, bot_token: str) -> bytes:
             error = f"You don't have the permission to download this file: {pdf_url}"
             raise SlackApiError(error, response)
 
-        if content_type != "application/pdf":
+        if content_type not in ["application/pdf", "binary/octet-stream"]:
             error = f"The responded content-type is not for PDF data: {content_type}"
             raise SlackApiError(error, response)
 
