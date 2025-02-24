@@ -10,7 +10,7 @@
 
 ## Quick Start
 
-First, create a new Slack app using `manifest.yml` and obtain required tokens:
+First, create a new Slack app using [`manifest.yml`](https://github.com/iwamot/collmbo/blob/main/manifest.yml) and obtain required tokens:
 
 - App-level token (`xapp-1-...` from Basic Information > App-Level Tokens)
 - Bot token (`xoxb-...` from OAuth & Permissions after installing the app)
