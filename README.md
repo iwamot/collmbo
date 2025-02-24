@@ -94,4 +94,6 @@ Questions and suggestions welcome! Feel free to open an issue.
 
 ## License
 
-MIT
+**The code** in this repository is licensed under the **MIT License**.
+
+**The Collmbo icon** (`assets/icon.png`) is licensed under **[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)**. For example, you may use it as a Slack profile icon.
