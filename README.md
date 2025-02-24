@@ -79,7 +79,7 @@ $ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-full
 - [Custom callbacks](https://github.com/iwamot/collmbo/wiki/Custom-callbacks): `LITELLM_CALLBACK_MODULE_NAME=tests.callback_example`
 - [Redaction](https://github.com/iwamot/collmbo/wiki/Redaction): `REDACTION_ENABLED=true`
 - [Image input](https://github.com/iwamot/collmbo/wiki/Image-input): `IMAGE_FILE_ACCESS_ENABLED=true`
-- PDF input:`IMAGE_PDF_ACCESS_ENABLED=true`
+- [PDF input](https://github.com/iwamot/collmbo/wiki/PDF-input): `PDF_FILE_ACCESS_ENABLED=true`
 
 ## Contributing
 
