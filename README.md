@@ -1,10 +1,14 @@
 # Collmbo
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/b13da1c7-5d2f-4ad3-8c5b-9ef4e500deb8">
+</p>
+
 **A Slack app for AI chat with flexible model selection powered by LiteLLM.** Pronounced the same as "Colombo".
 
-> ![](https://github.com/user-attachments/assets/a377b868-3673-4798-b415-44e674cf7ae6)
-
 ## Quick Start
+
+> ![](https://github.com/user-attachments/assets/a377b868-3673-4798-b415-44e674cf7ae6)
 
 First, create a new Slack app using `manifest.yml` and obtain required tokens:
 
