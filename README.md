@@ -10,10 +10,10 @@
 
 ## Quick Start
 
-First, create a new Slack app using [`manifest.yml`](https://github.com/iwamot/collmbo/blob/main/manifest.yml) and obtain required tokens:
+Before running Collmbo, you need to [create a Slack app](https://github.com/iwamot/collmbo/wiki/Creating-a-Slack-App) and obtain the required tokens:
 
-- App-level token (`xapp-1-...` from Basic Information > App-Level Tokens)
-- Bot token (`xoxb-...` from OAuth & Permissions after installing the app)
+- App-level token (`xapp-1-...`)
+- Bot token (`xoxb-...`)
 
 Then, pick your favorite model from [LiteLLM's supported models](https://docs.litellm.ai/docs/providers) and run Collmbo. Here are some examples:
 
