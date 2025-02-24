@@ -85,6 +85,10 @@ $ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-full
 - **[Image input](https://github.com/iwamot/collmbo/wiki/Image-input)** – Enables AI models to analyze uploaded images.
 - **[PDF input](https://github.com/iwamot/collmbo/wiki/PDF-input)** – Enables AI models to analyze uploaded PDFs.
 
+## Configuration
+
+Collmbo runs with default settings, but you can customize its behavior by [setting optional environment variables](https://github.com/iwamot/collmbo/wiki/Optional-Settings).
+
 ## Contributing
 
 Questions and suggestions welcome! Feel free to open an issue.
