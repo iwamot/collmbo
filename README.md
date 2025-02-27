@@ -115,7 +115,15 @@ Collmbo runs with default settings, but you can customize its behavior by [setti
 
 ## Contributing
 
-Questions and suggestions welcome! Feel free to open an issue.
+Contributions are welcome! Feel free to open an issue or submit a pull request.
+
+Before opening a PR, please run:
+
+```sh
+./validate.sh
+```
+
+This helps maintain code quality.
 
 ## Related Projects
 
