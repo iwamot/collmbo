@@ -194,7 +194,7 @@ def consume_litellm_stream_to_write_reply(
         "content": "",
     }
     messages.append(assistant_reply)
-    word_count = 0
+    pending_text = ""
     threads = []
     chunks: list = []
     is_response_too_long = False
@@ -210,9 +210,9 @@ def consume_litellm_stream_to_write_reply(
                 break
             delta = item.get("delta")
             if delta is not None and delta.get("content") is not None:
-                word_count += 1
+                pending_text += delta.get("content")
                 assistant_reply["content"] += delta.get("content")
-                if word_count >= 20:
+                if len(pending_text) >= 20:
 
                     def update_message():
                         assistant_reply_text = format_assistant_reply(
@@ -232,7 +232,7 @@ def consume_litellm_stream_to_write_reply(
                     thread.daemon = True
                     thread.start()
                     threads.append(thread)
-                    word_count = 0
+                    pending_text = ""
 
                     if len(wip_reply["message"]["text"].encode("utf-8")) > 3500:
                         is_response_too_long = True
