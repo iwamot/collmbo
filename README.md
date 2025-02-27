@@ -46,6 +46,8 @@ Mention the bot in Slack and start chatting:
 @Collmbo hello!
 ```
 
+Collmbo should respond in channels, threads, and direct messages (DMs).
+
 ## Want to Use a Different LLM?
 
 First, pick your favorite LLM from [LiteLLM supported providers](https://docs.litellm.ai/docs/providers).
