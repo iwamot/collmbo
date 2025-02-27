@@ -10,56 +10,74 @@
 
 ## Quick Start
 
-Before running Collmbo, you need to [create a Slack app](https://github.com/iwamot/collmbo/wiki/Creating-a-Slack-App) and obtain the required tokens:
+Collmbo supports multiple LLMs, but let's begin with OpenAI for a quick setup.
+
+### 1. Create a Slack App
+
+[Create a Slack app](https://github.com/iwamot/collmbo/wiki/Creating-a-Slack-App) and obtain the required tokens:
 
 - App-level token (`xapp-1-...`)
 - Bot token (`xoxb-...`)
 
-Then, pick your favorite model from [LiteLLM's supported models](https://docs.litellm.ai/docs/providers) and run Collmbo. Here are some examples:
+### 2. Create a `.env` File
 
-### OpenAI (gpt-4o)
+Save your credentials in a `.env` file:
 
 ```sh
-$ cat env
 SLACK_APP_TOKEN=xapp-1-...
 SLACK_BOT_TOKEN=xoxb-...
-OPENAI_API_KEY=sk-...
 LITELLM_MODEL=gpt-4o
-
-$ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-slim
+OPENAI_API_KEY=sk-...
 ```
+
+### 3. Run Collmbo Container
+
+Start the bot using Docker:
+
+```sh
+docker run -it --env-file .env ghcr.io/iwamot/collmbo:latest-slim
+```
+
+### 4. Say Hello!
+
+Mention the bot in Slack and start chatting:
+
+```
+@Collmbo hello!
+```
+
+## Want to Use a Different LLM?
+
+First, pick your favorite LLM from [LiteLLM supported providers](https://docs.litellm.ai/docs/providers).
+
+To use it, update the relevant environment variables in your `.env` file and restart the container.
+
+Here are some examples:
 
 ### Azure OpenAI (gpt-4-0613)
 
 ```sh
-$ cat env
 SLACK_APP_TOKEN=xapp-1-...
 SLACK_BOT_TOKEN=xoxb-...
+LITELLM_MODEL=azure/<your_deployment_name>
+LITELLM_MODEL_TYPE=azure/gpt-4-0613
 AZURE_API_KEY=...
 AZURE_API_BASE=...
 AZURE_API_VERSION=...
-LITELLM_MODEL=azure/<your_deployment_name>
-LITELLM_MODEL_TYPE=azure/gpt-4-0613
-
-$ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-slim
 ```
 
 ### Gemini - Google AI Studio (Gemini 1.5 Flash)
 
 ```sh
-$ cat env
 SLACK_APP_TOKEN=xapp-1-...
 SLACK_BOT_TOKEN=xoxb-...
-GEMINI_API_KEY=...
 LITELLM_MODEL=gemini/gemini-1.5-flash
-
-$ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-slim
+GEMINI_API_KEY=...
 ```
 
 ### Amazon Bedrock (Claude 3.5 Sonnet v2)
 
 ```sh
-$ cat env
 SLACK_APP_TOKEN=...
 SLACK_BOT_TOKEN=...
 LITELLM_MODEL=bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0
@@ -70,11 +88,13 @@ AWS_REGION_NAME=us-west-2
 # You can use your access key for authentication, but IAM roles are recommended
 AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
-
-$ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest-full
 ```
 
-*Note: `full` flavor images include boto3.*
+When using Amazon Bedrock, use the `full` flavor image instead of `slim` one, as it includes `boto3`, which is required for Bedrock:
+
+```
+docker run -it --env-file .env ghcr.io/iwamot/collmbo:latest-full
+```
 
 ## Features
 
