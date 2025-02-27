@@ -96,6 +96,10 @@ When using Amazon Bedrock, use the `full` flavor image instead of `slim` one, as
 docker run -it --env-file .env ghcr.io/iwamot/collmbo:latest-full
 ```
 
+## Deployment
+
+Collmbo does not serve endpoints and can run in any environment with internet access.
+
 ## Features
 
 - **[Tools (Function Calling)](https://github.com/iwamot/collmbo/wiki/Tools-(Function-Calling))** – Extends functionality with function calling.
