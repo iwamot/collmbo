@@ -77,14 +77,17 @@ def trim_pdf_content(messages: list[dict]) -> None:
             break
 
 
-# Remove old messages to make sure we have room for max_tokens
+# Remove old messages to make sure we have room for max_input_tokens
 def messages_within_context_window(
     messages: list[dict],
 ) -> Tuple[list[dict], int, int]:
-    max_tokens = litellm.utils.get_max_tokens(LITELLM_MODEL_TYPE)
-    if max_tokens is None:
+    model_info = litellm.utils.get_model_info(LITELLM_MODEL_TYPE)
+    max_input_tokens = model_info.get("max_input_tokens") or model_info.get(
+        "max_tokens"
+    )
+    if max_input_tokens is None:
         raise ValueError("LiteLLM does not support the model type")
-    max_context_tokens = max_tokens - LITELLM_MAX_TOKENS - 1
+    max_context_tokens = max_input_tokens - LITELLM_MAX_TOKENS - 1
     if LITELLM_TOOLS_MODULE_NAME is not None:
         max_context_tokens -= calculate_tokens_necessary_for_tools()
     num_context_tokens = 0  # Number of tokens in the context window just before the earliest message is deleted
