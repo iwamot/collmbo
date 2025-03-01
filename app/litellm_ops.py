@@ -81,7 +81,10 @@ def trim_pdf_content(messages: list[dict]) -> None:
 def messages_within_context_window(
     messages: list[dict],
 ) -> Tuple[list[dict], int, int]:
-    max_input_tokens = litellm.utils.get_model_info(LITELLM_MODEL_TYPE).get('max_input_tokens')
+    model_info = litellm.utils.get_model_info(LITELLM_MODEL_TYPE)
+    max_input_tokens = model_info.get("max_input_tokens") or model_info.get(
+        "max_tokens"
+    )
     if max_input_tokens is None:
         raise ValueError("LiteLLM does not support the model type")
     max_context_tokens = max_input_tokens - LITELLM_MAX_TOKENS - 1
