@@ -10,7 +10,7 @@
 
 ## Quick Start
 
-Collmbo supports multiple LLMs, but let's begin with OpenAI for a quick setup.
+Collmbo supports multiple LLMs, but let's begin with OpenAI's gpt-4o model for a quick setup.
 
 ### 1. Create a Slack App
 
@@ -46,7 +46,7 @@ Mention the bot in Slack and start chatting:
 @Collmbo hello!
 ```
 
-Collmbo should respond in channels, threads, and direct messages (DMs).
+Collmbo should respond in channels, threads, and DMs.
 
 ## Want to Use a Different LLM?
 
@@ -56,33 +56,36 @@ To use it, update the relevant environment variables in your `.env` file and res
 
 Here are some examples:
 
-### Azure OpenAI (gpt-4-0613)
+### Gemini - Google AI Studio (Gemini 2.0 Flash)
+
+```sh
+SLACK_APP_TOKEN=xapp-1-...
+SLACK_BOT_TOKEN=xoxb-...
+LITELLM_MODEL=gemini/gemini-2.0-flash-001
+GEMINI_API_KEY=...
+```
+
+### Azure OpenAI (gpt-4o)
 
 ```sh
 SLACK_APP_TOKEN=xapp-1-...
 SLACK_BOT_TOKEN=xoxb-...
 LITELLM_MODEL=azure/<your_deployment_name>
-LITELLM_MODEL_TYPE=azure/gpt-4-0613
+
+# Specify the model type to grab details like max input tokens
+LITELLM_MODEL_TYPE=azure/gpt-4o
+
 AZURE_API_KEY=...
 AZURE_API_BASE=...
 AZURE_API_VERSION=...
 ```
 
-### Gemini - Google AI Studio (Gemini 1.5 Flash)
-
-```sh
-SLACK_APP_TOKEN=xapp-1-...
-SLACK_BOT_TOKEN=xoxb-...
-LITELLM_MODEL=gemini/gemini-1.5-flash
-GEMINI_API_KEY=...
-```
-
-### Amazon Bedrock (Claude 3.5 Sonnet v2)
+### Amazon Bedrock (Claude 3.7 Sonnet)
 
 ```sh
 SLACK_APP_TOKEN=...
 SLACK_BOT_TOKEN=...
-LITELLM_MODEL=bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0
+LITELLM_MODEL=bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0
 
 # You can specify a Bedrock region if it's different from your default AWS region
 AWS_REGION_NAME=us-west-2
