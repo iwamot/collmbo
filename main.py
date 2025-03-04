@@ -49,8 +49,7 @@ if __name__ == "__main__":
             client: WebClient,
             next_,
         ):
-            user_id = context.actor_user_id or context.user_id
-            if user_id:
+            if user_id := context.actor_user_id or context.user_id:
                 user_info = client.users_info(user=user_id, include_locale=True)
                 user: dict = user_info.get("user", {})
                 context["locale"] = user.get("locale")
