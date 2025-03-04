@@ -1,6 +1,6 @@
 from typing import Optional
-from urllib.request import Request, urlopen
 
+import requests
 from slack_bolt import BoltContext
 from slack_sdk.errors import SlackApiError
 from slack_sdk.web import SlackResponse, WebClient
@@ -93,25 +93,22 @@ def can_send_image_url_to_litellm(context: BoltContext) -> bool:
 
 
 def download_slack_image_content(image_url: str, bot_token: str) -> bytes:
-    request = Request(
-        image_url,
-        headers={"Authorization": f"Bearer {bot_token}"},
-    )
-    with urlopen(request) as response:
-        if response.getcode() != 200:
-            error = f"Request to {image_url} failed with status code {response.status}"
-            raise SlackApiError(error, response)
+    headers = {"Authorization": f"Bearer {bot_token}"}
+    response = requests.get(image_url, headers=headers)
+    if response.status_code != 200:
+        error = f"Request to {image_url} failed with status code {response.status_code}"
+        raise SlackApiError(error, response)
 
-        content_type = response.info().get("Content-Type")
-        if content_type.startswith("text/html"):
-            error = f"You don't have the permission to download this file: {image_url}"
-            raise SlackApiError(error, response)
+    content_type = response.headers.get("Content-Type", "")
+    if content_type.startswith("text/html"):
+        error = f"You don't have the permission to download this file: {image_url}"
+        raise SlackApiError(error, response)
 
-        if not content_type.startswith("image/"):
-            error = f"The responded content-type is not for image data: {content_type}"
-            raise SlackApiError(error, response)
+    if not content_type.startswith("image/"):
+        error = f"The responded content-type is not for image data: {content_type}"
+        raise SlackApiError(error, response)
 
-        return response.read()
+    return response.content
 
 
 def can_send_pdf_url_to_litellm(context: BoltContext) -> bool:
@@ -123,22 +120,19 @@ def can_send_pdf_url_to_litellm(context: BoltContext) -> bool:
 
 
 def download_slack_pdf_content(pdf_url: str, bot_token: str) -> bytes:
-    request = Request(
-        pdf_url,
-        headers={"Authorization": f"Bearer {bot_token}"},
-    )
-    with urlopen(request) as response:
-        if response.getcode() != 200:
-            error = f"Request to {pdf_url} failed with status code {response.status}"
-            raise SlackApiError(error, response)
+    headers = {"Authorization": f"Bearer {bot_token}"}
+    response = requests.get(pdf_url, headers=headers)
+    if response.status_code != 200:
+        error = f"Request to {pdf_url} failed with status code {response.status_code}"
+        raise SlackApiError(error, response)
 
-        content_type = response.info().get("Content-Type")
-        if content_type.startswith("text/html"):
-            error = f"You don't have the permission to download this file: {pdf_url}"
-            raise SlackApiError(error, response)
+    content_type = response.headers.get("Content-Type", "")
+    if content_type.startswith("text/html"):
+        error = f"You don't have the permission to download this file: {pdf_url}"
+        raise SlackApiError(error, response)
 
-        if content_type not in ["application/pdf", "binary/octet-stream"]:
-            error = f"The responded content-type is not for PDF data: {content_type}"
-            raise SlackApiError(error, response)
+    if content_type not in ["application/pdf", "binary/octet-stream"]:
+        error = f"The responded content-type is not for PDF data: {content_type}"
+        raise SlackApiError(error, response)
 
-        return response.read()
+    return response.content
