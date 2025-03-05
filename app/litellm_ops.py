@@ -20,6 +20,7 @@ from app.env import (
     LITELLM_MODEL_TYPE,
     LITELLM_TEMPERATURE,
     LITELLM_TOOLS_MODULE_NAME,
+    SLACK_UPDATE_TEXT_BUFFER_SIZE,
 )
 from app.markdown_conversion import markdown_to_slack, slack_to_markdown
 from app.slack_ops import post_wip_message, update_wip_message
@@ -215,7 +216,7 @@ def consume_litellm_stream_to_write_reply(
             if delta is not None and delta.get("content") is not None:
                 pending_text += delta.get("content")
                 assistant_reply["content"] += delta.get("content")
-                if len(pending_text) >= 20:
+                if len(pending_text) >= SLACK_UPDATE_TEXT_BUFFER_SIZE:
 
                     def update_message():
                         assistant_reply_text = format_assistant_reply(
