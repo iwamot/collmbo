@@ -4,7 +4,7 @@
   <img src="https://github.com/user-attachments/assets/b13da1c7-5d2f-4ad3-8c5b-9ef4e500deb8">
 </p>
 
-**A Slack bot that lets you choose your preferred LLM using LiteLLM.** Pronounced the same as "Colombo".
+**A Slack bot that lets you choose your preferred LLM using [LiteLLM](https://github.com/BerriAI/litellm).** Pronounced the same as "Colombo".
 
 > ![](https://github.com/user-attachments/assets/a377b868-3673-4798-b415-44e674cf7ae6)
 
