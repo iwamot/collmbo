@@ -1,6 +1,5 @@
 from typing import Optional
 
-from slack_bolt import BoltContext
 from litellm.types.utils import ModelResponse
 
 from app.litellm_ops import call_litellm_completion
@@ -30,8 +29,8 @@ def from_locale_to_lang(locale: Optional[str]) -> Optional[str]:
 _translation_result_cache: dict[str, str] = {}
 
 
-def translate(*, context: BoltContext, text: str) -> str:
-    lang = from_locale_to_lang(context.get("locale"))
+def translate(*, locale: Optional[str], text: str) -> str:
+    lang = from_locale_to_lang(locale)
     if lang is None or lang == "English":
         return text
 
