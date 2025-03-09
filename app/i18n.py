@@ -4,7 +4,7 @@ from litellm.types.utils import ModelResponse
 
 from app.litellm_ops import call_litellm_completion
 
-# All the supported languages for Slack app as of March 2023
+# https://slack.com/help/articles/215058658-Manage-your-language-preferences
 _locale_to_lang = {
     "en-US": "English",
     "en-GB": "English",
@@ -14,7 +14,6 @@ _locale_to_lang = {
     "fr-FR": "French",
     "it-IT": "Italian",
     "pt-BR": "Portuguese",
-    "ru-RU": "Russian",
     "ja-JP": "Japanese",
     "zh-CN": "Chinese",
     "zh-TW": "Chinese",
