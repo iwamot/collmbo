@@ -158,7 +158,9 @@ def respond_to_app_mention(
 
             messages.append({"role": "user", "content": content})
 
-        loading_text = translate(context=context, text=DEFAULT_LOADING_TEXT)
+        loading_text = translate(
+            locale=context.get("locale"), text=DEFAULT_LOADING_TEXT
+        )
         if context.channel_id is None:
             raise ValueError("context.channel_id cannot be None")
         if context.user_id is None:
@@ -223,7 +225,7 @@ def respond_to_app_mention(
                 (message_dict.get("text", "") if wip_reply is not None else "")
                 + "\n\n"
                 + translate(
-                    context=context,
+                    locale=context.get("locale"),
                     text=TIMEOUT_ERROR_MESSAGE,
                 )
             )
@@ -240,7 +242,7 @@ def respond_to_app_mention(
             message_dict.get("text", "")
             + "\n\n"
             + translate(
-                context=context,
+                locale=context.get("locale"),
                 text=f":warning: Failed to start a conversation with AI: {e}",
             )
         )
@@ -414,7 +416,9 @@ def respond_to_new_message(
                 }
             )
 
-        loading_text = translate(context=context, text=DEFAULT_LOADING_TEXT)
+        loading_text = translate(
+            locale=context.get("locale"), text=DEFAULT_LOADING_TEXT
+        )
         if context.channel_id is None:
             raise ValueError("context.channel_id cannot be None")
         if user_id is None:
@@ -499,7 +503,7 @@ def respond_to_new_message(
                 (message_dict.get("text", "") if wip_reply is not None else "")
                 + "\n\n"
                 + translate(
-                    context=context,
+                    locale=context.get("locale"),
                     text=TIMEOUT_ERROR_MESSAGE,
                 )
             )
