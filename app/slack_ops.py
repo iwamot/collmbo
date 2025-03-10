@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Sequence
 
 import requests
 from slack_bolt import BoltContext
@@ -28,9 +28,9 @@ def find_parent_message(
     return messages[0] if messages else None
 
 
-def is_this_app_mentioned(context: BoltContext, parent_message: dict) -> bool:
+def is_this_app_mentioned(bot_user_id: Optional[str], parent_message: dict) -> bool:
     parent_message_text = parent_message.get("text", "")
-    return f"<@{context.bot_user_id}>" in parent_message_text
+    return f"<@{bot_user_id}>" in parent_message_text
 
 
 # ----------------------------
@@ -84,12 +84,12 @@ def update_wip_message(
 # ----------------------------
 
 
-def can_send_image_url_to_litellm(context: BoltContext) -> bool:
+def can_send_image_url_to_litellm(bot_scopes: Optional[Sequence[str]]) -> bool:
     if IMAGE_FILE_ACCESS_ENABLED is False:
         return False
-    if context.authorize_result is None or context.authorize_result.bot_scopes is None:
+    if bot_scopes is None:
         return False
-    return "files:read" in context.authorize_result.bot_scopes
+    return "files:read" in bot_scopes
 
 
 def download_slack_image_content(image_url: str, bot_token: str) -> bytes:
@@ -111,12 +111,12 @@ def download_slack_image_content(image_url: str, bot_token: str) -> bytes:
     return response.content
 
 
-def can_send_pdf_url_to_litellm(context: BoltContext) -> bool:
+def can_send_pdf_url_to_litellm(bot_scopes: Optional[Sequence[str]]) -> bool:
     if PDF_FILE_ACCESS_ENABLED is False:
         return False
-    if context.authorize_result is None or context.authorize_result.bot_scopes is None:
+    if bot_scopes is None:
         return False
-    return "files:read" in context.authorize_result.bot_scopes
+    return "files:read" in bot_scopes
 
 
 def download_slack_pdf_content(pdf_url: str, bot_token: str) -> bytes:

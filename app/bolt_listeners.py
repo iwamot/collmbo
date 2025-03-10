@@ -62,14 +62,16 @@ def respond_to_app_mention(
     if thread_ts is not None:
         parent_message = find_parent_message(client, context.channel_id, thread_ts)
         if parent_message is not None and is_this_app_mentioned(
-            context, parent_message
+            context.bot_user_id, parent_message
         ):
             # The message event handler will reply to this
             return
 
     wip_reply = None
     # Replace placeholder for Slack user ID in the system prompt
-    system_text = build_system_text(SYSTEM_TEXT, TRANSLATE_MARKDOWN, context)
+    system_text = build_system_text(
+        SYSTEM_TEXT, TRANSLATE_MARKDOWN, context.bot_user_id
+    )
     messages: list[dict] = [{"role": "system", "content": system_text}]
 
     try:
@@ -93,8 +95,12 @@ def respond_to_app_mention(
                 }
                 content = [message_text_item]
 
-                if reply.get("bot_id") is None and can_send_image_url_to_litellm(
-                    context
+                if (
+                    reply.get("bot_id") is None
+                    and context.authorize_result is not None
+                    and can_send_image_url_to_litellm(
+                        context.authorize_result.bot_scopes
+                    )
                 ):
                     if context.bot_token is None:
                         raise ValueError("context.bot_token cannot be None")
@@ -105,7 +111,11 @@ def respond_to_app_mention(
                         logger=context.logger,
                     )
 
-                if reply.get("bot_id") is None and can_send_pdf_url_to_litellm(context):
+                if (
+                    reply.get("bot_id") is None
+                    and context.authorize_result is not None
+                    and can_send_pdf_url_to_litellm(context.authorize_result.bot_scopes)
+                ):
                     if context.bot_token is None:
                         raise ValueError("context.bot_token cannot be None")
                     append_pdf_content_if_exists(
@@ -137,7 +147,11 @@ def respond_to_app_mention(
             }
             content = [message_text_item]
 
-            if payload.get("bot_id") is None and can_send_image_url_to_litellm(context):
+            if (
+                payload.get("bot_id") is None
+                and context.authorize_result is not None
+                and can_send_image_url_to_litellm(context.authorize_result.bot_scopes)
+            ):
                 if context.bot_token is None:
                     raise ValueError("context.bot_token cannot be None")
                 append_image_content_if_exists(
@@ -146,7 +160,11 @@ def respond_to_app_mention(
                     content=content,
                     logger=context.logger,
                 )
-            if payload.get("bot_id") is None and can_send_pdf_url_to_litellm(context):
+            if (
+                payload.get("bot_id") is None
+                and context.authorize_result is not None
+                and can_send_pdf_url_to_litellm(context.authorize_result.bot_scopes)
+            ):
                 if context.bot_token is None:
                     raise ValueError("context.bot_token cannot be None")
                 append_pdf_content_if_exists(
@@ -315,7 +333,9 @@ def respond_to_new_message(
                 for message in messages_in_context:
                     if message.get("ts") == thread_ts:
                         the_parent_message_found = True
-                        is_thread_for_this_app = is_this_app_mentioned(context, message)
+                        is_thread_for_this_app = is_this_app_mentioned(
+                            context.bot_user_id, message
+                        )
                         break
                 if the_parent_message_found is False:
                     parent_message = find_parent_message(
@@ -323,7 +343,7 @@ def respond_to_new_message(
                     )
                     if parent_message is not None:
                         is_thread_for_this_app = is_this_app_mentioned(
-                            context, parent_message
+                            context.bot_user_id, parent_message
                         )
 
         if is_thread_for_this_app is False:
@@ -360,7 +380,9 @@ def respond_to_new_message(
             filter(lambda msg: msg["role"] == "system", messages), None
         ):
             # Replace placeholder for Slack user ID in the system prompt
-            system_text = build_system_text(SYSTEM_TEXT, TRANSLATE_MARKDOWN, context)
+            system_text = build_system_text(
+                SYSTEM_TEXT, TRANSLATE_MARKDOWN, context.bot_user_id
+            )
             messages.insert(0, {"role": "system", "content": system_text})
 
         filtered_messages_in_context = []
@@ -385,7 +407,11 @@ def respond_to_new_message(
                     + format_litellm_message_content(reply_text, TRANSLATE_MARKDOWN),
                 }
             ]
-            if reply.get("bot_id") is None and can_send_image_url_to_litellm(context):
+            if (
+                reply.get("bot_id") is None
+                and context.authorize_result is not None
+                and can_send_image_url_to_litellm(context.authorize_result.bot_scopes)
+            ):
                 if context.bot_token is None:
                     raise ValueError("context.bot_token cannot be None")
                 append_image_content_if_exists(
@@ -394,7 +420,11 @@ def respond_to_new_message(
                     content=content,
                     logger=context.logger,
                 )
-            if reply.get("bot_id") is None and can_send_pdf_url_to_litellm(context):
+            if (
+                reply.get("bot_id") is None
+                and context.authorize_result is not None
+                and can_send_pdf_url_to_litellm(context.authorize_result.bot_scopes)
+            ):
                 if context.bot_token is None:
                     raise ValueError("context.bot_token cannot be None")
                 append_pdf_content_if_exists(

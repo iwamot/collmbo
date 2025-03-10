@@ -406,9 +406,9 @@ def format_assistant_reply(content: str, translate_markdown: bool) -> str:
 
 
 def build_system_text(
-    system_text_template: str, translate_markdown: bool, context: BoltContext
+    system_text_template: str, translate_markdown: bool, bot_user_id: Optional[str]
 ):
-    system_text = system_text_template.format(bot_user_id=context.bot_user_id)
+    system_text = system_text_template.format(bot_user_id=bot_user_id)
     # Translate format hint in system prompt
     if translate_markdown:
         system_text = slack_to_markdown(system_text)
