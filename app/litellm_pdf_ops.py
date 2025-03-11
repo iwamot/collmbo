@@ -5,15 +5,15 @@ from typing import Optional
 from app.slack_ops import download_slack_pdf_content
 
 
-def append_pdf_content_if_exists(
+def get_pdf_content_if_exists(
     *,
     bot_token: str,
     files: Optional[list[dict]],
-    content: list[dict],
     logger: logging.Logger,
-) -> None:
-    if files is None or len(files) == 0:
-        return
+) -> list[dict]:
+    content: list[dict] = []
+    if not files:
+        return content
 
     for file in files:
         mime_type = file.get("mimetype")
@@ -37,3 +37,5 @@ def append_pdf_content_if_exists(
                 "image_url": {"url": f"data:application/pdf;base64,{encoded_pdf}"},
             }
             content.append(image_url_item)
+
+    return content
