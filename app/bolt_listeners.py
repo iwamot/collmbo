@@ -17,7 +17,7 @@ from app.env import (
     TRANSLATE_MARKDOWN,
 )
 from app.i18n import translate
-from app.litellm_image_ops import append_image_content_if_exists
+from app.litellm_image_ops import get_image_content_if_exists
 from app.litellm_ops import (
     build_system_text,
     consume_litellm_stream_to_write_reply,
@@ -26,7 +26,7 @@ from app.litellm_ops import (
     start_receiving_litellm_response,
     trim_pdf_content,
 )
-from app.litellm_pdf_ops import append_pdf_content_if_exists
+from app.litellm_pdf_ops import get_pdf_content_if_exists
 from app.sensitive_info_redaction import redact_string
 from app.slack_constants import DEFAULT_LOADING_TEXT, TIMEOUT_ERROR_MESSAGE
 from app.slack_ops import (
@@ -104,10 +104,9 @@ def respond_to_app_mention(
                 ):
                     if context.bot_token is None:
                         raise ValueError("context.bot_token cannot be None")
-                    append_image_content_if_exists(
+                    content += get_image_content_if_exists(
                         bot_token=context.bot_token,
                         files=reply.get("files"),
-                        content=content,
                         logger=context.logger,
                     )
 
@@ -118,10 +117,9 @@ def respond_to_app_mention(
                 ):
                     if context.bot_token is None:
                         raise ValueError("context.bot_token cannot be None")
-                    append_pdf_content_if_exists(
+                    content += get_pdf_content_if_exists(
                         bot_token=context.bot_token,
                         files=reply.get("files"),
-                        content=content,
                         logger=context.logger,
                     )
 
@@ -154,10 +152,9 @@ def respond_to_app_mention(
             ):
                 if context.bot_token is None:
                     raise ValueError("context.bot_token cannot be None")
-                append_image_content_if_exists(
+                content += get_image_content_if_exists(
                     bot_token=context.bot_token,
                     files=payload.get("files"),
-                    content=content,
                     logger=context.logger,
                 )
             if (
@@ -167,10 +164,9 @@ def respond_to_app_mention(
             ):
                 if context.bot_token is None:
                     raise ValueError("context.bot_token cannot be None")
-                append_pdf_content_if_exists(
+                content += get_pdf_content_if_exists(
                     bot_token=context.bot_token,
                     files=payload.get("files"),
-                    content=content,
                     logger=context.logger,
                 )
 
@@ -414,10 +410,9 @@ def respond_to_new_message(
             ):
                 if context.bot_token is None:
                     raise ValueError("context.bot_token cannot be None")
-                append_image_content_if_exists(
+                content += get_image_content_if_exists(
                     bot_token=context.bot_token,
                     files=reply.get("files"),
-                    content=content,
                     logger=context.logger,
                 )
             if (
@@ -427,10 +422,9 @@ def respond_to_new_message(
             ):
                 if context.bot_token is None:
                     raise ValueError("context.bot_token cannot be None")
-                append_pdf_content_if_exists(
+                content += get_pdf_content_if_exists(
                     bot_token=context.bot_token,
                     files=reply.get("files"),
-                    content=content,
                     logger=context.logger,
                 )
 
