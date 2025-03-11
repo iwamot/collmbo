@@ -291,7 +291,8 @@ def consume_litellm_stream_to_write_reply(
         response = litellm.stream_chunk_builder(chunks)
         if response is None:
             raise RuntimeError(
-                "Unexpected None response from 'litellm.stream_chunk_builder'. Check the input 'chunks' and the Litellm API behavior."
+                "Unexpected None response from 'litellm.stream_chunk_builder'. "
+                "Check the input 'chunks' and the Litellm API behavior."
             )
         response_message = response.choices[0].get("message")
         if (
