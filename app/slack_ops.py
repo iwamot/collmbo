@@ -1,7 +1,6 @@
 from typing import Optional, Sequence
 
 import requests
-from slack_bolt import BoltContext
 from slack_sdk.errors import SlackApiError
 from slack_sdk.web import SlackResponse, WebClient
 

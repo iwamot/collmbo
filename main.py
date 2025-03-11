@@ -4,6 +4,7 @@ import signal
 import sys
 
 from slack_bolt import App, BoltContext
+from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk.http_retry.builtin_handlers import RateLimitErrorRetryHandler
 from slack_sdk.web import WebClient
 
@@ -27,8 +28,6 @@ def signal_handler(signum, frame):
 if __name__ == "__main__":
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
-
-    from slack_bolt.adapter.socket_mode import SocketModeHandler
 
     logging.basicConfig(level=SLACK_APP_LOG_LEVEL)
 
