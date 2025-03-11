@@ -204,7 +204,10 @@ def respond_to_app_mention(
                 client=client,
                 channel=context.channel_id,
                 ts=wip_reply["message"]["ts"],
-                text=f":warning: The previous message is too long ({num_context_tokens}/{max_context_tokens} prompt tokens).",
+                text=(
+                    f":warning: The previous message is too long "
+                    f"({num_context_tokens}/{max_context_tokens} prompt tokens)."
+                ),
                 messages=messages,
                 user=context.user_id,
             )
@@ -473,7 +476,10 @@ def respond_to_new_message(
                 client=client,
                 channel=context.channel_id,
                 ts=wip_reply["message"]["ts"],
-                text=f":warning: The previous message is too long ({num_context_tokens}/{max_context_tokens} prompt tokens).",
+                text=(
+                    f":warning: The previous message is too long "
+                    f"({num_context_tokens}/{max_context_tokens} prompt tokens)."
+                ),
                 messages=messages,
                 user=context.user_id,
             )
