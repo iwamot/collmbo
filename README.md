@@ -38,18 +38,20 @@ Start the bot using Docker:
 docker run -it --env-file .env ghcr.io/iwamot/collmbo:latest-slim
 ```
 
-#### Why `latest-slim` Here?
-
-Collmbo provides two official Docker image flavors:
-
-| Flavor | Description |
-|--------|-------------|
-| `slim` | A minimal image with only essential dependencies |
-| `full` | A full-featured image with additional libraries (e.g., `boto3` for Amazon Bedrock) |
-
-You must specify a flavor explicitly. If you want to use the latest image, use `latest-slim` or `latest-full`.
-
-Additionally, you can specify a versioned tag like `x.x.x-slim`. For more details, please check the [list of available tags](https://github.com/iwamot/collmbo/pkgs/container/collmbo/versions?filters%5Bversion_type%5D=tagged).
+> [!NOTE]
+> 
+> #### Why `latest-slim` Here?
+> 
+> Collmbo provides two official Docker image flavors:
+> 
+> | Flavor | Description |
+> |--------|-------------|
+> | `slim` | A minimal image with only essential dependencies |
+> | `full` | A full-featured image with additional libraries (e.g., `boto3` for Amazon Bedrock) |
+> 
+> You must specify a flavor explicitly. If you want to use the latest image, use `latest-slim` or `latest-full`.
+> 
+> Additionally, you can specify a versioned tag like `x.x.x-slim`. For more details, please check the [list of available tags](https://github.com/iwamot/collmbo/pkgs/container/collmbo/versions?filters%5Bversion_type%5D=tagged).
 
 ### 4. Say Hello!
 
