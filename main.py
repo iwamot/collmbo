@@ -3,12 +3,12 @@ import os
 import signal
 import sys
 
-from slack_bolt import App, BoltContext
+from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk.http_retry.builtin_handlers import RateLimitErrorRetryHandler
-from slack_sdk.web import WebClient
 
 from app.bolt_listeners import before_authorize, register_listeners
+from app.bolt_middlewares import set_locale
 from app.env import SLACK_APP_LOG_LEVEL, USE_SLACK_LANGUAGE
 
 
@@ -41,20 +41,7 @@ if __name__ == "__main__":
     register_listeners(app)
 
     if USE_SLACK_LANGUAGE is True:
-
-        @app.middleware
-        def set_locale(
-            context: BoltContext,
-            client: WebClient,
-            next_,
-        ):
-            if user_id := context.actor_user_id or context.user_id:
-                user_info = client.users_info(user=user_id, include_locale=True)
-                user: dict = user_info.get("user", {})
-                context["locale"] = user.get("locale")
-            else:
-                context["locale"] = None
-            next_()
+        app.middleware(set_locale)
 
     handler = SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"])
     handler.start()
