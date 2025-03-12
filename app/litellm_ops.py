@@ -51,33 +51,6 @@ def format_litellm_message_content(content: str, translate_markdown: bool) -> st
     return content
 
 
-# Bedrock Claude allows up to 5 PDFs, so remove the oldest ones if over the limit
-def trim_pdf_content(messages: list[dict]) -> None:
-    def count_pdfs() -> int:
-        return sum(
-            1
-            for message in messages
-            if isinstance(message.get("content"), list)
-            for item in message["content"]
-            if item["type"] == "image_url"
-            and item["image_url"]["url"].startswith("data:application/pdf;")
-        )
-
-    while count_pdfs() > 5:
-        for message in messages:
-            if not isinstance(message.get("content"), list):
-                continue
-            for item in message["content"]:
-                if item["type"] == "image_url" and item["image_url"]["url"].startswith(
-                    "data:application/pdf;"
-                ):
-                    message["content"].remove(item)
-                    break
-            else:
-                continue
-            break
-
-
 # Remove old messages to make sure we have room for max_input_tokens
 def messages_within_context_window(
     messages: list[dict],
