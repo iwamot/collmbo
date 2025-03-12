@@ -9,10 +9,8 @@ from slack_bolt.request.payload_utils import is_event
 from slack_sdk.web import WebClient
 
 from app.env import (
-    IMAGE_FILE_ACCESS_ENABLED,
     LITELLM_TEMPERATURE,
     LITELLM_TIMEOUT_SECONDS,
-    PDF_FILE_ACCESS_ENABLED,
     SYSTEM_TEXT,
     TRANSLATE_MARKDOWN,
 )
@@ -37,6 +35,7 @@ from app.slack_ops import (
     post_wip_message,
     update_wip_message,
 )
+from app.bolt_middlewares import attach_bot_scopes
 
 #
 # Listener functions
@@ -560,18 +559,7 @@ def respond_to_new_message(
 
 def register_listeners(app: App):
     # TODO: remove this workaround once bolt-python attaches scopes to context under the hood
-    @app.middleware
-    def attach_bot_scopes(client: WebClient, context: BoltContext, next_):
-        if (
-            # the bot_scopes is used for #can_send_*_url_to_litellm method calls
-            (IMAGE_FILE_ACCESS_ENABLED is True or PDF_FILE_ACCESS_ENABLED is True)
-            and context.authorize_result is not None
-            and context.authorize_result.bot_scopes is None
-        ):
-            auth_test = client.auth_test(token=context.bot_token)
-            scopes = auth_test.headers.get("x-oauth-scopes", [])
-            context.authorize_result.bot_scopes = scopes
-        next_()
+    app.middleware(attach_bot_scopes)
 
     # Chat with the bot
     app.event("app_mention")(ack=just_ack, lazy=[respond_to_app_mention])
