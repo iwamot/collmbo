@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 
 from PIL import Image
 
-from app.slack_ops import download_slack_image_content
+from app.slack_file_download_ops import download_slack_image_content
 
 SUPPORTED_IMAGE_FORMATS = ["jpeg", "png", "gif"]
 

@@ -23,7 +23,7 @@ from app.env import (
     SLACK_UPDATE_TEXT_BUFFER_SIZE,
 )
 from app.markdown_conversion import markdown_to_slack, slack_to_markdown
-from app.slack_ops import post_wip_message, update_wip_message
+from app.slack_api_ops import post_wip_message, update_wip_message
 
 # ----------------------------
 # Internal functions
