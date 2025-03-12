@@ -23,9 +23,8 @@ from app.litellm_ops import (
     format_litellm_message_content,
     messages_within_context_window,
     start_receiving_litellm_response,
-    trim_pdf_content,
 )
-from app.litellm_pdf_ops import get_pdf_content_if_exists
+from app.litellm_pdf_ops import get_pdf_content_if_exists, trim_pdf_content
 from app.sensitive_info_redaction import redact_string
 from app.slack_api_ops import (
     find_parent_message,

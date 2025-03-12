@@ -39,3 +39,30 @@ def get_pdf_content_if_exists(
             content.append(image_url_item)
 
     return content
+
+
+# Bedrock Claude allows up to 5 PDFs, so remove the oldest ones if over the limit
+def trim_pdf_content(messages: list[dict]) -> None:
+    def count_pdfs() -> int:
+        return sum(
+            1
+            for message in messages
+            if isinstance(message.get("content"), list)
+            for item in message["content"]
+            if item["type"] == "image_url"
+            and item["image_url"]["url"].startswith("data:application/pdf;")
+        )
+
+    while count_pdfs() > 5:
+        for message in messages:
+            if not isinstance(message.get("content"), list):
+                continue
+            for item in message["content"]:
+                if item["type"] == "image_url" and item["image_url"]["url"].startswith(
+                    "data:application/pdf;"
+                ):
+                    message["content"].remove(item)
+                    break
+            else:
+                continue
+            break
