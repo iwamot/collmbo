@@ -8,6 +8,7 @@ from slack_bolt import Ack, App, BoltContext, BoltResponse
 from slack_bolt.request.payload_utils import is_event
 from slack_sdk.web import WebClient
 
+from app.bolt_middlewares import attach_bot_scopes
 from app.env import (
     LITELLM_TEMPERATURE,
     LITELLM_TIMEOUT_SECONDS,
@@ -26,16 +27,17 @@ from app.litellm_ops import (
 )
 from app.litellm_pdf_ops import get_pdf_content_if_exists
 from app.sensitive_info_redaction import redact_string
-from app.slack_constants import DEFAULT_LOADING_TEXT, TIMEOUT_ERROR_MESSAGE
-from app.slack_ops import (
-    can_send_image_url_to_litellm,
-    can_send_pdf_url_to_litellm,
+from app.slack_api_ops import (
     find_parent_message,
     is_this_app_mentioned,
     post_wip_message,
     update_wip_message,
 )
-from app.bolt_middlewares import attach_bot_scopes
+from app.slack_constants import DEFAULT_LOADING_TEXT, TIMEOUT_ERROR_MESSAGE
+from app.slack_settings import (
+    can_send_image_url_to_litellm,
+    can_send_pdf_url_to_litellm,
+)
 
 #
 # Listener functions
