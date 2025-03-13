@@ -18,13 +18,12 @@ from app.env import (
 from app.i18n import translate
 from app.litellm_image_ops import get_image_content_if_exists
 from app.litellm_ops import (
-    build_system_text,
     consume_litellm_stream_to_write_reply,
-    format_litellm_message_content,
     messages_within_context_window,
     start_receiving_litellm_response,
 )
 from app.litellm_pdf_ops import get_pdf_content_if_exists, trim_pdf_content
+from app.message_formatting import build_system_text, format_litellm_message_content
 from app.sensitive_info_redaction import redact_string
 from app.slack_api_ops import (
     find_parent_message,

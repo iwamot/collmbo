@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import re
 import threading
 import time
 from importlib import import_module
@@ -22,7 +21,7 @@ from app.env import (
     LITELLM_TOOLS_MODULE_NAME,
     SLACK_UPDATE_TEXT_BUFFER_SIZE,
 )
-from app.markdown_conversion import markdown_to_slack, slack_to_markdown
+from app.message_formatting import format_assistant_reply
 from app.slack_api_ops import post_wip_message, update_wip_message
 
 # ----------------------------
@@ -36,19 +35,6 @@ if LITELLM_CALLBACK_MODULE_NAME is not None:
     litellm.callbacks = [callback_module.CallbackHandler()]
 
 _prompt_tokens_used_by_tools_cache: Optional[int] = None
-
-
-# Format message from Slack to send to LiteLLM
-def format_litellm_message_content(content: str, translate_markdown: bool) -> str:
-    # Unescape &, < and >, since Slack replaces these with their HTML equivalents
-    # See also: https://api.slack.com/reference/surfaces/formatting#escaping
-    content = content.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
-
-    # Convert from Slack mrkdwn to Markdown format
-    if translate_markdown:
-        content = slack_to_markdown(content)
-
-    return content
 
 
 # Remove old messages to make sure we have room for max_input_tokens
@@ -333,60 +319,6 @@ def consume_litellm_stream_to_write_reply(
                     t.join()
             except Exception:
                 pass
-
-
-# Format message from LiteLLM to display in Slack
-def format_assistant_reply(content: str, translate_markdown: bool) -> str:
-    for o, n in [
-        # Remove leading newlines
-        ("^\n+", ""),
-        # Remove prepended Slack user ID
-        ("^<@U.*?>\\s?:\\s?", ""),
-        # Remove code block tags since Slack doesn't render them in a message
-        ("```\\s*[Rr]ust\n", "```\n"),
-        ("```\\s*[Rr]uby\n", "```\n"),
-        ("```\\s*[Ss]cala\n", "```\n"),
-        ("```\\s*[Kk]otlin\n", "```\n"),
-        ("```\\s*[Jj]ava\n", "```\n"),
-        ("```\\s*[Gg]o\n", "```\n"),
-        ("```\\s*[Ss]wift\n", "```\n"),
-        ("```\\s*[Oo]objective[Cc]\n", "```\n"),
-        ("```\\s*[Cc]\n", "```\n"),
-        ("```\\s*[Cc][+][+]\n", "```\n"),
-        ("```\\s*[Cc][Pp][Pp]\n", "```\n"),
-        ("```\\s*[Cc]sharp\n", "```\n"),
-        ("```\\s*[Mm][Aa][Tt][Ll][Aa][Bb]\n", "```\n"),
-        ("```\\s*[Jj][Ss][Oo][Nn]\n", "```\n"),
-        ("```\\s*[Ll]a[Tt]e[Xx]\n", "```\n"),
-        ("```\\s*[Ll][Uu][Aa]\n", "```\n"),
-        ("```\\s*[Cc][Mm][Aa][Kk][Ee]\n", "```\n"),
-        ("```\\s*bash\n", "```\n"),
-        ("```\\s*zsh\n", "```\n"),
-        ("```\\s*sh\n", "```\n"),
-        ("```\\s*[Ss][Qq][Ll]\n", "```\n"),
-        ("```\\s*[Pp][Hh][Pp]\n", "```\n"),
-        ("```\\s*[Pp][Ee][Rr][Ll]\n", "```\n"),
-        ("```\\s*[Jj]ava[Ss]cript\n", "```\n"),
-        ("```\\s*[Ty]ype[Ss]cript\n", "```\n"),
-        ("```\\s*[Pp]ython\n", "```\n"),
-    ]:
-        content = re.sub(o, n, content)
-
-    # Convert from Markdown to Slack mrkdwn format
-    if translate_markdown:
-        content = markdown_to_slack(content)
-
-    return content
-
-
-def build_system_text(
-    system_text_template: str, translate_markdown: bool, bot_user_id: Optional[str]
-):
-    system_text = system_text_template.format(bot_user_id=bot_user_id)
-    # Translate format hint in system prompt
-    if translate_markdown:
-        system_text = slack_to_markdown(system_text)
-    return system_text
 
 
 def calculate_tokens_necessary_for_tools() -> int:

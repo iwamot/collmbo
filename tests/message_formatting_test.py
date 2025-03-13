@@ -1,4 +1,7 @@
-from app.litellm_ops import format_assistant_reply, format_litellm_message_content
+from app.message_formatting import (
+    format_assistant_reply,
+    format_litellm_message_content,
+)
 
 
 def test_format_assistant_reply():
