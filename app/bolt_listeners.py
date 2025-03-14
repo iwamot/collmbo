@@ -208,7 +208,7 @@ def respond_to_app_mention(
             consume_litellm_stream_to_write_reply(
                 client=client,
                 wip_reply=wip_reply,
-                context=context,
+                channel=context.channel_id,
                 user_id=user_id,
                 messages=messages,
                 stream=stream,
@@ -499,7 +499,7 @@ def respond_to_new_message(
             consume_litellm_stream_to_write_reply(
                 client=client,
                 wip_reply=wip_reply,
-                context=context,
+                channel=context.channel_id,
                 user_id=user_id,
                 messages=messages,
                 stream=stream,

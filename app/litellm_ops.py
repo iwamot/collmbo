@@ -9,7 +9,6 @@ from typing import Optional, Tuple, Union
 import litellm
 from litellm.litellm_core_utils.streaming_handler import CustomStreamWrapper
 from litellm.types.utils import ModelResponse
-from slack_bolt import BoltContext
 from slack_sdk.web import SlackResponse, WebClient
 
 from app.env import (
@@ -138,7 +137,7 @@ def consume_litellm_stream_to_write_reply(
     *,
     client: WebClient,
     wip_reply: Union[dict, SlackResponse],
-    context: BoltContext,
+    channel: Optional[str],
     user_id: str,
     messages: list[dict],
     stream: CustomStreamWrapper,
@@ -148,8 +147,8 @@ def consume_litellm_stream_to_write_reply(
     translate_markdown: bool,
     logger: logging.Logger,
 ):
-    if context.channel_id is None:
-        raise ValueError("context.channel_id cannot be None")
+    if channel is None:
+        raise ValueError("channel cannot be None")
 
     start_time = time.time()
     assistant_reply = {
@@ -184,7 +183,7 @@ def consume_litellm_stream_to_write_reply(
                         wip_reply["message"]["text"] = assistant_reply_text
                         update_wip_message(
                             client=client,
-                            channel=context.channel_id,
+                            channel=channel,
                             ts=wip_reply["message"]["ts"],
                             text=assistant_reply_text + loading_character,
                             messages=messages,
@@ -216,7 +215,7 @@ def consume_litellm_stream_to_write_reply(
             wip_reply["message"]["text"] = assistant_reply_text
             update_wip_message(
                 client=client,
-                channel=context.channel_id,
+                channel=channel,
                 ts=wip_reply["message"]["ts"],
                 text=assistant_reply_text,
                 messages=messages,
@@ -227,7 +226,7 @@ def consume_litellm_stream_to_write_reply(
         if is_response_too_long:
             next_wip_reply = post_wip_message(
                 client=client,
-                channel=context.channel_id,
+                channel=channel,
                 thread_ts=thread_ts,
                 loading_text=loading_character,
                 messages=messages,
@@ -236,7 +235,7 @@ def consume_litellm_stream_to_write_reply(
             consume_litellm_stream_to_write_reply(
                 client=client,
                 wip_reply=next_wip_reply,
-                context=context,
+                channel=channel,
                 user_id=user_id,
                 messages=messages,
                 stream=stream,
@@ -263,7 +262,7 @@ def consume_litellm_stream_to_write_reply(
             if wip_reply["message"]["text"] != loading_text:
                 wip_reply = post_wip_message(
                     client=client,
-                    channel=context.channel_id,
+                    channel=channel,
                     thread_ts=thread_ts,
                     loading_text=loading_text,
                     messages=messages,
@@ -301,7 +300,7 @@ def consume_litellm_stream_to_write_reply(
             consume_litellm_stream_to_write_reply(
                 client=client,
                 wip_reply=wip_reply,
-                context=context,
+                channel=channel,
                 user_id=user_id,
                 messages=messages,
                 stream=sub_stream,
