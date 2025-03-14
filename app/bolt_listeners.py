@@ -4,11 +4,9 @@ import time
 from typing import Optional
 
 from litellm.exceptions import Timeout
-from slack_bolt import Ack, App, BoltContext, BoltResponse
-from slack_bolt.request.payload_utils import is_event
+from slack_bolt import BoltContext
 from slack_sdk.web import WebClient
 
-from app.bolt_middlewares import attach_bot_scopes
 from app.env import (
     LITELLM_TEMPERATURE,
     LITELLM_TIMEOUT_SECONDS,
@@ -36,19 +34,6 @@ from app.slack_settings import (
     can_send_image_url_to_litellm,
     can_send_pdf_url_to_litellm,
 )
-
-#
-# Listener functions
-#
-
-
-def just_ack(ack: Ack):
-    ack()
-
-
-#
-# Chat with the bot
-#
 
 
 def respond_to_app_mention(
@@ -555,37 +540,3 @@ def respond_to_new_message(
                 ts=wip_reply["message"]["ts"],
                 text=text,
             )
-
-
-def register_listeners(app: App):
-    # TODO: remove this workaround once bolt-python attaches scopes to context under the hood
-    app.middleware(attach_bot_scopes)
-
-    # Chat with the bot
-    app.event("app_mention")(ack=just_ack, lazy=[respond_to_app_mention])
-    app.event("message")(ack=just_ack, lazy=[respond_to_new_message])
-
-
-MESSAGE_SUBTYPES_TO_SKIP = ["message_changed", "message_deleted"]
-
-
-# To reduce unnecessary workload in this app,
-# this before_authorize function skips message changed/deleted events.
-# Especially, "message_changed" events can be triggered many times when the app rapidly updates its reply.
-def before_authorize(
-    body: dict,
-    payload: dict,
-    logger: logging.Logger,
-    next_,
-):
-    if (
-        is_event(body)
-        and payload.get("type") == "message"
-        and payload.get("subtype") in MESSAGE_SUBTYPES_TO_SKIP
-    ):
-        logger.debug(
-            "Skipped the following middleware and listeners "
-            f"for this message event (subtype: {payload.get('subtype')})"
-        )
-        return BoltResponse(status=200, body="")
-    next_()
