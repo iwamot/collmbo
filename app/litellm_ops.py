@@ -9,7 +9,7 @@ from typing import Optional, Tuple, Union
 import litellm
 from litellm.litellm_core_utils.streaming_handler import CustomStreamWrapper
 from litellm.types.utils import ModelResponse
-from slack_sdk.web import SlackResponse, WebClient
+from slack_sdk.web import SlackResponse
 
 from app.env import (
     LITELLM_CALLBACK_MODULE_NAME,
@@ -21,7 +21,7 @@ from app.env import (
     SLACK_UPDATE_TEXT_BUFFER_SIZE,
 )
 from app.message_formatting import format_assistant_reply
-from app.slack_api_ops import post_wip_message, update_wip_message
+from app.slack_api_service import SlackApiService
 
 # ----------------------------
 # Internal functions
@@ -135,7 +135,7 @@ def call_litellm_completion(
 
 def consume_litellm_stream_to_write_reply(
     *,
-    client: WebClient,
+    slack_service: SlackApiService,
     wip_reply: Union[dict, SlackResponse],
     channel: Optional[str],
     user_id: str,
@@ -181,8 +181,7 @@ def consume_litellm_stream_to_write_reply(
                             assistant_reply["content"], translate_markdown
                         )
                         wip_reply["message"]["text"] = assistant_reply_text
-                        update_wip_message(
-                            client=client,
+                        slack_service.update_wip_message(
                             channel=channel,
                             ts=wip_reply["message"]["ts"],
                             text=assistant_reply_text + loading_character,
@@ -213,8 +212,7 @@ def consume_litellm_stream_to_write_reply(
                 assistant_reply["content"], translate_markdown
             )
             wip_reply["message"]["text"] = assistant_reply_text
-            update_wip_message(
-                client=client,
+            slack_service.update_wip_message(
                 channel=channel,
                 ts=wip_reply["message"]["ts"],
                 text=assistant_reply_text,
@@ -224,8 +222,7 @@ def consume_litellm_stream_to_write_reply(
 
         # If the response is too long, post a new message instead
         if is_response_too_long:
-            next_wip_reply = post_wip_message(
-                client=client,
+            next_wip_reply = slack_service.post_wip_message(
                 channel=channel,
                 thread_ts=thread_ts,
                 loading_text=loading_character,
@@ -233,7 +230,7 @@ def consume_litellm_stream_to_write_reply(
                 user=user_id,
             )
             consume_litellm_stream_to_write_reply(
-                client=client,
+                slack_service=slack_service,
                 wip_reply=next_wip_reply,
                 channel=channel,
                 user_id=user_id,
@@ -260,8 +257,7 @@ def consume_litellm_stream_to_write_reply(
         ):
             # If the message has already been updated, post a new one
             if wip_reply["message"]["text"] != loading_text:
-                wip_reply = post_wip_message(
-                    client=client,
+                wip_reply = slack_service.post_wip_message(
                     channel=channel,
                     thread_ts=thread_ts,
                     loading_text=loading_text,
@@ -298,7 +294,7 @@ def consume_litellm_stream_to_write_reply(
                 user=user_id,
             )
             consume_litellm_stream_to_write_reply(
-                client=client,
+                slack_service=slack_service,
                 wip_reply=wip_reply,
                 channel=channel,
                 user_id=user_id,
