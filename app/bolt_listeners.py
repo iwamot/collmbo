@@ -23,17 +23,17 @@ from app.litellm_ops import (
 from app.litellm_pdf_ops import get_pdf_content_if_exists, trim_pdf_content
 from app.message_formatting import build_system_text, format_litellm_message_content
 from app.sensitive_info_redaction import redact_string
-from app.slack_api_ops import (
-    find_parent_message,
-    is_this_app_mentioned,
-    post_wip_message,
-    update_wip_message,
-)
+from app.slack_api_service import SlackApiService
 from app.slack_constants import DEFAULT_LOADING_TEXT, TIMEOUT_ERROR_MESSAGE
 from app.slack_settings import (
     can_send_image_url_to_litellm,
     can_send_pdf_url_to_litellm,
 )
+
+
+def is_this_app_mentioned(bot_user_id: Optional[str], parent_message: dict) -> bool:
+    parent_message_text = parent_message.get("text", "")
+    return f"<@{bot_user_id}>" in parent_message_text
 
 
 def respond_to_app_mention(
@@ -42,9 +42,12 @@ def respond_to_app_mention(
     client: WebClient,
     logger: logging.Logger,
 ):
+    slack_service = SlackApiService(client)
     thread_ts = payload.get("thread_ts")
     if thread_ts is not None:
-        parent_message = find_parent_message(client, context.channel_id, thread_ts)
+        parent_message = slack_service.find_parent_message(
+            context.channel_id, thread_ts
+        )
         if parent_message is not None and is_this_app_mentioned(
             context.bot_user_id, parent_message
         ):
@@ -163,8 +166,7 @@ def respond_to_app_mention(
             raise ValueError("context.channel_id cannot be None")
         if context.user_id is None:
             raise ValueError("user_id cannot be None")
-        wip_reply = post_wip_message(
-            client=client,
+        wip_reply = slack_service.post_wip_message(
             channel=context.channel_id,
             thread_ts=payload["ts"],
             loading_text=loading_text,
@@ -184,8 +186,7 @@ def respond_to_app_mention(
                 raise ValueError("context.channel_id cannot be None")
             if context.user_id is None:
                 raise ValueError("context.user_id cannot be None")
-            update_wip_message(
-                client=client,
+            slack_service.update_wip_message(
                 channel=context.channel_id,
                 ts=wip_reply["message"]["ts"],
                 text=(
@@ -206,7 +207,7 @@ def respond_to_app_mention(
             if user_id is None:
                 raise ValueError("user_id cannot be None")
             consume_litellm_stream_to_write_reply(
-                client=client,
+                slack_service=slack_service,
                 wip_reply=wip_reply,
                 channel=context.channel_id,
                 user_id=user_id,
@@ -268,6 +269,7 @@ def respond_to_new_message(
         # Skip a new message by a different app
         return
 
+    slack_service = SlackApiService(client)
     wip_reply = None
     try:
         is_in_dm_with_bot = payload.get("channel_type") == "im"
@@ -321,8 +323,8 @@ def respond_to_new_message(
                         )
                         break
                 if the_parent_message_found is False:
-                    parent_message = find_parent_message(
-                        client, context.channel_id, thread_ts
+                    parent_message = slack_service.find_parent_message(
+                        context.channel_id, thread_ts
                     )
                     if parent_message is not None:
                         is_thread_for_this_app = is_this_app_mentioned(
@@ -435,8 +437,7 @@ def respond_to_new_message(
         if user_id is None:
             raise ValueError("user_id cannot be None")
         thread_ts = payload.get("thread_ts") if is_in_dm_with_bot else payload["ts"]
-        wip_reply = post_wip_message(
-            client=client,
+        wip_reply = slack_service.post_wip_message(
             channel=context.channel_id,
             thread_ts=thread_ts,
             loading_text=loading_text,
@@ -456,8 +457,7 @@ def respond_to_new_message(
                 raise ValueError("context.channel_id cannot be None")
             if context.user_id is None:
                 raise ValueError("context.user_id cannot be None")
-            update_wip_message(
-                client=client,
+            slack_service.update_wip_message(
                 channel=context.channel_id,
                 ts=wip_reply["message"]["ts"],
                 text=(
@@ -497,7 +497,7 @@ def respond_to_new_message(
                 return
 
             consume_litellm_stream_to_write_reply(
-                client=client,
+                slack_service=slack_service,
                 wip_reply=wip_reply,
                 channel=context.channel_id,
                 user_id=user_id,
