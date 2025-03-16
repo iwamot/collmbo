@@ -22,7 +22,6 @@ from app.env import (
     SLACK_UPDATE_TEXT_BUFFER_SIZE,
     TRANSLATE_MARKDOWN,
 )
-from app.markdown_conversion import markdown_to_slack
 from app.slack_api_ops import post_wip_message, update_wip_message
 
 
@@ -63,6 +62,34 @@ def format_assistant_reply(content: str) -> str:
     ]:
         content = re.sub(o, n, content)
     return content
+
+
+# Conversion from Markdown to Slack mrkdwn
+# See also: https://api.slack.com/reference/surfaces/formatting#basics
+def markdown_to_slack(content: str) -> str:
+    # Split the input string into parts based on code blocks and inline code
+    parts = re.split(r"(?s)(```.+?```|`[^`\n]+?`)", content)
+
+    # Apply the bold, italic, and strikethrough formatting to text not within code
+    result = ""
+    for part in parts:
+        if not part.startswith("```") and not part.startswith("`"):
+            for o, n in [
+                (
+                    r"\*\*\*(?!\s)([^\*\n]+?)(?<!\s)\*\*\*",
+                    r"_*\1*_",
+                ),  # ***bold italic*** to *_bold italic_*
+                (
+                    r"(?<![\*_])\*(?!\s)([^\*\n]+?)(?<!\s)\*(?![\*_])",
+                    r"_\1_",
+                ),  # *italic* to _italic_
+                (r"\*\*(?!\s)([^\*\n]+?)(?<!\s)\*\*", r"*\1*"),  # **bold** to *bold*
+                (r"__(?!\s)([^_\n]+?)(?<!\s)__", r"*\1*"),  # __bold__ to *bold*
+                (r"~~(?!\s)([^~\n]+?)(?<!\s)~~", r"~\1~"),  # ~~strike~~ to ~strike~
+            ]:
+                part = re.sub(o, n, part)
+        result += part
+    return result
 
 
 litellm.drop_params = True

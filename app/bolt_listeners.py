@@ -29,7 +29,6 @@ from app.litellm_ops import (
     start_receiving_litellm_response,
 )
 from app.litellm_pdf_ops import get_pdf_content_if_exists, trim_pdf_content
-from app.markdown_conversion import slack_to_markdown
 from app.slack_api_ops import (
     find_parent_message,
     is_this_app_mentioned,
@@ -59,6 +58,26 @@ def format_litellm_message_content(content: str) -> str:
 
 def build_system_text(system_text_template: str, bot_user_id: Optional[str]):
     return system_text_template.format(bot_user_id=bot_user_id)
+
+
+# Conversion from Slack mrkdwn to Markdown
+# See also: https://api.slack.com/reference/surfaces/formatting#basics
+def slack_to_markdown(content: str) -> str:
+    # Split the input string into parts based on code blocks and inline code
+    parts = re.split(r"(?s)(```.+?```|`[^`\n]+?`)", content)
+
+    # Apply the bold, italic, and strikethrough formatting to text not within code
+    result = ""
+    for part in parts:
+        if not part.startswith("```") and not part.startswith("`"):
+            for o, n in [
+                (r"\*(?!\s)([^\*\n]+?)(?<!\s)\*", r"**\1**"),  # *bold* to **bold**
+                (r"_(?!\s)([^_\n]+?)(?<!\s)_", r"*\1*"),  # _italic_ to *italic*
+                (r"~(?!\s)([^~\n]+?)(?<!\s)~", r"~~\1~~"),  # ~strike~ to ~~strike~~
+            ]:
+                part = re.sub(o, n, part)
+        result += part
+    return result
 
 
 REDACT_PATTERNS = [
