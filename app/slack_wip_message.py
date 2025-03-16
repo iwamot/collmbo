@@ -2,36 +2,6 @@ from typing import Optional
 
 from slack_sdk.web import SlackResponse, WebClient
 
-# ----------------------------
-# General operations in a channel
-# ----------------------------
-
-
-def find_parent_message(
-    client: WebClient, channel_id: Optional[str], thread_ts: Optional[str]
-) -> Optional[dict]:
-    if channel_id is None or thread_ts is None:
-        return None
-
-    messages: list[dict] = client.conversations_history(
-        channel=channel_id,
-        latest=thread_ts,
-        limit=1,
-        inclusive=True,
-    ).get("messages", [])
-
-    return messages[0] if messages else None
-
-
-def is_this_app_mentioned(bot_user_id: Optional[str], parent_message: dict) -> bool:
-    parent_message_text = parent_message.get("text", "")
-    return f"<@{bot_user_id}>" in parent_message_text
-
-
-# ----------------------------
-# WIP reply message stuff
-# ----------------------------
-
 
 def post_wip_message(
     *,

@@ -29,12 +29,7 @@ from app.litellm_ops import (
     start_receiving_litellm_response,
 )
 from app.litellm_pdf_ops import get_pdf_content_if_exists, trim_pdf_content
-from app.slack_api_ops import (
-    find_parent_message,
-    is_this_app_mentioned,
-    post_wip_message,
-    update_wip_message,
-)
+from app.slack_wip_message import post_wip_message, update_wip_message
 
 TIMEOUT_ERROR_MESSAGE = (
     f":warning: Apologies! It seems that the AI didn't respond within the {LITELLM_TIMEOUT_SECONDS}-second timeframe. "
@@ -43,6 +38,27 @@ TIMEOUT_ERROR_MESSAGE = (
     "you may consider deploying this app with customized settings on your infrastructure. :bow:"
 )
 LOADING_TEXT = ":hourglass_flowing_sand: Wait a second, please ..."
+
+
+def find_parent_message(
+    client: WebClient, channel_id: Optional[str], thread_ts: Optional[str]
+) -> Optional[dict]:
+    if channel_id is None or thread_ts is None:
+        return None
+
+    messages: list[dict] = client.conversations_history(
+        channel=channel_id,
+        latest=thread_ts,
+        limit=1,
+        inclusive=True,
+    ).get("messages", [])
+
+    return messages[0] if messages else None
+
+
+def is_this_app_mentioned(bot_user_id: Optional[str], parent_message: dict) -> bool:
+    parent_message_text = parent_message.get("text", "")
+    return f"<@{bot_user_id}>" in parent_message_text
 
 
 def can_bot_read_files(bot_scopes: Optional[Sequence[str]]) -> bool:

@@ -22,7 +22,7 @@ from app.env import (
     SLACK_UPDATE_TEXT_BUFFER_SIZE,
     TRANSLATE_MARKDOWN,
 )
-from app.slack_api_ops import post_wip_message, update_wip_message
+from app.slack_wip_message import post_wip_message, update_wip_message
 
 
 # Format message from LiteLLM to display in Slack
