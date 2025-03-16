@@ -1,7 +1,7 @@
 import logging
 import re
 import time
-from typing import Optional, Sequence
+from typing import List, Optional, Sequence, Tuple
 
 from litellm.exceptions import Timeout
 from slack_bolt import BoltContext
@@ -12,6 +12,12 @@ from app.env import (
     LITELLM_TEMPERATURE,
     LITELLM_TIMEOUT_SECONDS,
     PDF_FILE_ACCESS_ENABLED,
+    REDACT_CREDIT_CARD_PATTERN,
+    REDACT_EMAIL_PATTERN,
+    REDACT_PHONE_PATTERN,
+    REDACT_SSN_PATTERN,
+    REDACT_USER_DEFINED_PATTERN,
+    REDACTION_ENABLED,
     SYSTEM_TEXT,
     TRANSLATE_MARKDOWN,
 )
@@ -24,7 +30,6 @@ from app.litellm_ops import (
 )
 from app.litellm_pdf_ops import get_pdf_content_if_exists, trim_pdf_content
 from app.markdown_conversion import slack_to_markdown
-from app.sensitive_info_redaction import redact_string
 from app.slack_api_ops import (
     find_parent_message,
     is_this_app_mentioned,
@@ -47,6 +52,32 @@ def format_litellm_message_content(content: str) -> str:
 
 def build_system_text(system_text_template: str, bot_user_id: Optional[str]):
     return system_text_template.format(bot_user_id=bot_user_id)
+
+
+REDACT_PATTERNS = [
+    (REDACT_EMAIL_PATTERN, "[EMAIL]"),
+    (REDACT_CREDIT_CARD_PATTERN, "[CREDIT CARD]"),
+    (REDACT_PHONE_PATTERN, "[PHONE]"),
+    (REDACT_SSN_PATTERN, "[SSN]"),
+    (REDACT_USER_DEFINED_PATTERN, "[REDACTED]"),
+]
+
+
+def redact_string(input_string: str, patterns: List[Tuple[str, str]]) -> str:
+    """
+    Redact sensitive information from a string (inspired by @quangnhut123)
+
+    Args:
+        - input_string (str): The string to redact
+        - patterns (list[tuple]): A list of tuples where each tuple contains (regex pattern, replacement string)
+
+    Returns:
+        - str: The redacted string
+    """
+    output_string = input_string
+    for pattern, replacement in patterns:
+        output_string = re.sub(pattern, replacement, output_string)
+    return output_string
 
 
 def respond_to_app_mention(
@@ -84,7 +115,9 @@ def respond_to_app_mention(
                 limit=1000,
             ).get("messages", [])
             for reply in replies_in_thread:
-                reply_text = redact_string(reply.get("text") or "")
+                reply_text = reply.get("text") or ""
+                if REDACTION_ENABLED:
+                    reply_text = redact_string(reply_text, REDACT_PATTERNS)
                 reply_text = format_litellm_message_content(reply_text)
                 if TRANSLATE_MARKDOWN:
                     reply_text = slack_to_markdown(reply_text)
@@ -137,7 +170,8 @@ def respond_to_app_mention(
         else:
             # Strip bot Slack user ID from initial message
             msg_text = re.sub(f"<@{context.bot_user_id}>\\s*", "", payload["text"])
-            msg_text = redact_string(msg_text)
+            if REDACTION_ENABLED:
+                msg_text = redact_string(msg_text, REDACT_PATTERNS)
             msg_text = format_litellm_message_content(msg_text)
             if TRANSLATE_MARKDOWN:
                 msg_text = slack_to_markdown(msg_text)
@@ -399,7 +433,9 @@ def respond_to_new_message(
 
         for reply in filtered_messages_in_context:
             msg_user_id = reply.get("user")
-            reply_text = redact_string(reply.get("text") or "")
+            reply_text = reply.get("text") or ""
+            if REDACTION_ENABLED:
+                reply_text = redact_string(reply_text, REDACT_PATTERNS)
             reply_text = format_litellm_message_content(reply_text)
             if TRANSLATE_MARKDOWN:
                 reply_text = slack_to_markdown(reply_text)

@@ -1,6 +1,10 @@
 import pytest
 
-from app.bolt_listeners import build_system_text, format_litellm_message_content
+from app.bolt_listeners import (
+    build_system_text,
+    format_litellm_message_content,
+    redact_string,
+)
 
 
 @pytest.mark.parametrize(
@@ -34,3 +38,25 @@ def test_build_system_text():
 
     result = build_system_text(template, bot_user_id)
     assert result == expected_output
+
+
+@pytest.mark.parametrize(
+    "input_string, patterns, expected_output",
+    [
+        (
+            "My email is test@example.com and my phone is 123-456-7890",
+            [
+                ("test@example\\.com", "[EMAIL]"),
+                ("123-456-7890", "[PHONE]"),
+            ],
+            "My email is [EMAIL] and my phone is [PHONE]",
+        ),
+        (
+            "No sensitive data here",
+            [("test@example\\.com", "[EMAIL]")],
+            "No sensitive data here",
+        ),
+    ],
+)
+def test_redact_string(input_string, patterns, expected_output):
+    assert redact_string(input_string, patterns) == expected_output
