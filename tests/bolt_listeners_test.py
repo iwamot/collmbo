@@ -1,11 +1,68 @@
+from unittest.mock import MagicMock
+
 import pytest
+from slack_sdk.web import WebClient
 
 from app.bolt_listeners import (
     build_system_text,
+    find_parent_message,
     format_litellm_message_content,
+    is_this_app_mentioned,
     redact_string,
     slack_to_markdown,
 )
+
+
+def test_find_parent_message_with_valid_response():
+    mock_client = MagicMock(spec=WebClient)
+    mock_client.conversations_history.return_value = {
+        "messages": [{"text": "Hello, world!"}]
+    }
+
+    result = find_parent_message(mock_client, "C12345678", "123456.789")
+    assert result == {"text": "Hello, world!"}
+
+
+def test_find_parent_message_with_no_messages():
+    mock_client = MagicMock(spec=WebClient)
+    mock_client.conversations_history.return_value = {"messages": []}
+
+    result = find_parent_message(mock_client, "C12345678", "123456.789")
+    assert result is None
+
+
+def test_find_parent_message_with_none_channel_id():
+    mock_client = MagicMock(spec=WebClient)
+
+    result = find_parent_message(mock_client, None, "123456.789")
+    assert result is None
+
+
+def test_find_parent_message_with_none_thread_ts():
+    mock_client = MagicMock(spec=WebClient)
+
+    result = find_parent_message(mock_client, "C12345678", None)
+    assert result is None
+
+
+def test_find_parent_message_with_invalid_response():
+    mock_client = MagicMock(spec=WebClient)
+    mock_client.conversations_history.return_value = {"not_messages": []}
+
+    result = find_parent_message(mock_client, "C12345678", "123456.789")
+    assert result is None
+
+
+@pytest.mark.parametrize(
+    "bot_user_id, parent_message, expected",
+    [
+        ("U12345", {"text": "Hello <@U12345>"}, True),
+        ("U12345", {"text": "No mention here"}, False),
+        (None, {"text": "Hello <@U12345>"}, False),
+    ],
+)
+def test_is_this_app_mentioned(bot_user_id, parent_message, expected):
+    assert is_this_app_mentioned(bot_user_id, parent_message) == expected
 
 
 @pytest.mark.parametrize(
