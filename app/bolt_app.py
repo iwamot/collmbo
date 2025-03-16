@@ -6,7 +6,7 @@ from slack_bolt.request.payload_utils import is_event
 from slack_sdk.http_retry.builtin_handlers import RateLimitErrorRetryHandler
 
 from app.bolt_listeners import respond_to_app_mention, respond_to_new_message
-from app.bolt_middlewares import attach_bot_scopes, set_locale
+from app.bolt_middlewares import set_locale
 from app.env import USE_SLACK_LANGUAGE
 
 
@@ -15,8 +15,6 @@ def just_ack(ack: Ack):
 
 
 def register_listeners(app: App):
-    # TODO: remove this workaround once bolt-python attaches scopes to context under the hood
-    app.middleware(attach_bot_scopes)
 
     # Chat with the bot
     app.event("app_mention")(ack=just_ack, lazy=[respond_to_app_mention])
