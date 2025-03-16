@@ -1,8 +1,69 @@
+import logging
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import MagicMock
-from slack_bolt import BoltContext
+from slack_bolt import BoltContext, BoltResponse
 from slack_sdk.web import WebClient
-from app.bolt_middlewares import set_locale
+
+from app.bolt_middlewares import before_authorize, set_locale
+
+
+def test_before_authorize_skips_known_subtypes():
+    mock_logger = MagicMock(spec=logging.Logger)
+    mock_next = MagicMock()
+    body = {"event": {}}
+    payload = {"type": "message", "subtype": "message_changed"}
+
+    with patch("app.bolt_middlewares.is_event", return_value=True):
+        response = before_authorize(
+            body=body, payload=payload, logger=mock_logger, next_=mock_next
+        )
+        assert isinstance(response, BoltResponse)
+        assert response.status == 200
+        assert response.body == ""
+        mock_next.assert_not_called()
+
+
+def test_before_authorize_calls_next_for_other_events():
+    mock_logger = MagicMock(spec=logging.Logger)
+    mock_next = MagicMock()
+    body = {"event": {}}
+    payload = {"type": "message", "subtype": "new_message"}
+
+    with patch("app.bolt_middlewares.is_event", return_value=True):
+        response = before_authorize(
+            body=body, payload=payload, logger=mock_logger, next_=mock_next
+        )
+        assert response is None
+        mock_next.assert_called_once()
+
+
+def test_before_authorize_handles_non_message_events():
+    mock_logger = MagicMock(spec=logging.Logger)
+    mock_next = MagicMock()
+    body = {"event": {}}
+    payload = {"type": "other_event"}
+
+    with patch("app.bolt_middlewares.is_event", return_value=True):
+        response = before_authorize(
+            body=body, payload=payload, logger=mock_logger, next_=mock_next
+        )
+        assert response is None
+        mock_next.assert_called_once()
+
+
+def test_before_authorize_handles_non_event_bodies():
+    mock_logger = MagicMock(spec=logging.Logger)
+    mock_next = MagicMock()
+    body = {}
+    payload = {"type": "message", "subtype": "message_changed"}
+
+    with patch("app.bolt_middlewares.is_event", return_value=False):
+        response = before_authorize(
+            body=body, payload=payload, logger=mock_logger, next_=mock_next
+        )
+        assert response is None
+        mock_next.assert_called_once()
 
 
 @pytest.mark.parametrize(

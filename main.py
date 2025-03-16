@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=SLACK_APP_LOG_LEVEL)
 
-    app = create_bolt_app()
+    app = create_bolt_app(os.environ["SLACK_BOT_TOKEN"])
 
     handler = SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"])
     handler.start()
