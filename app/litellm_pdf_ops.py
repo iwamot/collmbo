@@ -2,7 +2,7 @@ import base64
 import logging
 from typing import Optional
 
-from app.slack_file_download_ops import download_slack_pdf_content
+from app.slack_file_download_ops import download_slack_file_content
 
 
 def get_pdf_content_if_exists(
@@ -22,7 +22,9 @@ def get_pdf_content_if_exists(
             if file_url is None:
                 logger.warning("Skipped a PDF file due to missing 'url_private'")
                 continue
-            pdf_bytes = download_slack_pdf_content(file_url, bot_token)
+            pdf_bytes = download_slack_file_content(
+                file_url, bot_token, ["application/pdf", "binary/octet-stream"]
+            )
             if not pdf_bytes.startswith(b"%PDF-"):
                 skipped_file_message = (
                     f"Skipped a file because it does not have a valid PDF header "
