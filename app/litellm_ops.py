@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import threading
 import time
 from importlib import import_module
@@ -19,13 +20,50 @@ from app.env import (
     LITELLM_TEMPERATURE,
     LITELLM_TOOLS_MODULE_NAME,
     SLACK_UPDATE_TEXT_BUFFER_SIZE,
+    TRANSLATE_MARKDOWN,
 )
-from app.message_formatting import format_assistant_reply
+from app.markdown_conversion import markdown_to_slack
 from app.slack_api_ops import post_wip_message, update_wip_message
 
-# ----------------------------
-# Internal functions
-# ----------------------------
+
+# Format message from LiteLLM to display in Slack
+def format_assistant_reply(content: str) -> str:
+    for o, n in [
+        # Remove leading newlines
+        ("^\n+", ""),
+        # Remove prepended Slack user ID
+        ("^<@U.*?>\\s?:\\s?", ""),
+        # Remove code block tags since Slack doesn't render them in a message
+        ("```\\s*[Rr]ust\n", "```\n"),
+        ("```\\s*[Rr]uby\n", "```\n"),
+        ("```\\s*[Ss]cala\n", "```\n"),
+        ("```\\s*[Kk]otlin\n", "```\n"),
+        ("```\\s*[Jj]ava\n", "```\n"),
+        ("```\\s*[Gg]o\n", "```\n"),
+        ("```\\s*[Ss]wift\n", "```\n"),
+        ("```\\s*[Oo]objective[Cc]\n", "```\n"),
+        ("```\\s*[Cc]\n", "```\n"),
+        ("```\\s*[Cc][+][+]\n", "```\n"),
+        ("```\\s*[Cc][Pp][Pp]\n", "```\n"),
+        ("```\\s*[Cc]sharp\n", "```\n"),
+        ("```\\s*[Mm][Aa][Tt][Ll][Aa][Bb]\n", "```\n"),
+        ("```\\s*[Jj][Ss][Oo][Nn]\n", "```\n"),
+        ("```\\s*[Ll]a[Tt]e[Xx]\n", "```\n"),
+        ("```\\s*[Ll][Uu][Aa]\n", "```\n"),
+        ("```\\s*[Cc][Mm][Aa][Kk][Ee]\n", "```\n"),
+        ("```\\s*bash\n", "```\n"),
+        ("```\\s*zsh\n", "```\n"),
+        ("```\\s*sh\n", "```\n"),
+        ("```\\s*[Ss][Qq][Ll]\n", "```\n"),
+        ("```\\s*[Pp][Hh][Pp]\n", "```\n"),
+        ("```\\s*[Pp][Ee][Rr][Ll]\n", "```\n"),
+        ("```\\s*[Jj]ava[Ss]cript\n", "```\n"),
+        ("```\\s*[Ty]ype[Ss]cript\n", "```\n"),
+        ("```\\s*[Pp]ython\n", "```\n"),
+    ]:
+        content = re.sub(o, n, content)
+    return content
+
 
 litellm.drop_params = True
 
@@ -178,8 +216,12 @@ def consume_litellm_stream_to_write_reply(
 
                     def update_message():
                         assistant_reply_text = format_assistant_reply(
-                            assistant_reply["content"], translate_markdown
+                            assistant_reply["content"]
                         )
+                        if TRANSLATE_MARKDOWN:
+                            assistant_reply_text = markdown_to_slack(
+                                assistant_reply_text
+                            )
                         wip_reply["message"]["text"] = assistant_reply_text
                         update_wip_message(
                             client=client,
@@ -209,9 +251,9 @@ def consume_litellm_stream_to_write_reply(
 
         # Append any remaining text to the message
         if len(assistant_reply["content"]) > 0:
-            assistant_reply_text = format_assistant_reply(
-                assistant_reply["content"], translate_markdown
-            )
+            assistant_reply_text = format_assistant_reply(assistant_reply["content"])
+            if TRANSLATE_MARKDOWN:
+                assistant_reply_text = markdown_to_slack(assistant_reply_text)
             wip_reply["message"]["text"] = assistant_reply_text
             update_wip_message(
                 client=client,

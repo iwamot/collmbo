@@ -23,7 +23,7 @@ from app.litellm_ops import (
     start_receiving_litellm_response,
 )
 from app.litellm_pdf_ops import get_pdf_content_if_exists, trim_pdf_content
-from app.message_formatting import build_system_text, format_litellm_message_content
+from app.markdown_conversion import slack_to_markdown
 from app.sensitive_info_redaction import redact_string
 from app.slack_api_ops import (
     find_parent_message,
@@ -36,6 +36,17 @@ from app.slack_constants import DEFAULT_LOADING_TEXT, TIMEOUT_ERROR_MESSAGE
 
 def can_bot_read_files(bot_scopes: Optional[Sequence[str]]) -> bool:
     return bot_scopes is not None and "files:read" in bot_scopes
+
+
+# Format message from Slack to send to LiteLLM
+def format_litellm_message_content(content: str) -> str:
+    # Unescape &, < and >, since Slack replaces these with their HTML equivalents
+    # See also: https://api.slack.com/reference/surfaces/formatting#escaping
+    return content.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
+
+
+def build_system_text(system_text_template: str, bot_user_id: Optional[str]):
+    return system_text_template.format(bot_user_id=bot_user_id)
 
 
 def respond_to_app_mention(
@@ -55,9 +66,9 @@ def respond_to_app_mention(
 
     wip_reply = None
     # Replace placeholder for Slack user ID in the system prompt
-    system_text = build_system_text(
-        SYSTEM_TEXT, TRANSLATE_MARKDOWN, context.bot_user_id
-    )
+    system_text = build_system_text(SYSTEM_TEXT, context.bot_user_id)
+    if TRANSLATE_MARKDOWN:
+        system_text = slack_to_markdown(system_text)
     messages: list[dict] = [{"role": "system", "content": system_text}]
 
     try:
@@ -74,10 +85,13 @@ def respond_to_app_mention(
             ).get("messages", [])
             for reply in replies_in_thread:
                 reply_text = redact_string(reply.get("text") or "")
+                reply_text = format_litellm_message_content(reply_text)
+                if TRANSLATE_MARKDOWN:
+                    reply_text = slack_to_markdown(reply_text)
                 message_text_item = {
                     "type": "text",
                     "text": f"<@{reply['user'] if 'user' in reply else reply['username']}>: "
-                    + format_litellm_message_content(reply_text, TRANSLATE_MARKDOWN),
+                    + reply_text,
                 }
                 content = [message_text_item]
 
@@ -124,11 +138,10 @@ def respond_to_app_mention(
             # Strip bot Slack user ID from initial message
             msg_text = re.sub(f"<@{context.bot_user_id}>\\s*", "", payload["text"])
             msg_text = redact_string(msg_text)
-            message_text_item = {
-                "type": "text",
-                "text": f"<@{user_id}>: "
-                + format_litellm_message_content(msg_text, TRANSLATE_MARKDOWN),
-            }
+            msg_text = format_litellm_message_content(msg_text)
+            if TRANSLATE_MARKDOWN:
+                msg_text = slack_to_markdown(msg_text)
+            message_text_item = {"type": "text", "text": f"<@{user_id}>: {msg_text}"}
             content = [message_text_item]
 
             if (
@@ -367,9 +380,9 @@ def respond_to_new_message(
             filter(lambda msg: msg["role"] == "system", messages), None
         ):
             # Replace placeholder for Slack user ID in the system prompt
-            system_text = build_system_text(
-                SYSTEM_TEXT, TRANSLATE_MARKDOWN, context.bot_user_id
-            )
+            system_text = build_system_text(SYSTEM_TEXT, context.bot_user_id)
+            if TRANSLATE_MARKDOWN:
+                system_text = slack_to_markdown(system_text)
             messages.insert(0, {"role": "system", "content": system_text})
 
         filtered_messages_in_context = []
@@ -387,13 +400,10 @@ def respond_to_new_message(
         for reply in filtered_messages_in_context:
             msg_user_id = reply.get("user")
             reply_text = redact_string(reply.get("text") or "")
-            content = [
-                {
-                    "type": "text",
-                    "text": f"<@{msg_user_id}>: "
-                    + format_litellm_message_content(reply_text, TRANSLATE_MARKDOWN),
-                }
-            ]
+            reply_text = format_litellm_message_content(reply_text)
+            if TRANSLATE_MARKDOWN:
+                reply_text = slack_to_markdown(reply_text)
+            content = [{"type": "text", "text": f"<@{msg_user_id}>: {reply_text}"}]
             if (
                 reply.get("bot_id") is None
                 and context.authorize_result is not None
