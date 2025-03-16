@@ -1,11 +1,11 @@
-from app.message_formatting import (
-    format_assistant_reply,
-    format_litellm_message_content,
-)
+import pytest
+
+from app.litellm_ops import format_assistant_reply
 
 
-def test_format_assistant_reply():
-    for content, expected in [
+@pytest.mark.parametrize(
+    "content, expected",
+    [
         (
             "\n\nSorry, I cannot answer the question.",
             "Sorry, I cannot answer the question.",
@@ -44,28 +44,8 @@ def test_format_assistant_reply():
         ("\n\n```bash\n#!/bin/bash\n```", "```\n#!/bin/bash\n```"),
         ("\n\n```zsh\n#!/bin/zsh\n```", "```\n#!/bin/zsh\n```"),
         ("\n\n```sh\n#!/bin/sh\n```", "```\n#!/bin/sh\n```"),
-    ]:
-        result = format_assistant_reply(content, False)
-        assert result == expected
-
-
-def test_format_litellm_message_content():
-    # https://github.com/seratch/ChatGPT-in-Slack/pull/5
-    for content, expected in [
-        (
-            """#include &lt;stdio.h&gt;
-int main(int argc, char *argv[])
-{
-    printf("Hello, world!\n");
-    return 0;
-}""",
-            """#include <stdio.h>
-int main(int argc, char *argv[])
-{
-    printf("Hello, world!\n");
-    return 0;
-}""",
-        ),
-    ]:
-        result = format_litellm_message_content(content, False)
-        assert result == expected
+    ],
+)
+def test_format_assistant_reply(content, expected):
+    result = format_assistant_reply(content)
+    assert result == expected
