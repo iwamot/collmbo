@@ -1,15 +1,17 @@
 import logging
 import re
 import time
-from typing import Optional
+from typing import Optional, Sequence
 
 from litellm.exceptions import Timeout
 from slack_bolt import BoltContext
 from slack_sdk.web import WebClient
 
 from app.env import (
+    IMAGE_FILE_ACCESS_ENABLED,
     LITELLM_TEMPERATURE,
     LITELLM_TIMEOUT_SECONDS,
+    PDF_FILE_ACCESS_ENABLED,
     SYSTEM_TEXT,
     TRANSLATE_MARKDOWN,
 )
@@ -30,10 +32,10 @@ from app.slack_api_ops import (
     update_wip_message,
 )
 from app.slack_constants import DEFAULT_LOADING_TEXT, TIMEOUT_ERROR_MESSAGE
-from app.slack_settings import (
-    can_send_image_url_to_litellm,
-    can_send_pdf_url_to_litellm,
-)
+
+
+def can_bot_read_files(bot_scopes: Optional[Sequence[str]]) -> bool:
+    return bot_scopes is not None and "files:read" in bot_scopes
 
 
 def respond_to_app_mention(
@@ -82,9 +84,8 @@ def respond_to_app_mention(
                 if (
                     reply.get("bot_id") is None
                     and context.authorize_result is not None
-                    and can_send_image_url_to_litellm(
-                        context.authorize_result.bot_scopes
-                    )
+                    and IMAGE_FILE_ACCESS_ENABLED
+                    and can_bot_read_files(context.authorize_result.bot_scopes)
                 ):
                     if context.bot_token is None:
                         raise ValueError("context.bot_token cannot be None")
@@ -97,7 +98,8 @@ def respond_to_app_mention(
                 if (
                     reply.get("bot_id") is None
                     and context.authorize_result is not None
-                    and can_send_pdf_url_to_litellm(context.authorize_result.bot_scopes)
+                    and PDF_FILE_ACCESS_ENABLED
+                    and can_bot_read_files(context.authorize_result.bot_scopes)
                 ):
                     if context.bot_token is None:
                         raise ValueError("context.bot_token cannot be None")
@@ -132,7 +134,8 @@ def respond_to_app_mention(
             if (
                 payload.get("bot_id") is None
                 and context.authorize_result is not None
-                and can_send_image_url_to_litellm(context.authorize_result.bot_scopes)
+                and IMAGE_FILE_ACCESS_ENABLED
+                and can_bot_read_files(context.authorize_result.bot_scopes)
             ):
                 if context.bot_token is None:
                     raise ValueError("context.bot_token cannot be None")
@@ -144,7 +147,8 @@ def respond_to_app_mention(
             if (
                 payload.get("bot_id") is None
                 and context.authorize_result is not None
-                and can_send_pdf_url_to_litellm(context.authorize_result.bot_scopes)
+                and PDF_FILE_ACCESS_ENABLED
+                and can_bot_read_files(context.authorize_result.bot_scopes)
             ):
                 if context.bot_token is None:
                     raise ValueError("context.bot_token cannot be None")
@@ -393,7 +397,8 @@ def respond_to_new_message(
             if (
                 reply.get("bot_id") is None
                 and context.authorize_result is not None
-                and can_send_image_url_to_litellm(context.authorize_result.bot_scopes)
+                and IMAGE_FILE_ACCESS_ENABLED
+                and can_bot_read_files(context.authorize_result.bot_scopes)
             ):
                 if context.bot_token is None:
                     raise ValueError("context.bot_token cannot be None")
@@ -405,7 +410,8 @@ def respond_to_new_message(
             if (
                 reply.get("bot_id") is None
                 and context.authorize_result is not None
-                and can_send_pdf_url_to_litellm(context.authorize_result.bot_scopes)
+                and PDF_FILE_ACCESS_ENABLED
+                and can_bot_read_files(context.authorize_result.bot_scopes)
             ):
                 if context.bot_token is None:
                     raise ValueError("context.bot_token cannot be None")
