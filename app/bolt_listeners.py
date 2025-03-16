@@ -36,7 +36,14 @@ from app.slack_api_ops import (
     post_wip_message,
     update_wip_message,
 )
-from app.slack_constants import DEFAULT_LOADING_TEXT, TIMEOUT_ERROR_MESSAGE
+
+TIMEOUT_ERROR_MESSAGE = (
+    f":warning: Apologies! It seems that the AI didn't respond within the {LITELLM_TIMEOUT_SECONDS}-second timeframe. "
+    "Please try your request again later. "
+    "If you wish to extend the timeout limit, "
+    "you may consider deploying this app with customized settings on your infrastructure. :bow:"
+)
+LOADING_TEXT = ":hourglass_flowing_sand: Wait a second, please ..."
 
 
 def can_bot_read_files(bot_scopes: Optional[Sequence[str]]) -> bool:
@@ -207,9 +214,7 @@ def respond_to_app_mention(
 
             messages.append({"role": "user", "content": content})
 
-        loading_text = translate(
-            locale=context.get("locale"), text=DEFAULT_LOADING_TEXT
-        )
+        loading_text = translate(locale=context.get("locale"), text=LOADING_TEXT)
         if context.channel_id is None:
             raise ValueError("context.channel_id cannot be None")
         if context.user_id is None:
@@ -479,9 +484,7 @@ def respond_to_new_message(
                 }
             )
 
-        loading_text = translate(
-            locale=context.get("locale"), text=DEFAULT_LOADING_TEXT
-        )
+        loading_text = translate(locale=context.get("locale"), text=LOADING_TEXT)
         if context.channel_id is None:
             raise ValueError("context.channel_id cannot be None")
         if user_id is None:
