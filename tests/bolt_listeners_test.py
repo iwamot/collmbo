@@ -5,6 +5,7 @@ from slack_sdk.web import WebClient
 
 from app.bolt_listeners import (
     build_system_text,
+    can_bot_read_files,
     find_parent_message,
     format_litellm_message_content,
     is_this_app_mentioned,
@@ -63,6 +64,18 @@ def test_find_parent_message_with_invalid_response():
 )
 def test_is_this_app_mentioned(bot_user_id, parent_message, expected):
     assert is_this_app_mentioned(bot_user_id, parent_message) == expected
+
+
+@pytest.mark.parametrize(
+    "bot_scopes, expected",
+    [
+        (None, False),
+        (["chat:write", "users:read"], False),
+        (["files:read", "chat:write"], True),
+    ],
+)
+def test_can_bot_read_files(bot_scopes, expected):
+    assert can_bot_read_files(bot_scopes) == expected
 
 
 @pytest.mark.parametrize(
