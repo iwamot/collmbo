@@ -51,8 +51,9 @@ def test_format_assistant_reply(content, expected):
     assert result == expected
 
 
-def test_markdown_to_slack():
-    for content, expected in [
+@pytest.mark.parametrize(
+    "content, expected",
+    [
         (
             "Sentence with **bold text**, __bold text__, *italic text*, _italic text_ and ~~strikethrough text~~.",
             "Sentence with *bold text*, *bold text*, _italic text_, _italic text_ and ~strikethrough text~.",
@@ -110,6 +111,8 @@ else:
     q, r, t, k, n, l = q*l, (2*q+r)*l, t*l, k+1, (q*(7*k+2)+r*l)//(t*l), l+2
 ```""",
         ),
-    ]:
-        result = markdown_to_slack(content)
-        assert result == expected
+    ],
+)
+def test_markdown_to_slack(content, expected):
+    result = markdown_to_slack(content)
+    assert result == expected

@@ -111,8 +111,9 @@ def test_build_system_text():
     assert result == expected_output
 
 
-def test_slack_to_markdown():
-    for content, expected in [
+@pytest.mark.parametrize(
+    "content, expected",
+    [
         (
             "Sentence with *bold text*, _italic text_ and ~strikethrough text~.",
             "Sentence with **bold text**, *italic text* and ~~strikethrough text~~.",
@@ -162,9 +163,11 @@ else:
     q, r, t, k, n, l = q*l, (2*q+r)*l, t*l, k+1, (q*(7*k+2)+r*l)//(t*l), l+2
 ```""",
         ),
-    ]:
-        result = slack_to_markdown(content)
-        assert result == expected
+    ],
+)
+def test_slack_to_markdown(content, expected):
+    result = slack_to_markdown(content)
+    assert result == expected
 
 
 @pytest.mark.parametrize(
