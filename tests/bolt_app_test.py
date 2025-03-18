@@ -13,7 +13,7 @@ def test_just_ack():
     mock_ack.assert_called_once()
 
 
-def test_create_bolt_app_with_event_listeners_and_middleware():
+def test_create_bolt_app_with_locale():
     mock_slack_bot_token = "xoxb-12345-67890-abcde"
     mock_rate_limit_handler = MagicMock()
 
@@ -26,7 +26,9 @@ def test_create_bolt_app_with_event_listeners_and_middleware():
         mock_app_instance.client.retry_handlers = [mock_rate_limit_handler]
         mock_app_class.return_value = mock_app_instance
 
-        app = create_bolt_app(slack_bot_token=mock_slack_bot_token)
+        app = create_bolt_app(
+            slack_bot_token=mock_slack_bot_token, use_slack_language=True
+        )
 
         assert app is mock_app_instance
 
@@ -49,3 +51,15 @@ def test_create_bolt_app_with_event_listeners_and_middleware():
         )
 
         mock_app_instance.middleware.assert_called_once_with(set_locale)
+
+
+def test_create_bolt_app_without_locale():
+    mock_slack_bot_token = "xoxb-12345-67890-abcde"
+
+    with patch("app.bolt_app.App") as mock_app_class:
+        mock_app_instance = MagicMock(spec=App)
+        mock_app_class.return_value = mock_app_instance
+
+        create_bolt_app(slack_bot_token=mock_slack_bot_token, use_slack_language=False)
+
+        mock_app_instance.middleware.assert_not_called()
