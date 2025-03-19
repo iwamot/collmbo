@@ -29,23 +29,6 @@ def mock_context():
     return context
 
 
-@patch(
-    "app.bolt_listeners.find_parent_message",
-    return_value={"text": "Hello <@U87654321>"},
-)
-@patch("app.bolt_listeners.is_this_app_mentioned", return_value=True)
-def test_is_child_message_and_mentioned_true(
-    mock_is_mentioned, mock_find_parent, mock_client, mock_context
-):
-    assert is_child_message_and_mentioned(mock_client, mock_context, "12345") is True
-    mock_find_parent.assert_called_once_with(
-        mock_client, mock_context.channel_id, "12345"
-    )
-    mock_is_mentioned.assert_called_once_with(
-        mock_context.bot_user_id, {"text": "Hello <@U87654321>"}
-    )
-
-
 def test_find_parent_message_with_valid_response():
     mock_client = MagicMock(spec=WebClient)
     mock_client.conversations_history.return_value = {
@@ -142,6 +125,23 @@ def test_is_child_message_and_mentioned_not_mentioned(
     )
     mock_is_mentioned.assert_called_once_with(
         mock_context.bot_user_id, {"text": "Hello"}
+    )
+
+
+@patch(
+    "app.bolt_listeners.find_parent_message",
+    return_value={"text": "Hello <@U87654321>"},
+)
+@patch("app.bolt_listeners.is_this_app_mentioned", return_value=True)
+def test_is_child_message_and_mentioned_true(
+    mock_is_mentioned, mock_find_parent, mock_client, mock_context
+):
+    assert is_child_message_and_mentioned(mock_client, mock_context, "12345") is True
+    mock_find_parent.assert_called_once_with(
+        mock_client, mock_context.channel_id, "12345"
+    )
+    mock_is_mentioned.assert_called_once_with(
+        mock_context.bot_user_id, {"text": "Hello <@U87654321>"}
     )
 
 
