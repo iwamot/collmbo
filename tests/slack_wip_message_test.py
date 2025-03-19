@@ -29,7 +29,7 @@ def test_post_wip_message_including_user_messages():
         thread_ts="123456.789",
         text="Loading...",
         metadata={
-            "event_type": "litellm-convo",
+            "event_type": "collmbo-convo",
             "event_payload": {
                 "messages": [
                     {"role": "system", "content": "System message 1"},
@@ -66,7 +66,7 @@ def test_update_wip_message_including_user_messages():
         ts="123456.789",
         text="Updated message",
         metadata={
-            "event_type": "litellm-convo",
+            "event_type": "collmbo-convo",
             "event_payload": {
                 "messages": [
                     {"role": "system", "content": "Updated system message 1"},
