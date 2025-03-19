@@ -1,17 +1,49 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
+from slack_bolt import BoltContext
 from slack_sdk.web import WebClient
 
 from app.bolt_listeners import (
-    build_system_text,
+    build_system_message,
     can_bot_read_files,
     find_parent_message,
     format_litellm_message_content,
+    is_child_message_and_mentioned,
     is_this_app_mentioned,
     redact_string,
     slack_to_markdown,
 )
+
+
+@pytest.fixture
+def mock_client():
+    return MagicMock(spec=WebClient)
+
+
+@pytest.fixture
+def mock_context():
+    context = MagicMock(spec=BoltContext)
+    context.channel_id = "C12345678"
+    context.bot_user_id = "U87654321"
+    return context
+
+
+@patch(
+    "app.bolt_listeners.find_parent_message",
+    return_value={"text": "Hello <@U87654321>"},
+)
+@patch("app.bolt_listeners.is_this_app_mentioned", return_value=True)
+def test_is_child_message_and_mentioned_true(
+    mock_is_mentioned, mock_find_parent, mock_client, mock_context
+):
+    assert is_child_message_and_mentioned(mock_client, mock_context, "12345") is True
+    mock_find_parent.assert_called_once_with(
+        mock_client, mock_context.channel_id, "12345"
+    )
+    mock_is_mentioned.assert_called_once_with(
+        mock_context.bot_user_id, {"text": "Hello <@U87654321>"}
+    )
 
 
 def test_find_parent_message_with_valid_response():
@@ -66,6 +98,81 @@ def test_is_this_app_mentioned(bot_user_id, parent_message, expected):
     assert is_this_app_mentioned(bot_user_id, parent_message) == expected
 
 
+@patch("app.bolt_listeners.find_parent_message", return_value=None)
+@patch("app.bolt_listeners.is_this_app_mentioned")
+def test_is_child_message_and_mentioned_no_channel_id(
+    mock_is_mentioned, mock_find_parent, mock_client, mock_context
+):
+    mock_context.channel_id = None
+    assert is_child_message_and_mentioned(mock_client, mock_context, "12345") is False
+    mock_find_parent.assert_not_called()
+    mock_is_mentioned.assert_not_called()
+
+
+@patch("app.bolt_listeners.find_parent_message", return_value=None)
+@patch("app.bolt_listeners.is_this_app_mentioned")
+def test_is_child_message_and_mentioned_no_thread_ts(
+    mock_is_mentioned, mock_find_parent, mock_client, mock_context
+):
+    assert is_child_message_and_mentioned(mock_client, mock_context, None) is False
+    mock_find_parent.assert_not_called()
+    mock_is_mentioned.assert_not_called()
+
+
+@patch("app.bolt_listeners.find_parent_message", return_value=None)
+@patch("app.bolt_listeners.is_this_app_mentioned")
+def test_is_child_message_and_mentioned_no_parent_message(
+    mock_is_mentioned, mock_find_parent, mock_client, mock_context
+):
+    assert is_child_message_and_mentioned(mock_client, mock_context, "12345") is False
+    mock_find_parent.assert_called_once_with(
+        mock_client, mock_context.channel_id, "12345"
+    )
+    mock_is_mentioned.assert_not_called()
+
+
+@patch("app.bolt_listeners.find_parent_message", return_value={"text": "Hello"})
+@patch("app.bolt_listeners.is_this_app_mentioned", return_value=False)
+def test_is_child_message_and_mentioned_not_mentioned(
+    mock_is_mentioned, mock_find_parent, mock_client, mock_context
+):
+    assert is_child_message_and_mentioned(mock_client, mock_context, "12345") is False
+    mock_find_parent.assert_called_once_with(
+        mock_client, mock_context.channel_id, "12345"
+    )
+    mock_is_mentioned.assert_called_once_with(
+        mock_context.bot_user_id, {"text": "Hello"}
+    )
+
+
+def test_build_system_message_without_markdown_translation():
+    template = "Hello, {bot_user_id}!"
+    bot_user_id = "U12345678"
+
+    expected_output = {"role": "system", "content": "Hello, U12345678!"}
+
+    with patch("app.bolt_listeners.slack_to_markdown") as mock_slack_to_markdown:
+        result = build_system_message(template, bot_user_id, translate_markdown=False)
+
+        mock_slack_to_markdown.assert_not_called()
+
+        assert result == expected_output
+
+
+def test_build_system_message_with_markdown_translation():
+    template = "Hello, *{bot_user_id}*!"
+    bot_user_id = "U12345678"
+
+    with patch(
+        "app.bolt_listeners.slack_to_markdown", return_value="mocked_markdown"
+    ) as mock_slack_to_markdown:
+        result = build_system_message(template, bot_user_id, translate_markdown=True)
+
+        mock_slack_to_markdown.assert_called_once_with("Hello, *U12345678*!")
+
+        assert result == {"role": "system", "content": "mocked_markdown"}
+
+
 @pytest.mark.parametrize(
     "bot_scopes, expected",
     [
@@ -100,15 +207,6 @@ int main(int argc, char *argv[])
 def test_format_litellm_message_content(content, expected):
     result = format_litellm_message_content(content)
     assert result == expected
-
-
-def test_build_system_text():
-    template = "Hello, {bot_user_id}!"
-    bot_user_id = "U12345678"
-    expected_output = "Hello, U12345678!"
-
-    result = build_system_text(template, bot_user_id)
-    assert result == expected_output
 
 
 @pytest.mark.parametrize(

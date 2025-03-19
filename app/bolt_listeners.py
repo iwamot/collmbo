@@ -61,6 +61,28 @@ def is_this_app_mentioned(bot_user_id: Optional[str], parent_message: dict) -> b
     return f"<@{bot_user_id}>" in parent_message_text
 
 
+def is_child_message_and_mentioned(
+    client: WebClient,
+    context: BoltContext,
+    thread_ts: Optional[str],
+) -> bool:
+    if context.channel_id is None or thread_ts is None:
+        return False
+    parent_message = find_parent_message(client, context.channel_id, thread_ts)
+    return parent_message is not None and is_this_app_mentioned(
+        context.bot_user_id, parent_message
+    )
+
+
+def build_system_message(
+    system_text_template: str, bot_user_id: Optional[str], translate_markdown: bool
+) -> dict:
+    system_text = system_text_template.format(bot_user_id=bot_user_id)
+    if translate_markdown:
+        system_text = slack_to_markdown(system_text)
+    return {"role": "system", "content": system_text}
+
+
 def can_bot_read_files(bot_scopes: Optional[Sequence[str]]) -> bool:
     return bot_scopes is not None and "files:read" in bot_scopes
 
@@ -70,10 +92,6 @@ def format_litellm_message_content(content: str) -> str:
     # Unescape &, < and >, since Slack replaces these with their HTML equivalents
     # See also: https://api.slack.com/reference/surfaces/formatting#escaping
     return content.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
-
-
-def build_system_text(system_text_template: str, bot_user_id: Optional[str]):
-    return system_text_template.format(bot_user_id=bot_user_id)
 
 
 # Conversion from Slack mrkdwn to Markdown
@@ -129,21 +147,16 @@ def respond_to_app_mention(
     logger: logging.Logger,
 ):
     thread_ts = payload.get("thread_ts")
-    if thread_ts is not None:
-        parent_message = find_parent_message(client, context.channel_id, thread_ts)
-        if parent_message is not None and is_this_app_mentioned(
-            context.bot_user_id, parent_message
-        ):
-            # The message event handler will reply to this
-            return
+    if is_child_message_and_mentioned(client, context, thread_ts):
+        # The message event handler will reply to this
+        return
+
+    system_message = build_system_message(
+        SYSTEM_TEXT, context.bot_user_id, TRANSLATE_MARKDOWN
+    )
+    messages: list[dict] = [system_message]
 
     wip_reply = None
-    # Replace placeholder for Slack user ID in the system prompt
-    system_text = build_system_text(SYSTEM_TEXT, context.bot_user_id)
-    if TRANSLATE_MARKDOWN:
-        system_text = slack_to_markdown(system_text)
-    messages: list[dict] = [{"role": "system", "content": system_text}]
-
     try:
         user_id = context.actor_user_id or context.user_id
         if thread_ts is not None:
@@ -453,11 +466,10 @@ def respond_to_new_message(
         if (is_in_dm_with_bot or last_assistant_idx == -1) and not next(
             filter(lambda msg: msg["role"] == "system", messages), None
         ):
-            # Replace placeholder for Slack user ID in the system prompt
-            system_text = build_system_text(SYSTEM_TEXT, context.bot_user_id)
-            if TRANSLATE_MARKDOWN:
-                system_text = slack_to_markdown(system_text)
-            messages.insert(0, {"role": "system", "content": system_text})
+            system_message = build_system_message(
+                SYSTEM_TEXT, context.bot_user_id, TRANSLATE_MARKDOWN
+            )
+            messages.insert(0, system_message)
 
         filtered_messages_in_context = []
         for idx, reply in enumerate(messages_in_context):
