@@ -18,7 +18,7 @@ def post_wip_message(
         thread_ts=thread_ts,
         text=loading_text,
         metadata={
-            "event_type": "litellm-convo",
+            "event_type": "collmbo-convo",
             "event_payload": {"messages": system_messages, "user": user},
         },
     )
@@ -38,7 +38,7 @@ def update_wip_message(
         ts=ts,
         text=text,
         metadata={
-            "event_type": "litellm-convo",
+            "event_type": "collmbo-convo",
             "event_payload": {"messages": system_messages, "user": user},
         },
     )

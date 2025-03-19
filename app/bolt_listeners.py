@@ -442,7 +442,7 @@ def respond_to_new_message(
         indices_to_remove = []
         for idx, reply in enumerate(messages_in_context):
             maybe_event_type = reply.get("metadata", {}).get("event_type")
-            if maybe_event_type == "litellm":
+            if maybe_event_type == "collmbo-convo":
                 if context.bot_id != reply.get("bot_id"):
                     # Remove messages by a different app
                     indices_to_remove.append(idx)
