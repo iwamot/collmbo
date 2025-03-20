@@ -1,4 +1,4 @@
-slack-bolt==1.22.0
+slack-bolt==1.23.0
 slack-sdk==3.35.0
 litellm==1.63.11
 pillow==11.1.0
