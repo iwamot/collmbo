@@ -78,8 +78,7 @@ def build_system_message(
     system_text_template: str, bot_user_id: Optional[str], translate_markdown: bool
 ) -> dict:
     system_text = system_text_template.format(bot_user_id=bot_user_id)
-    if translate_markdown:
-        system_text = slack_to_markdown(system_text)
+    system_text = maybe_slack_to_markdown(system_text, translate_markdown)
     return {"role": "system", "content": system_text}
 
 
@@ -96,7 +95,10 @@ def format_litellm_message_content(content: str) -> str:
 
 # Conversion from Slack mrkdwn to Markdown
 # See also: https://api.slack.com/reference/surfaces/formatting#basics
-def slack_to_markdown(content: str) -> str:
+def maybe_slack_to_markdown(content: str, translate_markdown: bool) -> str:
+    if not translate_markdown:
+        return content
+
     # Split the input string into parts based on code blocks and inline code
     parts = re.split(r"(?s)(```.+?```|`[^`\n]+?`)", content)
 
@@ -123,17 +125,25 @@ REDACT_PATTERNS = [
 ]
 
 
-def redact_string(input_string: str, patterns: List[Tuple[str, str]]) -> str:
+def maybe_redact_string(
+    input_string: str,
+    patterns: List[Tuple[str, str]],
+    redaction_enabled: bool = True,
+) -> str:
     """
-    Redact sensitive information from a string (inspired by @quangnhut123)
+    Optionally redact sensitive information from a string (inspired by @quangnhut123)
 
     Args:
-        - input_string (str): The string to redact
+        - input_string (str): The string to potentially redact
         - patterns (list[tuple]): A list of tuples where each tuple contains (regex pattern, replacement string)
+        - redaction_enabled (bool): Whether redaction should be applied
 
     Returns:
-        - str: The redacted string
+        - str: The redacted string (or original if disabled)
     """
+    if not redaction_enabled:
+        return input_string
+
     output_string = input_string
     for pattern, replacement in patterns:
         output_string = re.sub(pattern, replacement, output_string)
@@ -146,6 +156,9 @@ def respond_to_app_mention(
     client: WebClient,
     logger: logging.Logger,
 ):
+    if context.channel_id is None:
+        raise ValueError("context.channel_id cannot be None")
+
     thread_ts = payload.get("thread_ts")
     if is_child_message_and_mentioned(client, context, thread_ts):
         # The message event handler will reply to this
@@ -156,13 +169,12 @@ def respond_to_app_mention(
     )
     messages: list[dict] = [system_message]
 
+    user_id = context.actor_user_id or context.user_id
+
     wip_reply = None
     try:
-        user_id = context.actor_user_id or context.user_id
         if thread_ts is not None:
             # Mentioning the bot user in a thread
-            if context.channel_id is None:
-                raise ValueError("context.channel_id cannot be None")
             replies_in_thread: list[dict] = client.conversations_replies(
                 channel=context.channel_id,
                 ts=thread_ts,
@@ -171,11 +183,11 @@ def respond_to_app_mention(
             ).get("messages", [])
             for reply in replies_in_thread:
                 reply_text = reply.get("text") or ""
-                if REDACTION_ENABLED:
-                    reply_text = redact_string(reply_text, REDACT_PATTERNS)
+                reply_text = maybe_redact_string(
+                    reply_text, REDACT_PATTERNS, REDACTION_ENABLED
+                )
                 reply_text = format_litellm_message_content(reply_text)
-                if TRANSLATE_MARKDOWN:
-                    reply_text = slack_to_markdown(reply_text)
+                reply_text = maybe_slack_to_markdown(reply_text, TRANSLATE_MARKDOWN)
                 message_text_item = {
                     "type": "text",
                     "text": f"<@{reply['user'] if 'user' in reply else reply['username']}>: "
@@ -225,11 +237,9 @@ def respond_to_app_mention(
         else:
             # Strip bot Slack user ID from initial message
             msg_text = re.sub(f"<@{context.bot_user_id}>\\s*", "", payload["text"])
-            if REDACTION_ENABLED:
-                msg_text = redact_string(msg_text, REDACT_PATTERNS)
+            msg_text = maybe_redact_string(msg_text, REDACT_PATTERNS, REDACTION_ENABLED)
             msg_text = format_litellm_message_content(msg_text)
-            if TRANSLATE_MARKDOWN:
-                msg_text = slack_to_markdown(msg_text)
+            msg_text = maybe_slack_to_markdown(msg_text, TRANSLATE_MARKDOWN)
             message_text_item = {"type": "text", "text": f"<@{user_id}>: {msg_text}"}
             content = [message_text_item]
 
@@ -263,8 +273,6 @@ def respond_to_app_mention(
             messages.append({"role": "user", "content": content})
 
         loading_text = translate(locale=context.get("locale"), text=LOADING_TEXT)
-        if context.channel_id is None:
-            raise ValueError("context.channel_id cannot be None")
         if context.user_id is None:
             raise ValueError("user_id cannot be None")
         wip_reply = post_wip_message(
@@ -486,11 +494,11 @@ def respond_to_new_message(
         for reply in filtered_messages_in_context:
             msg_user_id = reply.get("user")
             reply_text = reply.get("text") or ""
-            if REDACTION_ENABLED:
-                reply_text = redact_string(reply_text, REDACT_PATTERNS)
+            reply_text = maybe_redact_string(
+                reply_text, REDACT_PATTERNS, REDACTION_ENABLED
+            )
             reply_text = format_litellm_message_content(reply_text)
-            if TRANSLATE_MARKDOWN:
-                reply_text = slack_to_markdown(reply_text)
+            reply_text = maybe_slack_to_markdown(reply_text, TRANSLATE_MARKDOWN)
             content = [{"type": "text", "text": f"<@{msg_user_id}>: {reply_text}"}]
             if (
                 reply.get("bot_id") is None
