@@ -11,8 +11,8 @@ from app.bolt_listeners import (
     format_litellm_message_content,
     is_child_message_and_mentioned,
     is_this_app_mentioned,
-    redact_string,
-    slack_to_markdown,
+    maybe_redact_string,
+    maybe_slack_to_markdown,
 )
 
 
@@ -145,32 +145,28 @@ def test_is_child_message_and_mentioned_true(
     )
 
 
-def test_build_system_message_without_markdown_translation():
-    template = "Hello, {bot_user_id}!"
-    bot_user_id = "U12345678"
-
-    expected_output = {"role": "system", "content": "Hello, U12345678!"}
-
-    with patch("app.bolt_listeners.slack_to_markdown") as mock_slack_to_markdown:
-        result = build_system_message(template, bot_user_id, translate_markdown=False)
-
-        mock_slack_to_markdown.assert_not_called()
-
-        assert result == expected_output
-
-
-def test_build_system_message_with_markdown_translation():
-    template = "Hello, *{bot_user_id}*!"
-    bot_user_id = "U12345678"
-
-    with patch(
-        "app.bolt_listeners.slack_to_markdown", return_value="mocked_markdown"
-    ) as mock_slack_to_markdown:
-        result = build_system_message(template, bot_user_id, translate_markdown=True)
-
-        mock_slack_to_markdown.assert_called_once_with("Hello, *U12345678*!")
-
-        assert result == {"role": "system", "content": "mocked_markdown"}
+@pytest.mark.parametrize(
+    "template, bot_user_id, translate_markdown, expected_content",
+    [
+        (
+            "Hello, {bot_user_id}!",
+            "U12345678",
+            False,
+            "Hello, U12345678!",
+        ),
+        (
+            "Hello, *{bot_user_id}* and _you_!",
+            "U12345678",
+            True,
+            "Hello, **U12345678** and *you*!",
+        ),
+    ],
+)
+def test_build_system_message(
+    template, bot_user_id, translate_markdown, expected_content
+):
+    result = build_system_message(template, bot_user_id, translate_markdown)
+    assert result == {"role": "system", "content": expected_content}
 
 
 @pytest.mark.parametrize(
@@ -263,9 +259,41 @@ else:
         ),
     ],
 )
-def test_slack_to_markdown(content, expected):
-    result = slack_to_markdown(content)
+def test_maybe_slack_to_markdown_enabled(content, expected):
+    result = maybe_slack_to_markdown(content, translate_markdown=True)
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        ("Sentence with *bold text*, _italic text_ and ~strikethrough text~.",),
+        ("Sentence with _*bold and italic text*_ and *_bold and italic text_*.",),
+        ("Code block ```*text*, _text_ and ~text~``` shouldn't be changed.",),
+        ("Inline code `*text*, _text_ and ~text~` shouldn't be changed.",),
+        (
+            "```Some `*bold text* inside inline code` inside a code block``` shouldn't be changed.",
+        ),
+        ("* bullets shouldn't\n* be changed",),
+        ("* not bold*, *not bold *, * not bold *, **, * *, *  *, *   *",),
+        ("_ not italic_, _not italic _, _ not italic _, __, _ _, _  _, _   _",),
+        (
+            "~ not strikethrough~, ~not strikethrough ~, ~ not strikethrough ~, ~~, ~ ~, ~  ~, ~   ~",
+        ),
+        (
+            """The following multiline code block shouldn't be translated:
+```
+if 4*q + r - t < n*t:
+    q, r, t, k, n, l = 10*q, 10*(r-n*t), t, k, (10*(3*q+r))//t - 10*n, l
+else:
+    q, r, t, k, n, l = q*l, (2*q+r)*l, t*l, k+1, (q*(7*k+2)+r*l)//(t*l), l+2
+```""",
+        ),
+    ],
+)
+def test_maybe_slack_to_markdown_disabled(content):
+    result = maybe_slack_to_markdown(content, translate_markdown=False)
+    assert result == content
 
 
 @pytest.mark.parametrize(
@@ -286,5 +314,31 @@ def test_slack_to_markdown(content, expected):
         ),
     ],
 )
-def test_redact_string(input_string, patterns, expected_output):
-    assert redact_string(input_string, patterns) == expected_output
+def test_maybe_redact_string_enabled(input_string, patterns, expected_output):
+    assert (
+        maybe_redact_string(input_string, patterns, redaction_enabled=True)
+        == expected_output
+    )
+
+
+@pytest.mark.parametrize(
+    "input_string, patterns",
+    [
+        (
+            "My email is test@example.com and my phone is 123-456-7890",
+            [
+                ("test@example\\.com", "[EMAIL]"),
+                ("123-456-7890", "[PHONE]"),
+            ],
+        ),
+        (
+            "No sensitive data here",
+            [("test@example\\.com", "[EMAIL]")],
+        ),
+    ],
+)
+def test_maybe_redact_string_disabled(input_string, patterns):
+    assert (
+        maybe_redact_string(input_string, patterns, redaction_enabled=False)
+        == input_string
+    )
