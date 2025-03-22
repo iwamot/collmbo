@@ -158,6 +158,8 @@ def respond_to_app_mention(
 ):
     if context.channel_id is None:
         raise ValueError("context.channel_id cannot be None")
+    if context.user_id is None:
+        raise ValueError("context.user_id cannot be None")
 
     thread_ts = payload.get("thread_ts")
     if is_child_message_and_mentioned(client, context, thread_ts):
@@ -173,6 +175,16 @@ def respond_to_app_mention(
 
     wip_reply = None
     try:
+        loading_text = translate(locale=context.get("locale"), text=LOADING_TEXT)
+        wip_reply = post_wip_message(
+            client=client,
+            channel=context.channel_id,
+            thread_ts=payload["ts"],
+            loading_text=loading_text,
+            messages=[system_message],
+            user=context.user_id,
+        )
+
         if thread_ts is not None:
             # Mentioning the bot user in a thread
             replies_in_thread: list[dict] = client.conversations_replies(
@@ -194,6 +206,17 @@ def respond_to_app_mention(
                     + reply_text,
                 }
                 content = [message_text_item]
+
+                role = (
+                    "assistant"
+                    if "user" in reply and reply["user"] == context.bot_user_id
+                    else "user"
+                )
+                if role == "assistant":
+                    messages.append(
+                        {"role": role, "content": message_text_item["text"]}
+                    )
+                    continue
 
                 if (
                     reply.get("bot_id") is None
@@ -223,17 +246,7 @@ def respond_to_app_mention(
                         logger=context.logger,
                     )
 
-                role = (
-                    "assistant"
-                    if "user" in reply and reply["user"] == context.bot_user_id
-                    else "user"
-                )
-                messages.append(
-                    {
-                        "role": role,
-                        "content": (content if role == "user" else content[0]["text"]),
-                    }
-                )
+                messages.append({"role": role, "content": content})
         else:
             # Strip bot Slack user ID from initial message
             msg_text = re.sub(f"<@{context.bot_user_id}>\\s*", "", payload["text"])
@@ -272,30 +285,13 @@ def respond_to_app_mention(
 
             messages.append({"role": "user", "content": content})
 
-        loading_text = translate(locale=context.get("locale"), text=LOADING_TEXT)
-        if context.user_id is None:
-            raise ValueError("user_id cannot be None")
-        wip_reply = post_wip_message(
-            client=client,
-            channel=context.channel_id,
-            thread_ts=payload["ts"],
-            loading_text=loading_text,
-            messages=messages,
-            user=context.user_id,
-        )
-
         trim_pdf_content(messages)
         (
             messages,
             num_context_tokens,
             max_context_tokens,
         ) = messages_within_context_window(messages)
-        num_messages = len([msg for msg in messages if msg.get("role") != "system"])
-        if num_messages == 0:
-            if context.channel_id is None:
-                raise ValueError("context.channel_id cannot be None")
-            if context.user_id is None:
-                raise ValueError("context.user_id cannot be None")
+        if messages == [system_message]:
             update_wip_message(
                 client=client,
                 channel=context.channel_id,
@@ -307,31 +303,28 @@ def respond_to_app_mention(
                 messages=messages,
                 user=context.user_id,
             )
-        else:
-            if context.user_id is None:
-                raise ValueError("context.user_id cannot be None")
-            stream = start_receiving_litellm_response(
-                temperature=LITELLM_TEMPERATURE,
-                messages=messages,
-                user=context.user_id,
-            )
-            if user_id is None:
-                raise ValueError("user_id cannot be None")
-            consume_litellm_stream_to_write_reply(
-                client=client,
-                wip_reply=wip_reply,
-                channel=context.channel_id,
-                user_id=user_id,
-                messages=messages,
-                stream=stream,
-                thread_ts=payload["ts"],
-                loading_text=loading_text,
-                timeout_seconds=LITELLM_TIMEOUT_SECONDS,
-                translate_markdown=TRANSLATE_MARKDOWN,
-                logger=context.logger,
-            )
+            return
 
-    except (Timeout, TimeoutError) as e:
+        stream = start_receiving_litellm_response(
+            temperature=LITELLM_TEMPERATURE,
+            messages=messages,
+            user=context.user_id,
+        )
+        consume_litellm_stream_to_write_reply(
+            client=client,
+            wip_reply=wip_reply,
+            channel=context.channel_id,
+            user_id=user_id,
+            messages=messages,
+            stream=stream,
+            thread_ts=payload["ts"],
+            loading_text=loading_text,
+            timeout_seconds=LITELLM_TIMEOUT_SECONDS,
+            translate_markdown=TRANSLATE_MARKDOWN,
+            logger=context.logger,
+        )
+
+    except (Timeout, TimeoutError):
         if wip_reply is not None:
             message_dict: dict = wip_reply.get("message", {})
             text = (
@@ -342,8 +335,6 @@ def respond_to_app_mention(
                     text=TIMEOUT_ERROR_MESSAGE,
                 )
             )
-            if context.channel_id is None:
-                raise ValueError("context.channel_id cannot be None") from e
             client.chat_update(
                 channel=context.channel_id,
                 ts=wip_reply["message"]["ts"],
@@ -361,8 +352,6 @@ def respond_to_app_mention(
         )
         logger.exception(text)
         if wip_reply is not None:
-            if context.channel_id is None:
-                raise ValueError("context.channel_id cannot be None") from e
             client.chat_update(
                 channel=context.channel_id,
                 ts=wip_reply["message"]["ts"],
