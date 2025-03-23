@@ -365,43 +365,33 @@ def respond_to_new_message(
     client: WebClient,
     logger: logging.Logger,
 ):
+    if context.channel_id is None:
+        raise ValueError("context.channel_id cannot be None")
+
     if payload.get("bot_id") is not None and payload.get("bot_id") != context.bot_id:
         # Skip a new message by a different app
         return
 
+    is_in_dm_with_bot = payload.get("channel_type") == "im"
+    thread_ts = payload.get("thread_ts")
+    if not is_in_dm_with_bot and thread_ts is None:
+        return
+
     wip_reply = None
     try:
-        is_in_dm_with_bot = payload.get("channel_type") == "im"
-        is_thread_for_this_app = False
-        thread_ts = payload.get("thread_ts")
-        if not is_in_dm_with_bot and thread_ts is None:
-            return
-
-        if context.channel_id is None:
-            raise ValueError("context.channel_id cannot be None")
-        messages_in_context = []
         # In the DM with the bot; this is not within a thread
         if is_in_dm_with_bot and thread_ts is None:
             past_messages: list[dict] = client.conversations_history(
                 channel=context.channel_id,
                 include_all_metadata=True,
                 limit=100,
+                oldest="%.6f" % (time.time() - 86400),
+                inclusive=True,
             ).get("messages", [])
-            past_messages.reverse()
-            # Remove old messages
-            for message in past_messages:
-                ts: Optional[str] = message.get("ts")
-                if ts is None:
-                    logger.warning("The message does not have a timestamp")
-                    continue
-                seconds = time.time() - float(ts)
-                if seconds < 86400:  # less than 1 day
-                    messages_in_context.append(message)
+            messages_in_context = list(reversed(past_messages))
             is_thread_for_this_app = True
         # Within a thread
-        else:
-            if thread_ts is None:
-                raise ValueError("thread_ts cannot be None")
+        elif thread_ts is not None:
             messages_in_context = client.conversations_replies(
                 channel=context.channel_id,
                 ts=thread_ts,
@@ -413,22 +403,20 @@ def respond_to_new_message(
                 is_thread_for_this_app = True
             else:
                 # In a channel
-                the_parent_message_found = False
-                for message in messages_in_context:
-                    if message.get("ts") == thread_ts:
-                        the_parent_message_found = True
-                        is_thread_for_this_app = is_this_app_mentioned(
-                            context.bot_user_id, message
-                        )
-                        break
-                if the_parent_message_found is False:
+                parent_message = next(
+                    (msg for msg in messages_in_context if msg.get("ts") == thread_ts),
+                    None,
+                )
+                if parent_message is None:
                     parent_message = find_parent_message(
                         client, context.channel_id, thread_ts
                     )
-                    if parent_message is not None:
-                        is_thread_for_this_app = is_this_app_mentioned(
-                            context.bot_user_id, parent_message
-                        )
+                is_thread_for_this_app = (
+                    parent_message is not None
+                    and is_this_app_mentioned(context.bot_user_id, parent_message)
+                )
+        else:
+            return
 
         if is_thread_for_this_app is False:
             return
@@ -529,8 +517,6 @@ def respond_to_new_message(
             )
 
         loading_text = translate(locale=context.get("locale"), text=LOADING_TEXT)
-        if context.channel_id is None:
-            raise ValueError("context.channel_id cannot be None")
         if user_id is None:
             raise ValueError("user_id cannot be None")
         thread_ts = payload.get("thread_ts") if is_in_dm_with_bot else payload["ts"]
@@ -551,8 +537,6 @@ def respond_to_new_message(
         ) = messages_within_context_window(messages)
         num_messages = len([msg for msg in messages if msg.get("role") != "system"])
         if num_messages == 0:
-            if context.channel_id is None:
-                raise ValueError("context.channel_id cannot be None")
             if context.user_id is None:
                 raise ValueError("context.user_id cannot be None")
             update_wip_message(
@@ -573,8 +557,6 @@ def respond_to_new_message(
                 user=user_id,
             )
 
-            if context.channel_id is None:
-                raise ValueError("context.channel_id cannot be None")
             ts = wip_reply.get("ts")
             if ts is None:
                 raise ValueError("ts cannot be None")
@@ -609,7 +591,7 @@ def respond_to_new_message(
                 logger=context.logger,
             )
 
-    except (Timeout, TimeoutError) as e:
+    except (Timeout, TimeoutError):
         if wip_reply is not None:
             message_dict: dict = wip_reply.get("message", {})
             text = (
@@ -620,8 +602,6 @@ def respond_to_new_message(
                     text=TIMEOUT_ERROR_MESSAGE,
                 )
             )
-            if context.channel_id is None:
-                raise ValueError("context.channel_id cannot be None") from e
             client.chat_update(
                 channel=context.channel_id,
                 ts=wip_reply["message"]["ts"],
@@ -632,8 +612,6 @@ def respond_to_new_message(
         text = message_dict.get("text", "") + "\n\n" + f":warning: Failed to reply: {e}"
         logger.exception(text)
         if wip_reply is not None:
-            if context.channel_id is None:
-                raise ValueError("context.channel_id cannot be None") from e
             client.chat_update(
                 channel=context.channel_id,
                 ts=wip_reply["message"]["ts"],
