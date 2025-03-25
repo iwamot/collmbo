@@ -5,10 +5,10 @@ from slack_bolt import BoltContext
 from slack_sdk.web import WebClient
 
 from app.bolt_listeners import (
-    build_system_message,
     can_bot_read_files,
     find_parent_message,
     format_litellm_message_content,
+    initialize_messages,
     is_child_message_and_mentioned,
     is_this_app_mentioned,
     maybe_redact_string,
@@ -162,11 +162,11 @@ def test_is_child_message_and_mentioned_true(
         ),
     ],
 )
-def test_build_system_message(
+def test_initialize_messages(
     template, bot_user_id, translate_markdown, expected_content
 ):
-    result = build_system_message(template, bot_user_id, translate_markdown)
-    assert result == {"role": "system", "content": expected_content}
+    result = initialize_messages(template, bot_user_id, translate_markdown)
+    assert result == [{"role": "system", "content": expected_content}]
 
 
 @pytest.mark.parametrize(
