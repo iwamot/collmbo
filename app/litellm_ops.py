@@ -133,13 +133,6 @@ def messages_within_context_window(
     else:
         num_context_tokens = num_tokens
 
-    # Remove any non-user messages at the beginning of the list
-    while messages and messages[0]["role"] != "user":
-        num_context_tokens = litellm.utils.token_counter(
-            model=LITELLM_MODEL_TYPE, messages=messages
-        )
-        del messages[0]
-
     # Remove any assistant messages at the end of the list
     while messages and messages[-1]["role"] == "assistant":
         num_context_tokens = litellm.utils.token_counter(
@@ -255,8 +248,6 @@ def consume_litellm_stream_to_write_reply(
                             channel=channel,
                             ts=wip_reply["message"]["ts"],
                             text=assistant_reply_text + loading_character,
-                            messages=messages,
-                            user=user_id,
                         )
 
                     thread = threading.Thread(target=update_message)
@@ -287,8 +278,6 @@ def consume_litellm_stream_to_write_reply(
                 channel=channel,
                 ts=wip_reply["message"]["ts"],
                 text=assistant_reply_text,
-                messages=messages,
-                user=user_id,
             )
 
         # If the response is too long, post a new message instead
@@ -298,8 +287,6 @@ def consume_litellm_stream_to_write_reply(
                 channel=channel,
                 thread_ts=thread_ts,
                 loading_text=loading_character,
-                messages=messages,
-                user=user_id,
             )
             consume_litellm_stream_to_write_reply(
                 client=client,
@@ -334,8 +321,6 @@ def consume_litellm_stream_to_write_reply(
                     channel=channel,
                     thread_ts=thread_ts,
                     loading_text=loading_text,
-                    messages=messages,
-                    user=user_id,
                 )
 
             tool_calls = response_message.tool_calls

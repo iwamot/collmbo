@@ -15,29 +15,12 @@ def test_post_wip_message_including_user_messages():
         channel="C12345678",
         thread_ts="123456.789",
         loading_text="Loading...",
-        messages=[
-            {"role": "system", "content": "System message 1"},
-            {"role": "user", "content": "User message 1"},
-            {"role": "system", "content": "System message 2"},
-            {"role": "user", "content": "User message 2"},
-        ],
-        user="U12345678",
     )
 
     mock_client.chat_postMessage.assert_called_once_with(
         channel="C12345678",
         thread_ts="123456.789",
         text="Loading...",
-        metadata={
-            "event_type": "collmbo-convo",
-            "event_payload": {
-                "messages": [
-                    {"role": "system", "content": "System message 1"},
-                    {"role": "system", "content": "System message 2"},
-                ],
-                "user": "U12345678",
-            },
-        },
     )
     assert response == mock_response
 
@@ -52,28 +35,11 @@ def test_update_wip_message_including_user_messages():
         channel="C12345678",
         ts="123456.789",
         text="Updated message",
-        messages=[
-            {"role": "system", "content": "Updated system message 1"},
-            {"role": "user", "content": "User message 1"},
-            {"role": "system", "content": "Updated system message 2"},
-            {"role": "user", "content": "User message 2"},
-        ],
-        user="U12345678",
     )
 
     mock_client.chat_update.assert_called_once_with(
         channel="C12345678",
         ts="123456.789",
         text="Updated message",
-        metadata={
-            "event_type": "collmbo-convo",
-            "event_payload": {
-                "messages": [
-                    {"role": "system", "content": "Updated system message 1"},
-                    {"role": "system", "content": "Updated system message 2"},
-                ],
-                "user": "U12345678",
-            },
-        },
     )
     assert response == mock_response

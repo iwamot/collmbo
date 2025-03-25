@@ -5,7 +5,7 @@ from typing import List, Optional, Sequence, Tuple
 
 from litellm.exceptions import Timeout
 from slack_bolt import BoltContext
-from slack_sdk.web import WebClient
+from slack_sdk.web import SlackResponse, WebClient
 
 from app.env import (
     IMAGE_FILE_ACCESS_ENABLED,
@@ -74,12 +74,30 @@ def is_child_message_and_mentioned(
     )
 
 
-def build_system_message(
+def initialize_messages(
     system_text_template: str, bot_user_id: Optional[str], translate_markdown: bool
-) -> dict:
+) -> list[dict]:
     system_text = system_text_template.format(bot_user_id=bot_user_id)
     system_text = maybe_slack_to_markdown(system_text, translate_markdown)
-    return {"role": "system", "content": system_text}
+    return [{"role": "system", "content": system_text}]
+
+
+def get_thread_replies(client: WebClient, channel: str, thread_ts: str) -> list[dict]:
+    return client.conversations_replies(
+        channel=channel,
+        ts=thread_ts,
+        limit=1000,
+    ).get("messages", [])
+
+
+def get_dm_replies(client: WebClient, channel: str) -> list[dict]:
+    past_messages: list[dict] = client.conversations_history(
+        channel=channel,
+        limit=100,
+        oldest="%.6f" % (time.time() - 86400),  # 24 hours ago
+        inclusive=True,
+    ).get("messages", [])
+    return list(reversed(past_messages))
 
 
 def can_bot_read_files(bot_scopes: Optional[Sequence[str]]) -> bool:
@@ -150,6 +168,150 @@ def maybe_redact_string(
     return output_string
 
 
+def convert_replies_to_messages(
+    replies: list[dict],
+    context: BoltContext,
+    logger: logging.Logger,
+) -> list[dict]:
+    messages: list[dict] = []
+
+    for reply in replies:
+        reply_text = re.sub(
+            f"<@{context.bot_user_id}>\\s*", "", reply.get("text") or ""
+        )
+        reply_text = maybe_redact_string(reply_text, REDACT_PATTERNS, REDACTION_ENABLED)
+        reply_text = format_litellm_message_content(reply_text)
+        reply_text = maybe_slack_to_markdown(reply_text, TRANSLATE_MARKDOWN)
+        content = [
+            {
+                "type": "text",
+                "text": f"<@{reply['user'] if 'user' in reply else reply['username']}>: {reply_text}",
+            }
+        ]
+
+        if reply["user"] == context.bot_user_id:
+            messages.append({"role": "assistant", "content": content[0]["text"]})
+            continue
+
+        if (
+            reply.get("bot_id") is None
+            and context.authorize_result is not None
+            and IMAGE_FILE_ACCESS_ENABLED
+            and can_bot_read_files(context.authorize_result.bot_scopes)
+        ):
+            if context.bot_token is None:
+                raise ValueError("context.bot_token cannot be None")
+            content += get_image_content_if_exists(
+                bot_token=context.bot_token,
+                files=reply.get("files"),
+                logger=logger,
+            )
+        if (
+            reply.get("bot_id") is None
+            and context.authorize_result is not None
+            and PDF_FILE_ACCESS_ENABLED
+            and can_bot_read_files(context.authorize_result.bot_scopes)
+        ):
+            if context.bot_token is None:
+                raise ValueError("context.bot_token cannot be None")
+            content += get_pdf_content_if_exists(
+                bot_token=context.bot_token,
+                files=reply.get("files"),
+                logger=logger,
+            )
+
+        messages.append({"role": "user", "content": content})
+
+    trim_pdf_content(messages)
+    return messages
+
+
+def reply_to_messages(
+    *,
+    messages: list[dict],
+    user_id: str,
+    thread_ts: str,
+    loading_text: str,
+    channel_id: str,
+    client: WebClient,
+    logger: logging.Logger,
+    wip_reply: SlackResponse,
+) -> None:
+    messages, num_context_tokens, max_context_tokens = messages_within_context_window(
+        messages
+    )
+
+    if len(messages) == 1:
+        update_wip_message(
+            client=client,
+            channel=channel_id,
+            ts=wip_reply["message"]["ts"],
+            text=(
+                f":warning: The previous message is too long "
+                f"({num_context_tokens}/{max_context_tokens} prompt tokens)."
+            ),
+        )
+        return
+
+    stream = start_receiving_litellm_response(
+        temperature=LITELLM_TEMPERATURE,
+        messages=messages,
+        user=user_id,
+    )
+    consume_litellm_stream_to_write_reply(
+        client=client,
+        wip_reply=wip_reply,
+        channel=channel_id,
+        user_id=user_id,
+        messages=messages,
+        stream=stream,
+        thread_ts=thread_ts,
+        loading_text=loading_text,
+        timeout_seconds=LITELLM_TIMEOUT_SECONDS,
+        translate_markdown=TRANSLATE_MARKDOWN,
+        logger=logger,
+    )
+
+
+def handle_timeout_error(
+    channel_id: str,
+    locale: Optional[str],
+    wip_reply: Optional[SlackResponse],
+    client: WebClient,
+):
+    if wip_reply is None:
+        return
+    message_dict: dict = wip_reply.get("message", {})
+    text = (
+        message_dict.get("text", "")
+        + "\n\n"
+        + translate(locale=locale, text=TIMEOUT_ERROR_MESSAGE)
+    )
+    client.chat_update(
+        channel=channel_id,
+        ts=wip_reply["message"]["ts"],
+        text=text,
+    )
+
+
+def handle_exception(
+    e: Exception,
+    channel_id: str,
+    wip_reply: Optional[SlackResponse],
+    client: WebClient,
+    logger: logging.Logger,
+):
+    message_dict: dict = wip_reply.get("message", {}) if wip_reply else {}
+    text = message_dict.get("text", "") + "\n\n" + f":warning: Failed to reply: {e}"
+    logger.exception(text)
+    if wip_reply:
+        client.chat_update(
+            channel=channel_id,
+            ts=wip_reply["message"]["ts"],
+            text=text,
+        )
+
+
 def respond_to_app_mention(
     context: BoltContext,
     payload: dict,
@@ -158,20 +320,19 @@ def respond_to_app_mention(
 ):
     if context.channel_id is None:
         raise ValueError("context.channel_id cannot be None")
-    if context.user_id is None:
-        raise ValueError("context.user_id cannot be None")
+
+    user_id = context.actor_user_id or context.user_id
+    if user_id is None:
+        raise ValueError("user_id cannot be None")
 
     thread_ts = payload.get("thread_ts")
     if is_child_message_and_mentioned(client, context, thread_ts):
         # The message event handler will reply to this
         return
 
-    system_message = build_system_message(
+    messages: list[dict] = initialize_messages(
         SYSTEM_TEXT, context.bot_user_id, TRANSLATE_MARKDOWN
     )
-    messages: list[dict] = [system_message]
-
-    user_id = context.actor_user_id or context.user_id
 
     wip_reply = None
     try:
@@ -181,182 +342,51 @@ def respond_to_app_mention(
             channel=context.channel_id,
             thread_ts=payload["ts"],
             loading_text=loading_text,
-            messages=[system_message],
-            user=context.user_id,
         )
 
         if thread_ts is not None:
             # Mentioning the bot user in a thread
-            replies_in_thread: list[dict] = client.conversations_replies(
-                channel=context.channel_id,
-                ts=thread_ts,
-                include_all_metadata=True,
-                limit=1000,
-            ).get("messages", [])
-            for reply in replies_in_thread:
-                reply_text = reply.get("text") or ""
-                reply_text = maybe_redact_string(
-                    reply_text, REDACT_PATTERNS, REDACTION_ENABLED
-                )
-                reply_text = format_litellm_message_content(reply_text)
-                reply_text = maybe_slack_to_markdown(reply_text, TRANSLATE_MARKDOWN)
-                message_text_item = {
-                    "type": "text",
-                    "text": f"<@{reply['user'] if 'user' in reply else reply['username']}>: "
-                    + reply_text,
-                }
-                content = [message_text_item]
-
-                role = (
-                    "assistant"
-                    if "user" in reply and reply["user"] == context.bot_user_id
-                    else "user"
-                )
-                if role == "assistant":
-                    messages.append(
-                        {"role": role, "content": message_text_item["text"]}
-                    )
-                    continue
-
-                if (
-                    reply.get("bot_id") is None
-                    and context.authorize_result is not None
-                    and IMAGE_FILE_ACCESS_ENABLED
-                    and can_bot_read_files(context.authorize_result.bot_scopes)
-                ):
-                    if context.bot_token is None:
-                        raise ValueError("context.bot_token cannot be None")
-                    content += get_image_content_if_exists(
-                        bot_token=context.bot_token,
-                        files=reply.get("files"),
-                        logger=context.logger,
-                    )
-
-                if (
-                    reply.get("bot_id") is None
-                    and context.authorize_result is not None
-                    and PDF_FILE_ACCESS_ENABLED
-                    and can_bot_read_files(context.authorize_result.bot_scopes)
-                ):
-                    if context.bot_token is None:
-                        raise ValueError("context.bot_token cannot be None")
-                    content += get_pdf_content_if_exists(
-                        bot_token=context.bot_token,
-                        files=reply.get("files"),
-                        logger=context.logger,
-                    )
-
-                messages.append({"role": role, "content": content})
-        else:
-            # Strip bot Slack user ID from initial message
-            msg_text = re.sub(f"<@{context.bot_user_id}>\\s*", "", payload["text"])
-            msg_text = maybe_redact_string(msg_text, REDACT_PATTERNS, REDACTION_ENABLED)
-            msg_text = format_litellm_message_content(msg_text)
-            msg_text = maybe_slack_to_markdown(msg_text, TRANSLATE_MARKDOWN)
-            message_text_item = {"type": "text", "text": f"<@{user_id}>: {msg_text}"}
-            content = [message_text_item]
-
-            if (
-                payload.get("bot_id") is None
-                and context.authorize_result is not None
-                and IMAGE_FILE_ACCESS_ENABLED
-                and can_bot_read_files(context.authorize_result.bot_scopes)
-            ):
-                if context.bot_token is None:
-                    raise ValueError("context.bot_token cannot be None")
-                content += get_image_content_if_exists(
-                    bot_token=context.bot_token,
-                    files=payload.get("files"),
-                    logger=context.logger,
-                )
-            if (
-                payload.get("bot_id") is None
-                and context.authorize_result is not None
-                and PDF_FILE_ACCESS_ENABLED
-                and can_bot_read_files(context.authorize_result.bot_scopes)
-            ):
-                if context.bot_token is None:
-                    raise ValueError("context.bot_token cannot be None")
-                content += get_pdf_content_if_exists(
-                    bot_token=context.bot_token,
-                    files=payload.get("files"),
-                    logger=context.logger,
-                )
-
-            messages.append({"role": "user", "content": content})
-
-        trim_pdf_content(messages)
-        (
-            messages,
-            num_context_tokens,
-            max_context_tokens,
-        ) = messages_within_context_window(messages)
-        if messages == [system_message]:
-            update_wip_message(
+            replies = get_thread_replies(
                 client=client,
                 channel=context.channel_id,
-                ts=wip_reply["message"]["ts"],
-                text=(
-                    f":warning: The previous message is too long "
-                    f"({num_context_tokens}/{max_context_tokens} prompt tokens)."
-                ),
-                messages=messages,
-                user=context.user_id,
+                thread_ts=thread_ts,
             )
-            return
+        else:
+            # Mentioning the bot user outside a thread
+            replies = [
+                {
+                    "text": payload["text"],
+                    "user": user_id,
+                    "bot_id": payload.get("bot_id"),
+                    "files": payload.get("files"),
+                }
+            ]
 
-        stream = start_receiving_litellm_response(
-            temperature=LITELLM_TEMPERATURE,
-            messages=messages,
-            user=context.user_id,
+        messages += convert_replies_to_messages(
+            replies=replies,
+            context=context,
+            logger=logger,
         )
-        consume_litellm_stream_to_write_reply(
-            client=client,
-            wip_reply=wip_reply,
-            channel=context.channel_id,
-            user_id=user_id,
+        reply_to_messages(
             messages=messages,
-            stream=stream,
+            user_id=user_id,
             thread_ts=payload["ts"],
             loading_text=loading_text,
-            timeout_seconds=LITELLM_TIMEOUT_SECONDS,
-            translate_markdown=TRANSLATE_MARKDOWN,
-            logger=context.logger,
+            channel_id=context.channel_id,
+            client=client,
+            logger=logger,
+            wip_reply=wip_reply,
         )
 
     except (Timeout, TimeoutError):
-        if wip_reply is not None:
-            message_dict: dict = wip_reply.get("message", {})
-            text = (
-                (message_dict.get("text", "") if wip_reply is not None else "")
-                + "\n\n"
-                + translate(
-                    locale=context.get("locale"),
-                    text=TIMEOUT_ERROR_MESSAGE,
-                )
-            )
-            client.chat_update(
-                channel=context.channel_id,
-                ts=wip_reply["message"]["ts"],
-                text=text,
-            )
-    except Exception as e:
-        message_dict = wip_reply.get("message", {}) if wip_reply is not None else {}
-        text = (
-            message_dict.get("text", "")
-            + "\n\n"
-            + translate(
-                locale=context.get("locale"),
-                text=f":warning: Failed to start a conversation with AI: {e}",
-            )
+        handle_timeout_error(
+            channel_id=context.channel_id,
+            locale=context.get("locale"),
+            wip_reply=wip_reply,
+            client=client,
         )
-        logger.exception(text)
-        if wip_reply is not None:
-            client.chat_update(
-                channel=context.channel_id,
-                ts=wip_reply["message"]["ts"],
-                text=text,
-            )
+    except Exception as e:
+        handle_exception(e, context.channel_id, wip_reply, client, logger)
 
 
 def respond_to_new_message(
@@ -368,252 +398,81 @@ def respond_to_new_message(
     if context.channel_id is None:
         raise ValueError("context.channel_id cannot be None")
 
-    if payload.get("bot_id") is not None and payload.get("bot_id") != context.bot_id:
-        # Skip a new message by a different app
+    user_id = context.actor_user_id or context.user_id
+    if user_id is None:
+        raise ValueError("user_id cannot be None")
+
+    if payload.get("bot_id") is not None:
         return
 
-    is_in_dm_with_bot = payload.get("channel_type") == "im"
-    thread_ts = payload.get("thread_ts")
-    if not is_in_dm_with_bot and thread_ts is None:
-        return
+    messages: list[dict] = initialize_messages(
+        SYSTEM_TEXT, context.bot_user_id, TRANSLATE_MARKDOWN
+    )
 
     wip_reply = None
     try:
+        is_in_dm_with_bot = payload.get("channel_type") == "im"
+        thread_ts = payload.get("thread_ts")
+
         # In the DM with the bot; this is not within a thread
         if is_in_dm_with_bot and thread_ts is None:
-            past_messages: list[dict] = client.conversations_history(
-                channel=context.channel_id,
-                include_all_metadata=True,
-                limit=100,
-                oldest="%.6f" % (time.time() - 86400),
-                inclusive=True,
-            ).get("messages", [])
-            messages_in_context = list(reversed(past_messages))
-            is_thread_for_this_app = True
+            replies = get_dm_replies(client, context.channel_id)
         # Within a thread
         elif thread_ts is not None:
-            messages_in_context = client.conversations_replies(
+            replies = get_thread_replies(
+                client=client,
                 channel=context.channel_id,
-                ts=thread_ts,
-                include_all_metadata=True,
-                limit=1000,
-            ).get("messages", [])
-            if is_in_dm_with_bot:
-                # In the DM with this bot
-                is_thread_for_this_app = True
-            else:
+                thread_ts=thread_ts,
+            )
+            if not is_in_dm_with_bot:
                 # In a channel
                 parent_message = next(
-                    (msg for msg in messages_in_context if msg.get("ts") == thread_ts),
+                    (msg for msg in replies if msg.get("ts") == thread_ts),
                     None,
                 )
                 if parent_message is None:
                     parent_message = find_parent_message(
                         client, context.channel_id, thread_ts
                     )
-                is_thread_for_this_app = (
-                    parent_message is not None
-                    and is_this_app_mentioned(context.bot_user_id, parent_message)
-                )
+                if parent_message is None or not is_this_app_mentioned(
+                    context.bot_user_id, parent_message
+                ):
+                    return
         else:
             return
 
-        if is_thread_for_this_app is False:
-            return
-
-        messages: list[dict] = []
-        user_id = context.actor_user_id or context.user_id
-        last_assistant_idx = -1
-        indices_to_remove = []
-        for idx, reply in enumerate(messages_in_context):
-            maybe_event_type = reply.get("metadata", {}).get("event_type")
-            if maybe_event_type == "collmbo-convo":
-                if context.bot_id != reply.get("bot_id"):
-                    # Remove messages by a different app
-                    indices_to_remove.append(idx)
-                    continue
-                maybe_new_messages = (
-                    reply.get("metadata", {}).get("event_payload", {}).get("messages")
-                )
-                if maybe_new_messages is not None:
-                    if len(messages) == 0 or user_id is None:
-                        new_user_id = (
-                            reply.get("metadata", {})
-                            .get("event_payload", {})
-                            .get("user")
-                        )
-                        if new_user_id is not None:
-                            user_id = new_user_id
-                    messages = maybe_new_messages
-                    last_assistant_idx = idx
-
-        # To know whether this app needs to start a new convo
-        if (is_in_dm_with_bot or last_assistant_idx == -1) and not next(
-            filter(lambda msg: msg["role"] == "system", messages), None
-        ):
-            system_message = build_system_message(
-                SYSTEM_TEXT, context.bot_user_id, TRANSLATE_MARKDOWN
-            )
-            messages.insert(0, system_message)
-
-        filtered_messages_in_context = []
-        for idx, reply in enumerate(messages_in_context):
-            # Strip bot Slack user ID from initial message
-            if idx == 0:
-                reply["text"] = re.sub(
-                    f"<@{context.bot_user_id}>\\s*", "", reply["text"]
-                )
-            if idx not in indices_to_remove:
-                filtered_messages_in_context.append(reply)
-        if not filtered_messages_in_context:
-            return
-
-        for reply in filtered_messages_in_context:
-            msg_user_id = reply.get("user")
-            reply_text = reply.get("text") or ""
-            reply_text = maybe_redact_string(
-                reply_text, REDACT_PATTERNS, REDACTION_ENABLED
-            )
-            reply_text = format_litellm_message_content(reply_text)
-            reply_text = maybe_slack_to_markdown(reply_text, TRANSLATE_MARKDOWN)
-            content = [{"type": "text", "text": f"<@{msg_user_id}>: {reply_text}"}]
-            if (
-                reply.get("bot_id") is None
-                and context.authorize_result is not None
-                and IMAGE_FILE_ACCESS_ENABLED
-                and can_bot_read_files(context.authorize_result.bot_scopes)
-            ):
-                if context.bot_token is None:
-                    raise ValueError("context.bot_token cannot be None")
-                content += get_image_content_if_exists(
-                    bot_token=context.bot_token,
-                    files=reply.get("files"),
-                    logger=context.logger,
-                )
-            if (
-                reply.get("bot_id") is None
-                and context.authorize_result is not None
-                and PDF_FILE_ACCESS_ENABLED
-                and can_bot_read_files(context.authorize_result.bot_scopes)
-            ):
-                if context.bot_token is None:
-                    raise ValueError("context.bot_token cannot be None")
-                content += get_pdf_content_if_exists(
-                    bot_token=context.bot_token,
-                    files=reply.get("files"),
-                    logger=context.logger,
-                )
-
-            role = (
-                "assistant"
-                if "user" in reply and reply["user"] == context.bot_user_id
-                else "user"
-            )
-            messages.append(
-                {
-                    "content": (content if role == "user" else content[0]["text"]),
-                    "role": role,
-                }
-            )
-
         loading_text = translate(locale=context.get("locale"), text=LOADING_TEXT)
-        if user_id is None:
-            raise ValueError("user_id cannot be None")
-        thread_ts = payload.get("thread_ts") if is_in_dm_with_bot else payload["ts"]
+        if not is_in_dm_with_bot:
+            thread_ts = payload["ts"]
         wip_reply = post_wip_message(
             client=client,
             channel=context.channel_id,
             thread_ts=thread_ts,
             loading_text=loading_text,
-            messages=messages,
-            user=user_id,
         )
 
-        trim_pdf_content(messages)
-        (
-            messages,
-            num_context_tokens,
-            max_context_tokens,
-        ) = messages_within_context_window(messages)
-        num_messages = len([msg for msg in messages if msg.get("role") != "system"])
-        if num_messages == 0:
-            if context.user_id is None:
-                raise ValueError("context.user_id cannot be None")
-            update_wip_message(
-                client=client,
-                channel=context.channel_id,
-                ts=wip_reply["message"]["ts"],
-                text=(
-                    f":warning: The previous message is too long "
-                    f"({num_context_tokens}/{max_context_tokens} prompt tokens)."
-                ),
-                messages=messages,
-                user=context.user_id,
-            )
-        else:
-            stream = start_receiving_litellm_response(
-                temperature=LITELLM_TEMPERATURE,
-                messages=messages,
-                user=user_id,
-            )
-
-            ts = wip_reply.get("ts")
-            if ts is None:
-                raise ValueError("ts cannot be None")
-            latest_replies = client.conversations_replies(
-                channel=context.channel_id,
-                ts=ts,
-                include_all_metadata=True,
-                limit=1000,
-            )
-            latest_replies_messages: list[dict] = latest_replies.get("messages", [])
-            if not latest_replies_messages:
-                return
-            if latest_replies_messages[-1]["ts"] != wip_reply["message"]["ts"]:
-                # Since a new reply will come soon, this app abandons this reply
-                client.chat_delete(
-                    channel=context.channel_id,
-                    ts=wip_reply["message"]["ts"],
-                )
-                return
-
-            consume_litellm_stream_to_write_reply(
-                client=client,
-                wip_reply=wip_reply,
-                channel=context.channel_id,
-                user_id=user_id,
-                messages=messages,
-                stream=stream,
-                thread_ts=thread_ts,
-                loading_text=loading_text,
-                timeout_seconds=LITELLM_TIMEOUT_SECONDS,
-                translate_markdown=TRANSLATE_MARKDOWN,
-                logger=context.logger,
-            )
+        messages += convert_replies_to_messages(
+            replies=replies,
+            context=context,
+            logger=logger,
+        )
+        reply_to_messages(
+            messages=messages,
+            user_id=user_id,
+            thread_ts=thread_ts,
+            loading_text=loading_text,
+            channel_id=context.channel_id,
+            client=client,
+            logger=logger,
+            wip_reply=wip_reply,
+        )
 
     except (Timeout, TimeoutError):
-        if wip_reply is not None:
-            message_dict: dict = wip_reply.get("message", {})
-            text = (
-                (message_dict.get("text", "") if wip_reply is not None else "")
-                + "\n\n"
-                + translate(
-                    locale=context.get("locale"),
-                    text=TIMEOUT_ERROR_MESSAGE,
-                )
-            )
-            client.chat_update(
-                channel=context.channel_id,
-                ts=wip_reply["message"]["ts"],
-                text=text,
-            )
+        handle_timeout_error(
+            channel_id=context.channel_id,
+            locale=context.get("locale"),
+            wip_reply=wip_reply,
+            client=client,
+        )
     except Exception as e:
-        message_dict = wip_reply.get("message", {}) if wip_reply is not None else {}
-        text = message_dict.get("text", "") + "\n\n" + f":warning: Failed to reply: {e}"
-        logger.exception(text)
-        if wip_reply is not None:
-            client.chat_update(
-                channel=context.channel_id,
-                ts=wip_reply["message"]["ts"],
-                text=text,
-            )
+        handle_exception(e, context.channel_id, wip_reply, client, logger)
