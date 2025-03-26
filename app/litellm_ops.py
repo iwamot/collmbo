@@ -226,8 +226,9 @@ def consume_litellm_stream_to_write_reply(
                 raise TimeoutError()
             chunks.append(chunk)
             item = chunk.choices[0]
-            if item.get("finish_reason") is not None:
-                break
+
+            is_final_chunk = item.get("finish_reason") is not None
+
             delta = item.get("delta")
             if delta is not None and delta.get("content") is not None:
                 pending_text += delta.get("content")
@@ -256,9 +257,15 @@ def consume_litellm_stream_to_write_reply(
                     threads.append(thread)
                     pending_text = ""
 
-                    if len(wip_reply["message"]["text"].encode("utf-8")) > 3500:
+                    if (
+                        not is_final_chunk
+                        and len(wip_reply["message"]["text"].encode("utf-8")) > 3500
+                    ):
                         is_response_too_long = True
                         break
+
+                if is_final_chunk:
+                    break
 
         for t in threads:
             try:
