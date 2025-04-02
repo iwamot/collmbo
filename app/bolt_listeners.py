@@ -56,12 +56,11 @@ def find_parent_message(
     return messages[0] if messages else None
 
 
-def is_this_app_mentioned(bot_user_id: Optional[str], parent_message: dict) -> bool:
-    parent_message_text = parent_message.get("text", "")
-    return f"<@{bot_user_id}>" in parent_message_text
+def is_this_app_mentioned(bot_user_id: Optional[str], text: str) -> bool:
+    return f"<@{bot_user_id}>" in text
 
 
-def is_child_message_and_mentioned(
+def is_in_thread_started_by_app_mention(
     client: WebClient,
     context: BoltContext,
     thread_ts: Optional[str],
@@ -70,7 +69,7 @@ def is_child_message_and_mentioned(
         return False
     parent_message = find_parent_message(client, context.channel_id, thread_ts)
     return parent_message is not None and is_this_app_mentioned(
-        context.bot_user_id, parent_message
+        context.bot_user_id, parent_message.get("text", "")
     )
 
 
@@ -245,7 +244,7 @@ def reply_to_messages(
     *,
     messages: list[dict],
     user_id: str,
-    thread_ts: str,
+    thread_ts: Optional[str],
     loading_text: str,
     channel_id: str,
     client: WebClient,
@@ -327,7 +326,7 @@ def handle_exception(
         )
 
 
-def respond_to_app_mention(
+def respond_to_new_message(
     context: BoltContext,
     payload: dict,
     client: WebClient,
@@ -340,34 +339,52 @@ def respond_to_app_mention(
     if user_id is None:
         raise ValueError("user_id cannot be None")
 
-    thread_ts = payload.get("thread_ts")
-    if is_child_message_and_mentioned(client, context, thread_ts):
-        # The message event handler will reply to this
+    # Ignore messages from bots
+    if payload.get("bot_id") is not None:
         return
-
-    messages: list[dict] = initialize_messages(
-        SYSTEM_TEXT, context.bot_user_id, TRANSLATE_MARKDOWN
-    )
 
     wip_reply = None
     try:
+        is_in_dm_with_bot = payload.get("channel_type") == "im"
+        payload_thread_ts = payload.get("thread_ts")
+        if (
+            not is_in_dm_with_bot
+            and not is_this_app_mentioned(context.bot_user_id, payload["text"])
+            and not is_in_thread_started_by_app_mention(
+                client, context, payload_thread_ts
+            )
+        ):
+            return
+
+        # If mentioned in a channel and outside a thread, reply in a thread
+        reply_thread_ts = payload_thread_ts
+        if not is_in_dm_with_bot and reply_thread_ts is None:
+            reply_thread_ts = payload["ts"]
+
         loading_text = translate(locale=context.get("locale"), text=LOADING_TEXT)
         wip_reply = post_wip_message(
             client=client,
             channel=context.channel_id,
-            thread_ts=payload["ts"],
+            thread_ts=reply_thread_ts,
             loading_text=loading_text,
         )
 
-        if thread_ts is not None:
-            # Mentioning the bot user in a thread
+        messages: list[dict] = initialize_messages(
+            SYSTEM_TEXT, context.bot_user_id, TRANSLATE_MARKDOWN
+        )
+
+        # In the DM with the bot; this is not within a thread
+        if is_in_dm_with_bot and payload_thread_ts is None:
+            replies = get_dm_replies(client, context.channel_id)
+        # Within a thread
+        elif payload_thread_ts is not None:
             replies = get_thread_replies(
                 client=client,
                 channel=context.channel_id,
-                thread_ts=thread_ts,
+                thread_ts=payload_thread_ts,
             )
+        # In a channel; mentioning the bot user outside a thread
         else:
-            # Mentioning the bot user outside a thread
             replies = [
                 {
                     "text": payload["text"],
@@ -385,96 +402,7 @@ def respond_to_app_mention(
         reply_to_messages(
             messages=messages,
             user_id=user_id,
-            thread_ts=payload["ts"],
-            loading_text=loading_text,
-            channel_id=context.channel_id,
-            client=client,
-            logger=logger,
-            wip_reply=wip_reply,
-        )
-
-    except (Timeout, TimeoutError):
-        handle_timeout_error(
-            channel_id=context.channel_id,
-            locale=context.get("locale"),
-            wip_reply=wip_reply,
-            client=client,
-        )
-    except Exception as e:
-        handle_exception(e, context.channel_id, wip_reply, client, logger)
-
-
-def respond_to_new_message(
-    context: BoltContext,
-    payload: dict,
-    client: WebClient,
-    logger: logging.Logger,
-):
-    if context.channel_id is None:
-        raise ValueError("context.channel_id cannot be None")
-
-    user_id = context.actor_user_id or context.user_id
-    if user_id is None:
-        raise ValueError("user_id cannot be None")
-
-    if payload.get("bot_id") is not None:
-        return
-
-    messages: list[dict] = initialize_messages(
-        SYSTEM_TEXT, context.bot_user_id, TRANSLATE_MARKDOWN
-    )
-
-    wip_reply = None
-    try:
-        is_in_dm_with_bot = payload.get("channel_type") == "im"
-        thread_ts = payload.get("thread_ts")
-
-        # In the DM with the bot; this is not within a thread
-        if is_in_dm_with_bot and thread_ts is None:
-            replies = get_dm_replies(client, context.channel_id)
-        # Within a thread
-        elif thread_ts is not None:
-            replies = get_thread_replies(
-                client=client,
-                channel=context.channel_id,
-                thread_ts=thread_ts,
-            )
-            if not is_in_dm_with_bot:
-                # In a channel
-                parent_message = next(
-                    (msg for msg in replies if msg.get("ts") == thread_ts),
-                    None,
-                )
-                if parent_message is None:
-                    parent_message = find_parent_message(
-                        client, context.channel_id, thread_ts
-                    )
-                if parent_message is None or not is_this_app_mentioned(
-                    context.bot_user_id, parent_message
-                ):
-                    return
-        else:
-            return
-
-        loading_text = translate(locale=context.get("locale"), text=LOADING_TEXT)
-        if not is_in_dm_with_bot:
-            thread_ts = payload["ts"]
-        wip_reply = post_wip_message(
-            client=client,
-            channel=context.channel_id,
-            thread_ts=thread_ts,
-            loading_text=loading_text,
-        )
-
-        messages += convert_replies_to_messages(
-            replies=replies,
-            context=context,
-            logger=logger,
-        )
-        reply_to_messages(
-            messages=messages,
-            user_id=user_id,
-            thread_ts=thread_ts,
+            thread_ts=reply_thread_ts,
             loading_text=loading_text,
             channel_id=context.channel_id,
             client=client,

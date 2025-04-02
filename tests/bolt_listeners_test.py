@@ -9,7 +9,7 @@ from app.bolt_listeners import (
     find_parent_message,
     format_litellm_message_content,
     initialize_messages,
-    is_child_message_and_mentioned,
+    is_in_thread_started_by_app_mention,
     is_this_app_mentioned,
     maybe_redact_string,
     maybe_slack_to_markdown,
@@ -70,44 +70,48 @@ def test_find_parent_message_with_invalid_response():
 
 
 @pytest.mark.parametrize(
-    "bot_user_id, parent_message, expected",
+    "bot_user_id, text, expected",
     [
-        ("U12345", {"text": "Hello <@U12345>"}, True),
-        ("U12345", {"text": "No mention here"}, False),
-        (None, {"text": "Hello <@U12345>"}, False),
+        ("U12345", "Hello <@U12345>", True),
+        ("U12345", "No mention here", False),
+        (None, "Hello <@U12345>", False),
     ],
 )
-def test_is_this_app_mentioned(bot_user_id, parent_message, expected):
-    assert is_this_app_mentioned(bot_user_id, parent_message) == expected
+def test_is_this_app_mentioned(bot_user_id, text, expected):
+    assert is_this_app_mentioned(bot_user_id, text) == expected
 
 
 @patch("app.bolt_listeners.find_parent_message", return_value=None)
 @patch("app.bolt_listeners.is_this_app_mentioned")
-def test_is_child_message_and_mentioned_no_channel_id(
+def test_is_in_thread_started_by_app_mention_no_channel_id(
     mock_is_mentioned, mock_find_parent, mock_client, mock_context
 ):
     mock_context.channel_id = None
-    assert is_child_message_and_mentioned(mock_client, mock_context, "12345") is False
+    assert (
+        is_in_thread_started_by_app_mention(mock_client, mock_context, "12345") is False
+    )
     mock_find_parent.assert_not_called()
     mock_is_mentioned.assert_not_called()
 
 
 @patch("app.bolt_listeners.find_parent_message", return_value=None)
 @patch("app.bolt_listeners.is_this_app_mentioned")
-def test_is_child_message_and_mentioned_no_thread_ts(
+def test_is_in_thread_started_by_app_mention_no_thread_ts(
     mock_is_mentioned, mock_find_parent, mock_client, mock_context
 ):
-    assert is_child_message_and_mentioned(mock_client, mock_context, None) is False
+    assert is_in_thread_started_by_app_mention(mock_client, mock_context, None) is False
     mock_find_parent.assert_not_called()
     mock_is_mentioned.assert_not_called()
 
 
 @patch("app.bolt_listeners.find_parent_message", return_value=None)
 @patch("app.bolt_listeners.is_this_app_mentioned")
-def test_is_child_message_and_mentioned_no_parent_message(
+def test_is_in_thread_started_by_app_mention_no_parent_message(
     mock_is_mentioned, mock_find_parent, mock_client, mock_context
 ):
-    assert is_child_message_and_mentioned(mock_client, mock_context, "12345") is False
+    assert (
+        is_in_thread_started_by_app_mention(mock_client, mock_context, "12345") is False
+    )
     mock_find_parent.assert_called_once_with(
         mock_client, mock_context.channel_id, "12345"
     )
@@ -116,16 +120,16 @@ def test_is_child_message_and_mentioned_no_parent_message(
 
 @patch("app.bolt_listeners.find_parent_message", return_value={"text": "Hello"})
 @patch("app.bolt_listeners.is_this_app_mentioned", return_value=False)
-def test_is_child_message_and_mentioned_not_mentioned(
+def test_is_in_thread_started_by_app_mention_not_mentioned(
     mock_is_mentioned, mock_find_parent, mock_client, mock_context
 ):
-    assert is_child_message_and_mentioned(mock_client, mock_context, "12345") is False
+    assert (
+        is_in_thread_started_by_app_mention(mock_client, mock_context, "12345") is False
+    )
     mock_find_parent.assert_called_once_with(
         mock_client, mock_context.channel_id, "12345"
     )
-    mock_is_mentioned.assert_called_once_with(
-        mock_context.bot_user_id, {"text": "Hello"}
-    )
+    mock_is_mentioned.assert_called_once_with(mock_context.bot_user_id, "Hello")
 
 
 @patch(
@@ -133,15 +137,17 @@ def test_is_child_message_and_mentioned_not_mentioned(
     return_value={"text": "Hello <@U87654321>"},
 )
 @patch("app.bolt_listeners.is_this_app_mentioned", return_value=True)
-def test_is_child_message_and_mentioned_true(
+def test_is_in_thread_started_by_app_mention_true(
     mock_is_mentioned, mock_find_parent, mock_client, mock_context
 ):
-    assert is_child_message_and_mentioned(mock_client, mock_context, "12345") is True
+    assert (
+        is_in_thread_started_by_app_mention(mock_client, mock_context, "12345") is True
+    )
     mock_find_parent.assert_called_once_with(
         mock_client, mock_context.channel_id, "12345"
     )
     mock_is_mentioned.assert_called_once_with(
-        mock_context.bot_user_id, {"text": "Hello <@U87654321>"}
+        mock_context.bot_user_id, "Hello <@U87654321>"
     )
 
 
