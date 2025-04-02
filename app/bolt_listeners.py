@@ -28,7 +28,7 @@ from app.litellm_ops import (
     messages_within_context_window,
     start_receiving_litellm_response,
 )
-from app.litellm_pdf_ops import get_pdf_content_if_exists, trim_pdf_content
+from app.litellm_pdf_ops import get_pdf_content_if_exists
 from app.slack_wip_message import post_wip_message, update_wip_message
 
 TIMEOUT_ERROR_MESSAGE = (
@@ -174,8 +174,12 @@ def convert_replies_to_messages(
     logger: logging.Logger,
 ) -> list[dict]:
     messages: list[dict] = []
+    pdf_count = 0
 
-    for reply in replies:
+    # Process replies in reverse order to prioritize recent PDFs and avoid unnecessary downloads
+    reversed_replies = list(reversed(replies))
+
+    for reply in reversed_replies:
         reply_text = re.sub(
             f"<@{context.bot_user_id}>\\s*", "", reply.get("text") or ""
         )
@@ -206,23 +210,34 @@ def convert_replies_to_messages(
                 files=reply.get("files"),
                 logger=logger,
             )
+
+        # Only process PDFs if we haven't reached the limit of 5
         if (
-            reply.get("bot_id") is None
+            pdf_count < 5
+            and reply.get("bot_id") is None
             and context.authorize_result is not None
             and PDF_FILE_ACCESS_ENABLED
             and can_bot_read_files(context.authorize_result.bot_scopes)
         ):
             if context.bot_token is None:
                 raise ValueError("context.bot_token cannot be None")
-            content += get_pdf_content_if_exists(
+
+            pdf_content = get_pdf_content_if_exists(
                 bot_token=context.bot_token,
                 files=reply.get("files"),
                 logger=logger,
+                max_pdfs=5,
+                current_pdf_count=pdf_count,
             )
+
+            # Count and add PDFs
+            pdf_count += len(pdf_content)
+            content += pdf_content
 
         messages.append({"role": "user", "content": content})
 
-    trim_pdf_content(messages)
+    # Reverse the messages to restore chronological order
+    messages.reverse()
     return messages
 
 
