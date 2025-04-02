@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 from slack_bolt import App
 
 from app.bolt_app import create_bolt_app, just_ack
-from app.bolt_listeners import respond_to_app_mention, respond_to_new_message
+from app.bolt_listeners import respond_to_new_message
 from app.bolt_middlewares import set_locale
 
 
@@ -40,12 +40,8 @@ def test_create_bolt_app_with_locale():
 
         assert mock_rate_limit_handler in mock_app_instance.client.retry_handlers
 
-        mock_app_instance.event.assert_any_call("app_mention")
         mock_app_instance.event.assert_any_call("message")
 
-        mock_app_instance.event("app_mention").assert_any_call(
-            ack=mock_just_ack, lazy=[respond_to_app_mention]
-        )
         mock_app_instance.event("message").assert_any_call(
             ack=mock_just_ack, lazy=[respond_to_new_message]
         )
