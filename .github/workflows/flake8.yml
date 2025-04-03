@@ -1,4 +1,4 @@
-name: Run flake8 validation
+name: flake8
 on:
   push:
     branches: [main]
