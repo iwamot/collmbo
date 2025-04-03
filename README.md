@@ -5,9 +5,7 @@
 [![pytest](https://github.com/iwamot/collmbo/actions/workflows/tests.yml/badge.svg)](https://github.com/iwamot/collmbo/actions/workflows/tests.yml)
 [![codecov](https://codecov.io/gh/iwamot/collmbo/branch/main/graph/badge.svg)](https://app.codecov.io/gh/iwamot/collmbo)
 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/b13da1c7-5d2f-4ad3-8c5b-9ef4e500deb8">
-</p>
+![Collmbo icon](https://github.com/user-attachments/assets/b13da1c7-5d2f-4ad3-8c5b-9ef4e500deb8)
 
 **A Slack bot that lets you choose your preferred LLM using [LiteLLM](https://github.com/BerriAI/litellm).** Pronounced the same as "Colombo".
 
