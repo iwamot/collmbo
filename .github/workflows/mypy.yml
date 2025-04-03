@@ -1,4 +1,4 @@
-name: Run mypy validation
+name: mypy
 on:
   push:
     branches: [main]
