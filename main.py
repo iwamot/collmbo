@@ -2,7 +2,8 @@ import logging
 import os
 import signal
 import sys
-from typing import Type
+from types import FrameType
+from typing import Optional, Type
 
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
@@ -10,10 +11,12 @@ from app.bolt_app import create_bolt_app
 from app.env import SLACK_APP_LOG_LEVEL
 
 
-def signal_handler(signum, frame, slack_handler: SocketModeHandler) -> None:
+def signal_handler(
+    signum: int, _: Optional[FrameType], slack_handler: SocketModeHandler
+) -> None:
     logger = logging.getLogger(__name__)
     signal_name = signal.Signals(signum).name
-    logger.info(f"Received {signal_name}, shutting down...")
+    logger.info("Received %s, shutting down...", signal_name)
     try:
         slack_handler.close()
     except Exception:

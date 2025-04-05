@@ -93,7 +93,7 @@ def get_dm_replies(client: WebClient, channel: str) -> list[dict]:
     past_messages: list[dict] = client.conversations_history(
         channel=channel,
         limit=100,
-        oldest="%.6f" % (time.time() - 86400),  # 24 hours ago
+        oldest=f"{time.time() - 86400:.6f}",  # 24 hours ago
         inclusive=True,
     ).get("messages", [])
     return list(reversed(past_messages))

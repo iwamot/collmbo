@@ -4,6 +4,7 @@ import os
 import re
 import threading
 import time
+from functools import lru_cache
 from importlib import import_module
 from typing import Optional, Tuple, Union
 
@@ -97,8 +98,6 @@ litellm.drop_params = True
 if LITELLM_CALLBACK_MODULE_NAME is not None:
     callback_module = import_module(LITELLM_CALLBACK_MODULE_NAME)
     litellm.callbacks = [callback_module.CallbackHandler()]
-
-_prompt_tokens_used_by_tools_cache: Optional[int] = None
 
 
 # Remove old messages to make sure we have room for max_input_tokens
@@ -381,15 +380,11 @@ def consume_litellm_stream_to_write_reply(
                 pass
 
 
+@lru_cache(maxsize=1)
 def calculate_tokens_necessary_for_tools() -> int:
     """Calculates the estimated number of prompt tokens necessary for loading Tools stuff"""
-    tools_module_name = LITELLM_TOOLS_MODULE_NAME
-    if tools_module_name is None:
+    if LITELLM_TOOLS_MODULE_NAME is None:
         return 0
-
-    global _prompt_tokens_used_by_tools_cache
-    if _prompt_tokens_used_by_tools_cache is not None:
-        return _prompt_tokens_used_by_tools_cache
 
     def _calculate_prompt_tokens(tools) -> int:
         response = call_litellm_completion(
@@ -402,8 +397,5 @@ def calculate_tokens_necessary_for_tools() -> int:
         return response["usage"]["prompt_tokens"]
 
     # TODO: If there is a better way to calculate this, replace the logic with it
-    module = import_module(tools_module_name)
-    _prompt_tokens_used_by_tools_cache = _calculate_prompt_tokens(
-        module.tools
-    ) - _calculate_prompt_tokens(None)
-    return _prompt_tokens_used_by_tools_cache
+    module = import_module(LITELLM_TOOLS_MODULE_NAME)
+    return _calculate_prompt_tokens(module.tools) - _calculate_prompt_tokens(None)
