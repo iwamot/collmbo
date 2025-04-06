@@ -6,11 +6,17 @@ import threading
 import time
 from functools import lru_cache
 from importlib import import_module
+from types import ModuleType
 from typing import Optional, Tuple, Union
 
 import litellm
 from litellm.litellm_core_utils.streaming_handler import CustomStreamWrapper
-from litellm.types.utils import ModelResponse
+from litellm.types.utils import (
+    ChatCompletionMessageToolCall,
+    Choices,
+    Message,
+    ModelResponse,
+)
 from slack_sdk.web import SlackResponse, WebClient
 
 from app.env import (
@@ -20,6 +26,7 @@ from app.env import (
     LITELLM_MODEL_TYPE,
     LITELLM_TEMPERATURE,
     LITELLM_TOOLS_MODULE_NAME,
+    SLACK_LOADING_CHARACTER,
     SLACK_UPDATE_TEXT_BUFFER_SIZE,
     TRANSLATE_MARKDOWN,
 )
@@ -190,194 +197,278 @@ def call_litellm_completion(
     )
 
 
+def update_reply_text(
+    client: WebClient,
+    channel: str,
+    wip_reply: Union[dict, SlackResponse],
+    assistant_content: str,
+    with_loading_character: bool = True,
+) -> None:
+    assistant_reply_text = format_assistant_reply(assistant_content)
+    if TRANSLATE_MARKDOWN:
+        assistant_reply_text = markdown_to_slack(assistant_reply_text)
+    wip_reply["message"]["text"] = assistant_reply_text
+    text = assistant_reply_text
+    if with_loading_character:
+        text += SLACK_LOADING_CHARACTER
+    update_wip_message(
+        client=client,
+        channel=channel,
+        ts=wip_reply["message"]["ts"],
+        text=text,
+    )
+
+
+def spawn_reply_update_text(
+    *,
+    client: WebClient,
+    channel: str,
+    wip_reply: Union[dict, SlackResponse],
+    assistant_content: str,
+    threads: list[threading.Thread],
+) -> None:
+    thread = threading.Thread(
+        target=update_reply_text,
+        args=(client, channel, wip_reply, assistant_content),
+    )
+    thread.daemon = True
+    thread.start()
+    threads.append(thread)
+
+
+def build_litellm_response(chunks: list) -> Optional[Message]:
+    response = litellm.stream_chunk_builder(chunks)
+    if response is None:
+        raise RuntimeError(
+            "litellm.stream_chunk_builder returned None. "
+            "Check the stream data or API behavior."
+        )
+    if isinstance(response.choices[0], Choices):
+        return response.choices[0].message
+    return None
+
+
+def handle_litellm_stream(
+    *,
+    stream: CustomStreamWrapper,
+    assistant_reply: dict,
+    wip_reply: Union[dict, SlackResponse],
+    client: WebClient,
+    channel: str,
+    timeout_seconds: int,
+    start_time: float,
+) -> tuple[Optional[Message], bool]:
+    response_chunks: list = []
+    is_response_too_long = False
+    threads: list[threading.Thread] = []
+    buffered_text = ""
+    try:
+        for chunk in stream:
+            if (time.time() - start_time) > timeout_seconds:
+                raise TimeoutError()
+            response_chunks.append(chunk)
+            delta = chunk.choices[0].get("delta")
+            if delta is None or delta.get("content") is None:
+                continue
+            buffered_text += delta["content"]
+            assistant_reply["content"] += delta["content"]
+            is_final_chunk = chunk.choices[0].get("finish_reason") is not None
+            if len(buffered_text) >= SLACK_UPDATE_TEXT_BUFFER_SIZE:
+                spawn_reply_update_text(
+                    client=client,
+                    channel=channel,
+                    wip_reply=wip_reply,
+                    assistant_content=assistant_reply["content"],
+                    threads=threads,
+                )
+                buffered_text = ""
+                if (
+                    not is_final_chunk
+                    and len(wip_reply["message"]["text"].encode("utf-8")) > 3500
+                ):
+                    is_response_too_long = True
+                    break
+            if is_final_chunk:
+                break
+    finally:
+        for t in threads:
+            try:
+                t.join()
+            except Exception:
+                pass
+    return build_litellm_response(response_chunks), is_response_too_long
+
+
+def process_tool_call(
+    tool_call: ChatCompletionMessageToolCall,
+    tools_module: ModuleType,
+    messages: list[dict],
+    logger: logging.Logger,
+) -> None:
+    function_name = tool_call.function.name
+    if function_name is None:
+        logger.warning(
+            "Skipped a tool call due to missing function name. Tool call details: %s",
+            tool_call,
+        )
+        return
+    function_to_call = getattr(tools_module, function_name)
+    function_args = json.loads(tool_call.function.arguments)
+    function_response = function_to_call(**function_args)
+    messages.append(
+        {
+            "tool_call_id": tool_call.id,
+            "role": "tool",
+            "name": function_name,
+            "content": function_response,
+        }
+    )
+
+
+def process_tool_calls(
+    *,
+    response_message: Message,
+    tools_module_name: str,
+    assistant_reply: dict,
+    messages: list[dict],
+    logger: logging.Logger,
+) -> None:
+    if response_message.tool_calls is None:
+        return
+    assistant_reply["tool_calls"] = response_message.model_dump()["tool_calls"]
+    tools_module = import_module(tools_module_name)
+    for tool_call in response_message.tool_calls:
+        process_tool_call(tool_call, tools_module, messages, logger)
+
+
+def reply_to_slack_with_litellm(
+    *,
+    client: WebClient,
+    wip_reply: Union[dict, SlackResponse],
+    channel: str,
+    user_id: str,
+    messages: list[dict],
+    thread_ts: Optional[str],
+    loading_text: str,
+    timeout_seconds: int,
+    logger: logging.Logger,
+) -> None:
+    stream = start_receiving_litellm_response(
+        temperature=LITELLM_TEMPERATURE,
+        messages=messages,
+        user=user_id,
+    )
+    consume_litellm_stream_to_write_reply(
+        client=client,
+        wip_reply=wip_reply,
+        channel=channel,
+        user_id=user_id,
+        messages=messages,
+        stream=stream,
+        thread_ts=thread_ts,
+        loading_text=loading_text,
+        timeout_seconds=timeout_seconds,
+        logger=logger,
+    )
+
+
 def consume_litellm_stream_to_write_reply(
     *,
     client: WebClient,
     wip_reply: Union[dict, SlackResponse],
-    channel: Optional[str],
+    channel: str,
     user_id: str,
     messages: list[dict],
     stream: CustomStreamWrapper,
     thread_ts: Optional[str],
     loading_text: str,
     timeout_seconds: int,
-    translate_markdown: bool,
     logger: logging.Logger,
 ):
-    if channel is None:
-        raise ValueError("channel cannot be None")
-
     start_time = time.time()
     assistant_reply = {
         "role": "assistant",
         "content": "",
     }
+
+    response_message, is_response_too_long = handle_litellm_stream(
+        stream=stream,
+        assistant_reply=assistant_reply,
+        wip_reply=wip_reply,
+        client=client,
+        channel=channel,
+        timeout_seconds=timeout_seconds,
+        start_time=start_time,
+    )
+
+    # Append any remaining text to the message
+    if len(assistant_reply["content"]) > 0:
+        update_reply_text(
+            client=client,
+            channel=channel,
+            wip_reply=wip_reply,
+            assistant_content=assistant_reply["content"],
+            with_loading_character=False,
+        )
+
     messages.append(assistant_reply)
-    pending_text = ""
-    threads = []
-    chunks: list = []
-    is_response_too_long = False
-    try:
-        loading_character = " ... :writing_hand:"
-        for chunk in stream:
-            spent_seconds = time.time() - start_time
-            if timeout_seconds < spent_seconds:
-                raise TimeoutError()
-            chunks.append(chunk)
-            item = chunk.choices[0]
 
-            is_final_chunk = item.get("finish_reason") is not None
+    # If the response is too long, post a new message instead
+    if is_response_too_long:
+        next_wip_reply = post_wip_message(
+            client=client,
+            channel=channel,
+            thread_ts=thread_ts,
+            loading_text=SLACK_LOADING_CHARACTER,
+        )
+        consume_litellm_stream_to_write_reply(
+            client=client,
+            wip_reply=next_wip_reply,
+            channel=channel,
+            user_id=user_id,
+            messages=messages,
+            stream=stream,
+            thread_ts=thread_ts,
+            loading_text=loading_text,
+            timeout_seconds=int(timeout_seconds - (time.time() - start_time)),
+            logger=logger,
+        )
 
-            delta = item.get("delta")
-            if delta is not None and delta.get("content") is not None:
-                pending_text += delta.get("content")
-                assistant_reply["content"] += delta.get("content")
-                if len(pending_text) >= SLACK_UPDATE_TEXT_BUFFER_SIZE:
+    if (
+        response_message is None
+        or response_message.tool_calls is None
+        or LITELLM_TOOLS_MODULE_NAME is None
+    ):
+        return
 
-                    def update_message():
-                        assistant_reply_text = format_assistant_reply(
-                            assistant_reply["content"]
-                        )
-                        if TRANSLATE_MARKDOWN:
-                            assistant_reply_text = markdown_to_slack(
-                                assistant_reply_text
-                            )
-                        wip_reply["message"]["text"] = assistant_reply_text
-                        update_wip_message(
-                            client=client,
-                            channel=channel,
-                            ts=wip_reply["message"]["ts"],
-                            text=assistant_reply_text + loading_character,
-                        )
+    # If the message has already been updated, post a new one
+    if wip_reply["message"]["text"] != loading_text:
+        wip_reply = post_wip_message(
+            client=client,
+            channel=channel,
+            thread_ts=thread_ts,
+            loading_text=loading_text,
+        )
 
-                    thread = threading.Thread(target=update_message)
-                    thread.daemon = True
-                    thread.start()
-                    threads.append(thread)
-                    pending_text = ""
-
-                    if (
-                        not is_final_chunk
-                        and len(wip_reply["message"]["text"].encode("utf-8")) > 3500
-                    ):
-                        is_response_too_long = True
-                        break
-
-                if is_final_chunk:
-                    break
-
-        for t in threads:
-            try:
-                if t.is_alive():
-                    t.join()
-            except Exception:
-                pass
-
-        # Append any remaining text to the message
-        if len(assistant_reply["content"]) > 0:
-            assistant_reply_text = format_assistant_reply(assistant_reply["content"])
-            if TRANSLATE_MARKDOWN:
-                assistant_reply_text = markdown_to_slack(assistant_reply_text)
-            wip_reply["message"]["text"] = assistant_reply_text
-            update_wip_message(
-                client=client,
-                channel=channel,
-                ts=wip_reply["message"]["ts"],
-                text=assistant_reply_text,
-            )
-
-        # If the response is too long, post a new message instead
-        if is_response_too_long:
-            next_wip_reply = post_wip_message(
-                client=client,
-                channel=channel,
-                thread_ts=thread_ts,
-                loading_text=loading_character,
-            )
-            consume_litellm_stream_to_write_reply(
-                client=client,
-                wip_reply=next_wip_reply,
-                channel=channel,
-                user_id=user_id,
-                messages=messages,
-                stream=stream,
-                thread_ts=thread_ts,
-                loading_text=loading_text,
-                timeout_seconds=int(timeout_seconds - (time.time() - start_time)),
-                translate_markdown=translate_markdown,
-                logger=logger,
-            )
-
-        response = litellm.stream_chunk_builder(chunks)
-        if response is None:
-            raise RuntimeError(
-                "Unexpected None response from 'litellm.stream_chunk_builder'. "
-                "Check the input 'chunks' and the Litellm API behavior."
-            )
-        response_message = response.choices[0].get("message")
-        if (
-            response_message is not None
-            and response_message.tool_calls is not None
-            and LITELLM_TOOLS_MODULE_NAME is not None
-        ):
-            # If the message has already been updated, post a new one
-            if wip_reply["message"]["text"] != loading_text:
-                wip_reply = post_wip_message(
-                    client=client,
-                    channel=channel,
-                    thread_ts=thread_ts,
-                    loading_text=loading_text,
-                )
-
-            tool_calls = response_message.tool_calls
-            assistant_reply["tool_calls"] = response_message.model_dump()["tool_calls"]
-            tools_module = import_module(LITELLM_TOOLS_MODULE_NAME)
-            for tool_call in tool_calls:
-                function_name = tool_call.function.name
-                if function_name is None:
-                    logger.warning(
-                        "Skipped a tool call due to missing function name. Tool call details: %s",
-                        tool_call,
-                    )
-                    continue
-                function_to_call = getattr(tools_module, function_name)
-                function_args = json.loads(tool_call.function.arguments)
-                function_response = function_to_call(**function_args)
-                messages.append(
-                    {
-                        "tool_call_id": tool_call.id,
-                        "role": "tool",
-                        "name": function_name,
-                        "content": function_response,
-                    }
-                )
-            messages_within_context_window(messages)
-            sub_stream = start_receiving_litellm_response(
-                temperature=LITELLM_TEMPERATURE,
-                messages=messages,
-                user=user_id,
-            )
-            consume_litellm_stream_to_write_reply(
-                client=client,
-                wip_reply=wip_reply,
-                channel=channel,
-                user_id=user_id,
-                messages=messages,
-                stream=sub_stream,
-                thread_ts=thread_ts,
-                loading_text=loading_text,
-                timeout_seconds=int(timeout_seconds - (time.time() - start_time)),
-                translate_markdown=translate_markdown,
-                logger=logger,
-            )
-
-    finally:
-        for t in threads:
-            try:
-                if t.is_alive():
-                    t.join()
-            except Exception:
-                pass
+    process_tool_calls(
+        response_message=response_message,
+        tools_module_name=LITELLM_TOOLS_MODULE_NAME,
+        assistant_reply=assistant_reply,
+        messages=messages,
+        logger=logger,
+    )
+    messages_within_context_window(messages)
+    reply_to_slack_with_litellm(
+        client=client,
+        wip_reply=wip_reply,
+        channel=channel,
+        user_id=user_id,
+        messages=messages,
+        thread_ts=thread_ts,
+        loading_text=loading_text,
+        timeout_seconds=int(timeout_seconds - (time.time() - start_time)),
+        logger=logger,
+    )
 
 
 @lru_cache(maxsize=1)
