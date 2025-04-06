@@ -9,7 +9,6 @@ from slack_sdk.web import SlackResponse, WebClient
 
 from app.env import (
     IMAGE_FILE_ACCESS_ENABLED,
-    LITELLM_TEMPERATURE,
     LITELLM_TIMEOUT_SECONDS,
     PDF_FILE_ACCESS_ENABLED,
     REDACT_CREDIT_CARD_PATTERN,
@@ -23,11 +22,7 @@ from app.env import (
 )
 from app.i18n import translate
 from app.litellm_image_ops import get_image_content_if_exists
-from app.litellm_ops import (
-    consume_litellm_stream_to_write_reply,
-    messages_within_context_window,
-    start_receiving_litellm_response,
-)
+from app.litellm_ops import messages_within_context_window, reply_to_slack_with_litellm
 from app.litellm_pdf_ops import get_pdf_content_if_exists
 from app.slack_wip_message import post_wip_message, update_wip_message
 
@@ -267,22 +262,15 @@ def reply_to_messages(
         )
         return
 
-    stream = start_receiving_litellm_response(
-        temperature=LITELLM_TEMPERATURE,
-        messages=messages,
-        user=user_id,
-    )
-    consume_litellm_stream_to_write_reply(
+    reply_to_slack_with_litellm(
         client=client,
         wip_reply=wip_reply,
         channel=channel_id,
         user_id=user_id,
         messages=messages,
-        stream=stream,
         thread_ts=thread_ts,
         loading_text=loading_text,
         timeout_seconds=LITELLM_TIMEOUT_SECONDS,
-        translate_markdown=TRANSLATE_MARKDOWN,
         logger=logger,
     )
 
