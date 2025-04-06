@@ -351,7 +351,6 @@ def reply_to_slack_with_litellm(
     thread_ts: Optional[str],
     loading_text: str,
     timeout_seconds: int,
-    logger: logging.Logger,
 ) -> None:
     stream = start_receiving_litellm_response(
         temperature=LITELLM_TEMPERATURE,
@@ -368,7 +367,6 @@ def reply_to_slack_with_litellm(
         thread_ts=thread_ts,
         loading_text=loading_text,
         timeout_seconds=timeout_seconds,
-        logger=logger,
     )
 
 
@@ -383,7 +381,6 @@ def consume_litellm_stream_to_write_reply(
     thread_ts: Optional[str],
     loading_text: str,
     timeout_seconds: int,
-    logger: logging.Logger,
 ):
     start_time = time.time()
     assistant_reply = {
@@ -431,7 +428,6 @@ def consume_litellm_stream_to_write_reply(
             thread_ts=thread_ts,
             loading_text=loading_text,
             timeout_seconds=int(timeout_seconds - (time.time() - start_time)),
-            logger=logger,
         )
 
     if (
@@ -455,7 +451,7 @@ def consume_litellm_stream_to_write_reply(
         tools_module_name=LITELLM_TOOLS_MODULE_NAME,
         assistant_reply=assistant_reply,
         messages=messages,
-        logger=logger,
+        logger=client.logger,
     )
     messages_within_context_window(messages)
     reply_to_slack_with_litellm(
@@ -467,7 +463,6 @@ def consume_litellm_stream_to_write_reply(
         thread_ts=thread_ts,
         loading_text=loading_text,
         timeout_seconds=int(timeout_seconds - (time.time() - start_time)),
-        logger=logger,
     )
 
 

@@ -243,7 +243,6 @@ def reply_to_messages(
     loading_text: str,
     channel_id: str,
     client: WebClient,
-    logger: logging.Logger,
     wip_reply: SlackResponse,
 ) -> None:
     messages, num_context_tokens, max_context_tokens = messages_within_context_window(
@@ -271,7 +270,6 @@ def reply_to_messages(
         thread_ts=thread_ts,
         loading_text=loading_text,
         timeout_seconds=LITELLM_TIMEOUT_SECONDS,
-        logger=logger,
     )
 
 
@@ -301,11 +299,10 @@ def handle_exception(
     channel_id: str,
     wip_reply: Optional[SlackResponse],
     client: WebClient,
-    logger: logging.Logger,
 ):
     message_dict: dict = wip_reply.get("message", {}) if wip_reply else {}
     text = message_dict.get("text", "") + "\n\n" + f":warning: Failed to reply: {e}"
-    logger.exception(text)
+    client.logger.exception(text)
     if wip_reply:
         client.chat_update(
             channel=channel_id,
@@ -318,7 +315,6 @@ def respond_to_new_message(
     context: BoltContext,
     payload: dict,
     client: WebClient,
-    logger: logging.Logger,
 ):
     if context.channel_id is None:
         raise ValueError("context.channel_id cannot be None")
@@ -385,7 +381,7 @@ def respond_to_new_message(
         messages += convert_replies_to_messages(
             replies=replies,
             context=context,
-            logger=logger,
+            logger=client.logger,
         )
         reply_to_messages(
             messages=messages,
@@ -394,7 +390,6 @@ def respond_to_new_message(
             loading_text=loading_text,
             channel_id=context.channel_id,
             client=client,
-            logger=logger,
             wip_reply=wip_reply,
         )
 
@@ -406,4 +401,4 @@ def respond_to_new_message(
             client=client,
         )
     except Exception as e:
-        handle_exception(e, context.channel_id, wip_reply, client, logger)
+        handle_exception(e, context.channel_id, wip_reply, client)
