@@ -9,6 +9,8 @@ from slack_bolt import BoltContext, BoltResponse
 from slack_bolt.request.payload_utils import is_event
 from slack_sdk.web import WebClient
 
+from app.bolt_utils import extract_user_id_from_context
+
 
 def before_authorize(
     body: dict,
@@ -59,7 +61,7 @@ def set_locale(
     Returns:
         None
     """
-    if user_id := context.actor_user_id or context.user_id:
+    if user_id := extract_user_id_from_context(context):
         user_info = client.users_info(user=user_id, include_locale=True)
         user: dict = user_info.get("user", {})
         context["locale"] = user.get("locale")
