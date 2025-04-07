@@ -7,6 +7,7 @@ from litellm.exceptions import Timeout
 from slack_bolt import BoltContext
 from slack_sdk.web import SlackResponse, WebClient
 
+from app.bolt_utils import extract_user_id_from_context
 from app.env import (
     IMAGE_FILE_ACCESS_ENABLED,
     LITELLM_TIMEOUT_SECONDS,
@@ -20,6 +21,7 @@ from app.env import (
     SYSTEM_TEXT,
     TRANSLATE_MARKDOWN,
 )
+from app.exceptions import ContextOverflowError
 from app.i18n import translate
 from app.litellm_image_ops import get_image_content_if_exists
 from app.litellm_ops import messages_within_context_window, reply_to_slack_with_litellm
@@ -235,49 +237,110 @@ def convert_replies_to_messages(
     return messages
 
 
-def reply_to_messages(
+def should_ignore_message(
     *,
-    messages: list[dict],
-    user_id: str,
-    thread_ts: Optional[str],
-    loading_text: str,
-    channel_id: str,
+    context: BoltContext,
+    payload: dict,
     client: WebClient,
-    wip_reply: SlackResponse,
-) -> None:
+) -> bool:
+    if payload.get("bot_id") is not None:
+        return True
+    return (
+        payload.get("channel_type") != "im"
+        and not is_this_app_mentioned(context.bot_user_id, payload["text"])
+        and not is_in_thread_started_by_app_mention(
+            client, context, payload.get("thread_ts")
+        )
+    )
+
+
+def post_loading_reply(
+    *,
+    client: WebClient,
+    channel_id: str,
+    payload: dict,
+    loading_text: str,
+) -> tuple[Optional[str], SlackResponse]:
+    reply_thread_ts = payload.get("thread_ts")
+
+    # If mentioned in a channel and outside a thread, reply in a thread
+    if payload.get("channel_type") != "im" and reply_thread_ts is None:
+        reply_thread_ts = payload["ts"]
+
+    wip_reply = post_wip_message(
+        client=client,
+        channel=channel_id,
+        thread_ts=reply_thread_ts,
+        loading_text=loading_text,
+    )
+
+    return reply_thread_ts, wip_reply
+
+
+def build_messages(
+    *,
+    client: WebClient,
+    context: BoltContext,
+    payload: dict,
+    channel_id: str,
+    user_id: str,
+) -> list[dict]:
+    messages = initialize_messages(SYSTEM_TEXT, context.bot_user_id, TRANSLATE_MARKDOWN)
+
+    thread_ts = payload.get("thread_ts")
+    # In the DM with the bot; this is not within a thread
+    if payload.get("channel_type") == "im" and thread_ts is None:
+        replies = get_dm_replies(client, channel_id)
+    # Within a thread
+    elif thread_ts is not None:
+        replies = get_thread_replies(client, channel_id, thread_ts)
+    # In a channel; mentioning the bot user outside a thread
+    else:
+        replies = [
+            {
+                "text": payload["text"],
+                "user": user_id,
+                "bot_id": payload.get("bot_id"),
+                "files": payload.get("files"),
+            }
+        ]
+
+    messages += convert_replies_to_messages(
+        replies=replies,
+        context=context,
+        logger=client.logger,
+    )
     messages, num_context_tokens, max_context_tokens = messages_within_context_window(
         messages
     )
-
     if len(messages) == 1:
-        update_wip_message(
-            client=client,
-            channel=channel_id,
-            ts=wip_reply["message"]["ts"],
-            text=(
-                f":warning: The previous message is too long "
-                f"({num_context_tokens}/{max_context_tokens} prompt tokens)."
-            ),
-        )
-        return
+        raise ContextOverflowError(num_context_tokens, max_context_tokens)
+    return messages
 
-    reply_to_slack_with_litellm(
+
+def handle_context_overflow(
+    *,
+    client: WebClient,
+    channel_id: str,
+    e: ContextOverflowError,
+    wip_reply: Optional[SlackResponse],
+) -> None:
+    if wip_reply is None:
+        return
+    update_wip_message(
         client=client,
-        wip_reply=wip_reply,
         channel=channel_id,
-        user_id=user_id,
-        messages=messages,
-        thread_ts=thread_ts,
-        loading_text=loading_text,
-        timeout_seconds=LITELLM_TIMEOUT_SECONDS,
+        ts=wip_reply["message"]["ts"],
+        text=e.message,
     )
 
 
 def handle_timeout_error(
+    *,
+    client: WebClient,
     channel_id: str,
     locale: Optional[str],
     wip_reply: Optional[SlackResponse],
-    client: WebClient,
 ):
     if wip_reply is None:
         return
@@ -295,10 +358,11 @@ def handle_timeout_error(
 
 
 def handle_exception(
-    e: Exception,
-    channel_id: str,
-    wip_reply: Optional[SlackResponse],
+    *,
     client: WebClient,
+    channel_id: str,
+    e: Exception,
+    wip_reply: Optional[SlackResponse],
 ):
     message_dict: dict = wip_reply.get("message", {}) if wip_reply else {}
     text = message_dict.get("text", "") + "\n\n" + f":warning: Failed to reply: {e}"
@@ -315,90 +379,73 @@ def respond_to_new_message(
     context: BoltContext,
     payload: dict,
     client: WebClient,
-):
+) -> None:
+    """
+    Respond to a new Slack message event.
+
+    This function filters irrelevant messages, posts a loading message,
+    builds the conversation history, and sends a response using a language model.
+
+    Args:
+        context (BoltContext): The Bolt context object.
+        payload (dict): The payload of the incoming message.
+        client (WebClient): The Slack WebClient instance.
+    Returns:
+        None
+    """
     if context.channel_id is None:
         raise ValueError("context.channel_id cannot be None")
 
-    user_id = context.actor_user_id or context.user_id
+    user_id = extract_user_id_from_context(context)
     if user_id is None:
-        raise ValueError("user_id cannot be None")
-
-    # Ignore messages from bots
-    if payload.get("bot_id") is not None:
-        return
+        raise ValueError("User ID could not be determined from context")
 
     wip_reply = None
     try:
-        is_in_dm_with_bot = payload.get("channel_type") == "im"
-        payload_thread_ts = payload.get("thread_ts")
-        if (
-            not is_in_dm_with_bot
-            and not is_this_app_mentioned(context.bot_user_id, payload["text"])
-            and not is_in_thread_started_by_app_mention(
-                client, context, payload_thread_ts
-            )
-        ):
+        if should_ignore_message(context=context, payload=payload, client=client):
             return
-
-        # If mentioned in a channel and outside a thread, reply in a thread
-        reply_thread_ts = payload_thread_ts
-        if not is_in_dm_with_bot and reply_thread_ts is None:
-            reply_thread_ts = payload["ts"]
-
         loading_text = translate(locale=context.get("locale"), text=LOADING_TEXT)
-        wip_reply = post_wip_message(
+        reply_thread_ts, wip_reply = post_loading_reply(
+            client=client,
+            channel_id=context.channel_id,
+            payload=payload,
+            loading_text=loading_text,
+        )
+        messages = build_messages(
+            client=client,
+            context=context,
+            payload=payload,
+            channel_id=context.channel_id,
+            user_id=user_id,
+        )
+        reply_to_slack_with_litellm(
             client=client,
             channel=context.channel_id,
-            thread_ts=reply_thread_ts,
-            loading_text=loading_text,
-        )
-
-        messages: list[dict] = initialize_messages(
-            SYSTEM_TEXT, context.bot_user_id, TRANSLATE_MARKDOWN
-        )
-
-        # In the DM with the bot; this is not within a thread
-        if is_in_dm_with_bot and payload_thread_ts is None:
-            replies = get_dm_replies(client, context.channel_id)
-        # Within a thread
-        elif payload_thread_ts is not None:
-            replies = get_thread_replies(
-                client=client,
-                channel=context.channel_id,
-                thread_ts=payload_thread_ts,
-            )
-        # In a channel; mentioning the bot user outside a thread
-        else:
-            replies = [
-                {
-                    "text": payload["text"],
-                    "user": user_id,
-                    "bot_id": payload.get("bot_id"),
-                    "files": payload.get("files"),
-                }
-            ]
-
-        messages += convert_replies_to_messages(
-            replies=replies,
-            context=context,
-            logger=client.logger,
-        )
-        reply_to_messages(
-            messages=messages,
             user_id=user_id,
             thread_ts=reply_thread_ts,
+            messages=messages,
             loading_text=loading_text,
-            channel_id=context.channel_id,
+            wip_reply=wip_reply,
+            timeout_seconds=LITELLM_TIMEOUT_SECONDS,
+        )
+    except ContextOverflowError as e:
+        handle_context_overflow(
             client=client,
+            channel_id=context.channel_id,
+            e=e,
             wip_reply=wip_reply,
         )
-
     except (Timeout, TimeoutError):
         handle_timeout_error(
+            client=client,
             channel_id=context.channel_id,
             locale=context.get("locale"),
             wip_reply=wip_reply,
-            client=client,
         )
     except Exception as e:
-        handle_exception(e, context.channel_id, wip_reply, client)
+        handle_exception(
+            client=client,
+            channel_id=context.channel_id,
+            e=e,
+            wip_reply=wip_reply,
+        )

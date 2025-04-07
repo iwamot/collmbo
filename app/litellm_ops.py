@@ -344,12 +344,12 @@ def process_tool_calls(
 def reply_to_slack_with_litellm(
     *,
     client: WebClient,
-    wip_reply: Union[dict, SlackResponse],
     channel: str,
     user_id: str,
-    messages: list[dict],
     thread_ts: Optional[str],
+    messages: list[dict],
     loading_text: str,
+    wip_reply: Union[dict, SlackResponse],
     timeout_seconds: int,
 ) -> None:
     stream = start_receiving_litellm_response(
