@@ -26,7 +26,7 @@ from app.i18n import translate
 from app.litellm_image_ops import get_image_content_if_exists
 from app.litellm_ops import messages_within_context_window, reply_to_slack_with_litellm
 from app.litellm_pdf_ops import get_pdf_content_if_exists
-from app.slack_wip_message import post_wip_message, update_wip_message
+from app.slack_utils import is_in_thread_started_by_app_mention, is_this_app_mentioned
 
 TIMEOUT_ERROR_MESSAGE = (
     f":warning: Apologies! It seems that the AI didn't respond within the {LITELLM_TIMEOUT_SECONDS}-second timeframe. "
@@ -35,39 +35,6 @@ TIMEOUT_ERROR_MESSAGE = (
     "you may consider deploying this app with customized settings on your infrastructure. :bow:"
 )
 LOADING_TEXT = ":hourglass_flowing_sand: Wait a second, please ..."
-
-
-def find_parent_message(
-    client: WebClient, channel_id: Optional[str], thread_ts: Optional[str]
-) -> Optional[dict]:
-    if channel_id is None or thread_ts is None:
-        return None
-
-    messages: list[dict] = client.conversations_history(
-        channel=channel_id,
-        latest=thread_ts,
-        limit=1,
-        inclusive=True,
-    ).get("messages", [])
-
-    return messages[0] if messages else None
-
-
-def is_this_app_mentioned(bot_user_id: Optional[str], text: str) -> bool:
-    return f"<@{bot_user_id}>" in text
-
-
-def is_in_thread_started_by_app_mention(
-    client: WebClient,
-    context: BoltContext,
-    thread_ts: Optional[str],
-) -> bool:
-    if context.channel_id is None or thread_ts is None:
-        return False
-    parent_message = find_parent_message(client, context.channel_id, thread_ts)
-    return parent_message is not None and is_this_app_mentioned(
-        context.bot_user_id, parent_message.get("text", "")
-    )
 
 
 def initialize_messages(
@@ -243,6 +210,16 @@ def should_ignore_message(
     payload: dict,
     client: WebClient,
 ) -> bool:
+    """
+    Check if the message should be ignored based on certain conditions.
+
+    Args:
+        context (BoltContext): The Bolt context object.
+        payload (dict): The payload of the incoming message.
+        client (WebClient): The Slack WebClient instance.
+    Returns:
+        bool: True if the message should be ignored, False otherwise.
+    """
     if payload.get("bot_id") is not None:
         return True
     return (
@@ -261,19 +238,28 @@ def post_loading_reply(
     payload: dict,
     loading_text: str,
 ) -> tuple[Optional[str], SlackResponse]:
+    """
+    Post a loading message to a channel or thread.
+
+    Args:
+        client (WebClient): Slack WebClient instance.
+        channel_id (str): Channel ID to post the message to.
+        payload (dict): Incoming message payload.
+        loading_text (str): Message text to show while loading.
+    Returns:
+        tuple[Optional[str], SlackResponse]: Thread timestamp and Slack API response.
+    """
     reply_thread_ts = payload.get("thread_ts")
 
     # If mentioned in a channel and outside a thread, reply in a thread
     if payload.get("channel_type") != "im" and reply_thread_ts is None:
         reply_thread_ts = payload["ts"]
 
-    wip_reply = post_wip_message(
-        client=client,
+    wip_reply = client.chat_postMessage(
         channel=channel_id,
         thread_ts=reply_thread_ts,
-        loading_text=loading_text,
+        text=loading_text,
     )
-
     return reply_thread_ts, wip_reply
 
 
@@ -327,8 +313,7 @@ def handle_context_overflow(
 ) -> None:
     if wip_reply is None:
         return
-    update_wip_message(
-        client=client,
+    client.chat_update(
         channel=channel_id,
         ts=wip_reply["message"]["ts"],
         text=e.message,
