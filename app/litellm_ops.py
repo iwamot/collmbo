@@ -30,7 +30,6 @@ from app.env import (
     SLACK_UPDATE_TEXT_BUFFER_SIZE,
     TRANSLATE_MARKDOWN,
 )
-from app.slack_wip_message import post_wip_message, update_wip_message
 
 
 # Format message from LiteLLM to display in Slack
@@ -211,8 +210,7 @@ def update_reply_text(
     text = assistant_reply_text
     if with_loading_character:
         text += SLACK_LOADING_CHARACTER
-    update_wip_message(
-        client=client,
+    client.chat_update(
         channel=channel,
         ts=wip_reply["message"]["ts"],
         text=text,
@@ -412,11 +410,10 @@ def consume_litellm_stream_to_write_reply(
 
     # If the response is too long, post a new message instead
     if is_response_too_long:
-        next_wip_reply = post_wip_message(
-            client=client,
+        next_wip_reply = client.chat_postMessage(
             channel=channel,
             thread_ts=thread_ts,
-            loading_text=SLACK_LOADING_CHARACTER,
+            text=SLACK_LOADING_CHARACTER,
         )
         consume_litellm_stream_to_write_reply(
             client=client,
@@ -439,11 +436,10 @@ def consume_litellm_stream_to_write_reply(
 
     # If the message has already been updated, post a new one
     if wip_reply["message"]["text"] != loading_text:
-        wip_reply = post_wip_message(
-            client=client,
+        wip_reply = client.chat_postMessage(
             channel=channel,
             thread_ts=thread_ts,
-            loading_text=loading_text,
+            text=loading_text,
         )
 
     process_tool_calls(
