@@ -66,6 +66,10 @@ IMAGE_FILE_ACCESS_ENABLED = (
 
 PDF_FILE_ACCESS_ENABLED = os.environ.get("PDF_FILE_ACCESS_ENABLED", "false") == "true"
 
+ANTHROPIC_PROMPT_CACHING_ENABLED = (
+    os.environ.get("ANTHROPIC_PROMPT_CACHING_ENABLED", "false") == "true"
+)
+
 # Redaction patterns
 #
 REDACT_EMAIL_PATTERN = os.environ.get(

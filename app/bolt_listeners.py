@@ -9,6 +9,7 @@ from slack_sdk.web import SlackResponse, WebClient
 
 from app.bolt_utils import extract_user_id_from_context
 from app.env import (
+    ANTHROPIC_PROMPT_CACHING_ENABLED,
     IMAGE_FILE_ACCESS_ENABLED,
     LITELLM_TIMEOUT_SECONDS,
     PDF_FILE_ACCESS_ENABLED,
@@ -301,6 +302,21 @@ def build_messages(
     )
     if len(messages) == 1:
         raise ContextOverflowError(num_context_tokens, max_context_tokens)
+
+    if (
+        ANTHROPIC_PROMPT_CACHING_ENABLED
+        and num_context_tokens >= 1024
+        and len([m for m in messages if m.get("role") == "user"]) > 1
+    ):
+        # Set cache points for the last two user messages
+        user_messages_found = 0
+        for message in reversed(messages):
+            if message.get("role") == "user":
+                message["content"][-1]["cache_control"] = {"type": "ephemeral"}
+                user_messages_found += 1
+                if user_messages_found >= 2:
+                    break
+
     return messages
 
 
