@@ -125,13 +125,13 @@ Collmbo does not serve endpoints and can run in any environment with internet ac
 
 ## Features
 
-- **[Tools (Function Calling)](https://github.com/iwamot/collmbo/wiki/Tools-(Function-Calling))** – Extends functionality with function calling.
-- **[Custom callbacks](https://github.com/iwamot/collmbo/wiki/Custom-callbacks)** – Hooks into requests and responses for custom processing.
-- **[Redaction](https://github.com/iwamot/collmbo/wiki/Redaction)** – Masks sensitive information before sending requests.
-- **[Slack-friendly formatting](https://github.com/iwamot/collmbo/wiki/Slack%E2%80%90friendly-formatting)** – Formats messages for better readability in Slack.
-- **[Image input](https://github.com/iwamot/collmbo/wiki/Image-input)** – Enables AI models to analyze uploaded images.
-- **[PDF input](https://github.com/iwamot/collmbo/wiki/PDF-input)** – Enables AI models to analyze uploaded PDFs.
-- **[Prompt caching](https://github.com/iwamot/collmbo/wiki/Prompt-caching)** – May help reduce costs by reusing context (Anthropic, Amazon Bedrock).
+- **[Tools (Function Calling)](https://github.com/iwamot/collmbo/wiki/Tools-(Function-Calling))** - Extends functionality with function calling.
+- **[Custom callbacks](https://github.com/iwamot/collmbo/wiki/Custom-callbacks)** - Hooks into requests and responses for custom processing.
+- **[Redaction](https://github.com/iwamot/collmbo/wiki/Redaction)** - Masks sensitive information before sending requests.
+- **[Slack-friendly formatting](https://github.com/iwamot/collmbo/wiki/Slack%E2%80%90friendly-formatting)** - Formats messages for better readability in Slack.
+- **[Image input](https://github.com/iwamot/collmbo/wiki/Image-input)** - Enables AI models to analyze uploaded images.
+- **[PDF input](https://github.com/iwamot/collmbo/wiki/PDF-input)** - Enables AI models to analyze uploaded PDFs.
+- **[Prompt caching](https://github.com/iwamot/collmbo/wiki/Prompt-caching)** - May help reduce costs by reusing context (Anthropic, Amazon Bedrock).
 
 ## Configuration
 
@@ -151,7 +151,7 @@ This helps maintain code quality.
 
 ## Related Projects
 
-- [seratch/ChatGPT-in-Slack](https://github.com/seratch/ChatGPT-in-Slack) – The original project by @seratch.
+- [seratch/ChatGPT-in-Slack](https://github.com/seratch/ChatGPT-in-Slack) - The original project by @seratch.
 
 ## License
 
