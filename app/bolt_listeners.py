@@ -9,10 +9,10 @@ from slack_sdk.web import SlackResponse, WebClient
 
 from app.bolt_utils import extract_user_id_from_context
 from app.env import (
-    ANTHROPIC_PROMPT_CACHING_ENABLED,
     IMAGE_FILE_ACCESS_ENABLED,
     LITELLM_TIMEOUT_SECONDS,
     PDF_FILE_ACCESS_ENABLED,
+    PROMPT_CACHING_ENABLED,
     REDACT_CREDIT_CARD_PATTERN,
     REDACT_EMAIL_PATTERN,
     REDACT_PHONE_PATTERN,
@@ -304,7 +304,7 @@ def build_messages(
         raise ContextOverflowError(num_context_tokens, max_context_tokens)
 
     if (
-        ANTHROPIC_PROMPT_CACHING_ENABLED
+        PROMPT_CACHING_ENABLED
         and num_context_tokens >= 1024
         and len([m for m in messages if m.get("role") == "user"]) > 1
     ):
