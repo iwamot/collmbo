@@ -33,7 +33,10 @@ class CallbackHandler(CustomLogger):
         pass
 
     def log_success_event(self, kwargs, response_obj, start_time, end_time):
-        pass
+        if "complete_streaming_response" in kwargs:
+            print(
+                f"complete streaming response: {kwargs['complete_streaming_response']}"
+            )
 
     def log_failure_event(self, kwargs, response_obj, start_time, end_time):
         pass
