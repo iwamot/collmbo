@@ -131,7 +131,7 @@ Collmbo does not serve endpoints and can run in any environment with internet ac
 - **[Slack-friendly formatting](https://github.com/iwamot/collmbo/wiki/Slack%E2%80%90friendly-formatting)** - Formats messages for better readability in Slack.
 - **[Image input](https://github.com/iwamot/collmbo/wiki/Image-input)** - Enables AI models to analyze uploaded images.
 - **[PDF input](https://github.com/iwamot/collmbo/wiki/PDF-input)** - Enables AI models to analyze uploaded PDFs.
-- **[Prompt caching](https://github.com/iwamot/collmbo/wiki/Prompt-caching)** - May help reduce costs by reusing context (Anthropic, Amazon Bedrock).
+- **[Prompt caching](https://github.com/iwamot/collmbo/wiki/Prompt-caching)** - May help reduce costs by reusing context (Anthropic Claude, Amazon Bedrock).
 
 ## Configuration
 
