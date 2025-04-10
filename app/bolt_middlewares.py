@@ -29,6 +29,7 @@ def before_authorize(
         payload (dict): The request payload.
         logger (logging.Logger): The logger instance.
         next_ (Callable[[], None]): The next middleware function to call.
+
     Returns:
         Optional[BoltResponse]: A BoltResponse object if the event is skipped, None otherwise.
     """
@@ -58,6 +59,7 @@ def set_locale(
         context (BoltContext): The Bolt context object.
         client (WebClient): The Slack WebClient instance.
         next_ (Callable[[], None]): The next middleware function to call.
+
     Returns:
         None
     """

@@ -4,7 +4,7 @@ from unittest.mock import ANY, MagicMock, patch
 import pytest
 from slack_bolt import App
 
-from app.bolt_listeners import respond_to_new_message
+from app.bolt_listeners import respond_to_new_post
 from app.bolt_middlewares import set_locale
 from main import (
     create_bolt_app,
@@ -21,10 +21,23 @@ def mock_slack_handler():
     return MagicMock()
 
 
-def test_just_ack():
-    mock_ack = MagicMock()
-    just_ack(ack=mock_ack)
-    mock_ack.assert_called_once()
+def test_main(mock_slack_handler):
+    with patch("signal.signal") as mock_signal, patch(
+        "main.create_bolt_app"
+    ) as mock_create_app, patch("main.SocketModeHandler") as mock_handler_class:
+        mock_app = MagicMock()
+        mock_create_app.return_value = mock_app
+        mock_handler_class.return_value = mock_slack_handler
+
+        main("test-bot-token", "test-app-token")
+
+        assert mock_signal.call_count == 2
+        mock_signal.assert_any_call(signal.SIGTERM, ANY)
+        mock_signal.assert_any_call(signal.SIGINT, ANY)
+
+        mock_create_app.assert_called_once_with("test-bot-token")
+        mock_handler_class.assert_called_once_with(mock_app, "test-app-token")
+        mock_slack_handler.start.assert_called_once()
 
 
 def test_create_bolt_app_with_locale():
@@ -59,7 +72,7 @@ def test_create_bolt_app_with_locale():
         mock_app_instance.event.assert_any_call("message")
 
         mock_app_instance.event("message").assert_any_call(
-            ack=mock_just_ack, lazy=[respond_to_new_message]
+            ack=mock_just_ack, lazy=[respond_to_new_post]
         )
 
         mock_app_instance.middleware.assert_called_once_with(set_locale)
@@ -75,6 +88,12 @@ def test_create_bolt_app_without_locale():
         create_bolt_app(slack_bot_token=mock_slack_bot_token)
 
         mock_app_instance.middleware.assert_not_called()
+
+
+def test_just_ack():
+    mock_ack = MagicMock()
+    just_ack(ack=mock_ack)
+    mock_ack.assert_called_once()
 
 
 def test_signal_handler_success(mock_slack_handler):
@@ -101,29 +120,10 @@ def test_make_signal_handler(mock_slack_handler):
         )
 
 
-def test_sregister_signal_handlers(mock_slack_handler):
+def test_register_signal_handlers(mock_slack_handler):
     with patch("signal.signal") as mock_signal:
         register_signal_handlers(mock_slack_handler)
 
         assert mock_signal.call_count == 2
         mock_signal.assert_any_call(signal.SIGTERM, ANY)
         mock_signal.assert_any_call(signal.SIGINT, ANY)
-
-
-def test_main(mock_slack_handler):
-    with patch("signal.signal") as mock_signal, patch(
-        "main.create_bolt_app"
-    ) as mock_create_app, patch("main.SocketModeHandler") as mock_handler_class:
-        mock_app = MagicMock()
-        mock_create_app.return_value = mock_app
-        mock_handler_class.return_value = mock_slack_handler
-
-        main("test-bot-token", "test-app-token")
-
-        assert mock_signal.call_count == 2
-        mock_signal.assert_any_call(signal.SIGTERM, ANY)
-        mock_signal.assert_any_call(signal.SIGINT, ANY)
-
-        mock_create_app.assert_called_once_with("test-bot-token")
-        mock_handler_class.assert_called_once_with(mock_app, "test-app-token")
-        mock_slack_handler.start.assert_called_once()
