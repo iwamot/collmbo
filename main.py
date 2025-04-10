@@ -16,9 +16,49 @@ from slack_bolt import Ack, App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 from slack_sdk.http_retry.builtin_handlers import RateLimitErrorRetryHandler
 
-from app.bolt_listeners import respond_to_new_message
+from app.bolt_listeners import respond_to_new_post
 from app.bolt_middlewares import before_authorize, set_locale
 from app.env import SLACK_APP_LOG_LEVEL, USE_SLACK_LANGUAGE
+
+
+def main(slack_bot_token: str, slack_app_token: str) -> None:
+    """
+    Main entry point for Collmbo, the Slack chatbot application.
+
+    Args:
+        slack_bot_token (str): The Slack bot token for authentication.
+        slack_app_token (str): The Slack app token for Socket Mode.
+
+    Returns:
+        None
+    """
+    logging.basicConfig(level=SLACK_APP_LOG_LEVEL)
+    app = create_bolt_app(slack_bot_token)
+    slack_handler = SocketModeHandler(app, slack_app_token)
+    register_signal_handlers(slack_handler)
+    slack_handler.start()
+
+
+def create_bolt_app(slack_bot_token: str) -> App:
+    """
+    Create and configure a Slack Bolt app instance.
+
+    Args:
+        slack_bot_token (str): The Slack bot token for authentication.
+
+    Returns:
+        App: The configured Slack Bolt app instance.
+    """
+    app = App(
+        token=slack_bot_token,
+        before_authorize=before_authorize,
+        process_before_response=True,
+    )
+    app.client.retry_handlers.append(RateLimitErrorRetryHandler(max_retry_count=2))
+    app.event("message")(ack=just_ack, lazy=[respond_to_new_post])
+    if USE_SLACK_LANGUAGE:
+        app.middleware(set_locale)
+    return app
 
 
 def just_ack(ack: Ack) -> None:
@@ -29,32 +69,11 @@ def just_ack(ack: Ack) -> None:
 
     Args:
         ack (Ack): The acknowledgment function provided by Slack Bolt.
+
     Returns:
         None
     """
     ack()
-
-
-def create_bolt_app(slack_bot_token: str) -> App:
-    """
-    Create and configure a Slack Bolt app instance.
-
-    Args:
-        slack_bot_token (str): The Slack bot token for authentication.
-    Returns:
-        App: The configured Slack Bolt app instance.
-    """
-
-    app = App(
-        token=slack_bot_token,
-        before_authorize=before_authorize,
-        process_before_response=True,
-    )
-    app.client.retry_handlers.append(RateLimitErrorRetryHandler(max_retry_count=2))
-    app.event("message")(ack=just_ack, lazy=[respond_to_new_message])
-    if USE_SLACK_LANGUAGE:
-        app.middleware(set_locale)
-    return app
 
 
 def signal_handler(
@@ -71,7 +90,6 @@ def signal_handler(
     Returns:
         None
     """
-
     logging.getLogger(__name__).info(
         "Received %s, shutting down...", signal.Signals(signum).name
     )
@@ -90,6 +108,7 @@ def make_signal_handler(
 
     Args:
         slack_handler (SocketModeHandler): The active SocketModeHandler instance to shut down.
+
     Returns:
         Callable[[int, Optional[FrameType]], None]: A function that handles signals.
     """
@@ -102,28 +121,12 @@ def register_signal_handlers(slack_handler: SocketModeHandler) -> None:
 
     Args:
         slack_handler (SocketModeHandler): The active SocketModeHandler instance to shut down.
+
     Returns:
         None
     """
     for signum in (signal.SIGTERM, signal.SIGINT):
         signal.signal(signum, make_signal_handler(slack_handler))
-
-
-def main(slack_bot_token: str, slack_app_token: str) -> None:
-    """
-    Main entry point for Collmbo, the Slack chatbot application.
-
-    Args:
-        slack_bot_token (str): The Slack bot token for authentication.
-        slack_app_token (str): The Slack app token for Socket Mode.
-    Returns:
-        None
-    """
-    logging.basicConfig(level=SLACK_APP_LOG_LEVEL)
-    app = create_bolt_app(slack_bot_token)
-    slack_handler = SocketModeHandler(app, slack_app_token)
-    register_signal_handlers(slack_handler)
-    slack_handler.start()
 
 
 if __name__ == "__main__":  # pragma: no cover

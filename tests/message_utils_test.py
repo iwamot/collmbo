@@ -4,10 +4,10 @@ import pytest
 from slack_bolt import BoltContext
 from slack_sdk.web import WebClient
 
-from app.bolt_listeners import (
+from app.message_utils import (
+    build_system_message,
     can_bot_read_files,
     format_litellm_message_content,
-    initialize_messages,
     maybe_redact_string,
     maybe_slack_to_markdown,
 )
@@ -43,11 +43,11 @@ def mock_context():
         ),
     ],
 )
-def test_initialize_messages(
+def test_build_system_message(
     template, bot_user_id, translate_markdown, expected_content
 ):
-    result = initialize_messages(template, bot_user_id, translate_markdown)
-    assert result == [{"role": "system", "content": expected_content}]
+    result = build_system_message(template, bot_user_id, translate_markdown)
+    assert result == {"role": "system", "content": expected_content}
 
 
 @pytest.mark.parametrize(
