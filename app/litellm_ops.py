@@ -30,6 +30,7 @@ from app.env import (
     SLACK_UPDATE_TEXT_BUFFER_SIZE,
     TRANSLATE_MARKDOWN,
 )
+from app.exceptions import ContextOverflowError
 
 
 # Format message from LiteLLM to display in Slack
@@ -107,7 +108,7 @@ if LITELLM_CALLBACK_MODULE_NAME is not None:
 
 
 # Remove old messages to make sure we have room for max_input_tokens
-def messages_within_context_window(
+def trim_messages_to_fit_context(
     messages: list[dict],
 ) -> Tuple[list[dict], int, int]:
     model_info = litellm.utils.get_model_info(LITELLM_MODEL_TYPE)
@@ -116,36 +117,30 @@ def messages_within_context_window(
     )
     if max_input_tokens is None:
         raise ValueError("LiteLLM does not support the model type")
-    max_context_tokens = max_input_tokens - LITELLM_MAX_TOKENS - 1
+
+    tools_tokens = 0
     if LITELLM_TOOLS_MODULE_NAME is not None:
-        max_context_tokens -= calculate_tokens_necessary_for_tools()
-    num_context_tokens = 0  # Number of tokens in the context window just before the earliest message is deleted
-    while (
-        num_tokens := litellm.utils.token_counter(
+        tools_tokens = calculate_tokens_necessary_for_tools()
+
+    max_context_tokens = max_input_tokens - tools_tokens - LITELLM_MAX_TOKENS - 1
+
+    while True:
+        messages_tokens = litellm.utils.token_counter(
             model=LITELLM_MODEL_TYPE, messages=messages
         )
-    ) > max_context_tokens:
-        removed = False
+        if messages_tokens <= max_context_tokens:
+            break
+        if len(messages) == 2:
+            raise ContextOverflowError(messages_tokens, max_context_tokens)
         for i, message in enumerate(messages):
             if message["role"] in ("user", "assistant", "function"):
-                num_context_tokens = num_tokens
                 del messages[i]
-                removed = True
                 break
-        if not removed:
+        else:
             # Fall through and let the LiteLLM error handler deal with it
             break
-    else:
-        num_context_tokens = num_tokens
 
-    # Remove any assistant messages at the end of the list
-    while messages and messages[-1]["role"] == "assistant":
-        num_context_tokens = litellm.utils.token_counter(
-            model=LITELLM_MODEL_TYPE, messages=messages
-        )
-        del messages[-1]
-
-    return messages, num_context_tokens, max_context_tokens
+    return messages, messages_tokens, tools_tokens
 
 
 def start_receiving_litellm_response(
@@ -449,7 +444,7 @@ def consume_litellm_stream_to_write_reply(
         messages=messages,
         logger=client.logger,
     )
-    messages_within_context_window(messages)
+    trim_messages_to_fit_context(messages)
     reply_to_slack_with_litellm(
         client=client,
         wip_reply=wip_reply,

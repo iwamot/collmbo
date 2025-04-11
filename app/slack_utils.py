@@ -72,38 +72,40 @@ def is_in_thread_started_by_app_mention(
     )
 
 
-def get_thread_replies(client: WebClient, channel: str, thread_ts: str) -> list[dict]:
+def get_thread_replies(
+    client: WebClient, channel_id: str, thread_ts: str
+) -> list[dict]:
     """
     Retrieves all replies to a Slack thread.
 
     Args:
         client (WebClient): The Slack WebClient instance.
-        channel (str): The ID of the channel containing the thread.
+        channel_id (str): The ID of the channel containing the thread.
         thread_ts (str): The timestamp of the parent post.
 
     Returns:
         list[dict]: A list of replies in the thread.
     """
     return client.conversations_replies(
-        channel=channel,
+        channel=channel_id,
         ts=thread_ts,
         limit=1000,
     ).get("messages", [])
 
 
-def get_dm_replies(client: WebClient, channel: str) -> list[dict]:
+def get_dm_replies(client: WebClient, channel_id: str) -> list[dict]:
     """
     Retrieves recent replies in a direct message (DM) conversation.
 
     Args:
         client (WebClient): The Slack WebClient instance.
-        channel (str): The ID of the DM channel.
+        channel_id (str): The ID of the DM channel.
 
     Returns:
         list[dict]: A list of replies in the DM conversation.
     """
     replies: list[dict] = client.conversations_history(
-        channel=channel,
+        channel=channel_id,
         limit=100,
         oldest=f"{time.time() - 86400:.6f}",  # 24 hours ago
         inclusive=True,

@@ -13,6 +13,7 @@ from app.env import (
     REDACT_SSN_PATTERN,
     REDACT_USER_DEFINED_PATTERN,
     REDACTION_ENABLED,
+    SYSTEM_TEXT,
     TRANSLATE_MARKDOWN,
 )
 from app.litellm_image_ops import get_image_content_if_exists
@@ -29,8 +30,8 @@ REDACT_PATTERNS = [
 
 # Conversion from Slack mrkdwn to Markdown
 # See also: https://api.slack.com/reference/surfaces/formatting#basics
-def maybe_slack_to_markdown(content: str, translate_markdown: bool) -> str:
-    if not translate_markdown:
+def maybe_slack_to_markdown(content: str) -> str:
+    if not TRANSLATE_MARKDOWN:
         return content
 
     # Split the input string into parts based on code blocks and inline code
@@ -74,11 +75,9 @@ def maybe_redact_string(
     return output_string
 
 
-def build_system_message(
-    system_text_template: str, bot_user_id: Optional[str], translate_markdown: bool
-) -> dict:
-    system_text = system_text_template.format(bot_user_id=bot_user_id)
-    system_text = maybe_slack_to_markdown(system_text, translate_markdown)
+def build_system_message(bot_user_id: Optional[str]) -> dict:
+    system_text = SYSTEM_TEXT.format(bot_user_id=bot_user_id)
+    system_text = maybe_slack_to_markdown(system_text)
     return {"role": "system", "content": system_text}
 
 
@@ -110,7 +109,7 @@ def convert_replies_to_messages(
         )
         reply_text = maybe_redact_string(reply_text, REDACT_PATTERNS, REDACTION_ENABLED)
         reply_text = format_litellm_message_content(reply_text)
-        reply_text = maybe_slack_to_markdown(reply_text, TRANSLATE_MARKDOWN)
+        reply_text = maybe_slack_to_markdown(reply_text)
         content = [
             {
                 "type": "text",

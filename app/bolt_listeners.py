@@ -5,15 +5,9 @@ from slack_bolt import BoltContext
 from slack_sdk.web import SlackResponse, WebClient
 
 from app.bolt_utils import extract_user_id_from_context
-from app.env import (
-    LITELLM_TIMEOUT_SECONDS,
-    PROMPT_CACHING_ENABLED,
-    SYSTEM_TEXT,
-    TRANSLATE_MARKDOWN,
-)
-from app.exceptions import ContextOverflowError
+from app.env import LITELLM_TIMEOUT_SECONDS, PROMPT_CACHING_ENABLED
 from app.i18n import translate
-from app.litellm_ops import messages_within_context_window, reply_to_slack_with_litellm
+from app.litellm_ops import reply_to_slack_with_litellm, trim_messages_to_fit_context
 from app.message_utils import build_system_message, convert_replies_to_messages
 from app.slack_utils import (
     get_replies,
@@ -49,7 +43,6 @@ def respond_to_new_post(
     Returns:
         None
     """
-
     if context.channel_id is None:
         raise ValueError("context.channel_id cannot be None")
     user_id = extract_user_id_from_context(context)
@@ -57,9 +50,9 @@ def respond_to_new_post(
         raise ValueError("User ID could not be determined from context")
     wip_reply = None
     try:
-        if should_ignore_post(context=context, payload=payload, client=client):
+        if should_ignore_post(context, payload, client):
             return
-        loading_text = translate(locale=context.get("locale"), text=LOADING_TEXT)
+        loading_text = translate(context.get("locale"), LOADING_TEXT)
         reply_thread_ts, wip_reply = post_loading_reply(
             client=client,
             channel_id=context.channel_id,
@@ -83,13 +76,6 @@ def respond_to_new_post(
             wip_reply=wip_reply,
             timeout_seconds=LITELLM_TIMEOUT_SECONDS,
         )
-    except ContextOverflowError as e:
-        handle_context_overflow(
-            client=client,
-            channel_id=context.channel_id,
-            e=e,
-            wip_reply=wip_reply,
-        )
     except (Timeout, TimeoutError):
         handle_timeout_error(
             client=client,
@@ -107,7 +93,6 @@ def respond_to_new_post(
 
 
 def should_ignore_post(
-    *,
     context: BoltContext,
     payload: dict,
     client: WebClient,
@@ -154,11 +139,9 @@ def post_loading_reply(
         tuple[Optional[str], SlackResponse]: Thread timestamp and Slack API response.
     """
     reply_thread_ts = payload.get("thread_ts")
-
     # If mentioned in a channel and outside a thread, reply in a thread
     if payload.get("channel_type") != "im" and reply_thread_ts is None:
         reply_thread_ts = payload["ts"]
-
     wip_reply = client.chat_postMessage(
         channel=channel_id,
         thread_ts=reply_thread_ts,
@@ -175,9 +158,7 @@ def build_messages(
     channel_id: str,
     user_id: str,
 ) -> list[dict]:
-    system_message = build_system_message(
-        SYSTEM_TEXT, context.bot_user_id, TRANSLATE_MARKDOWN
-    )
+    system_message = build_system_message(context.bot_user_id)
     replies = get_replies(
         client=client,
         payload=payload,
@@ -185,19 +166,13 @@ def build_messages(
         user_id=user_id,
     )
     messages = [system_message] + convert_replies_to_messages(
-        replies=replies,
-        context=context,
-        logger=client.logger,
+        replies, context, client.logger
     )
-    messages, num_context_tokens, max_context_tokens = messages_within_context_window(
-        messages
-    )
-    if len(messages) == 1:
-        raise ContextOverflowError(num_context_tokens, max_context_tokens)
+    messages, messages_tokens, tools_tokens = trim_messages_to_fit_context(messages)
 
     if (
         PROMPT_CACHING_ENABLED
-        and num_context_tokens >= 1024
+        and messages_tokens + tools_tokens >= 1024
         and len([m for m in messages if m.get("role") == "user"]) > 1
     ):
         # Set cache points for the last two user messages
@@ -212,22 +187,6 @@ def build_messages(
     return messages
 
 
-def handle_context_overflow(
-    *,
-    client: WebClient,
-    channel_id: str,
-    e: ContextOverflowError,
-    wip_reply: Optional[SlackResponse],
-) -> None:
-    if wip_reply is None:
-        return
-    client.chat_update(
-        channel=channel_id,
-        ts=wip_reply["message"]["ts"],
-        text=e.message,
-    )
-
-
 def handle_timeout_error(
     *,
     client: WebClient,
@@ -239,9 +198,7 @@ def handle_timeout_error(
         return
     message_dict: dict = wip_reply.get("message", {})
     text = (
-        message_dict.get("text", "")
-        + "\n\n"
-        + translate(locale=locale, text=TIMEOUT_ERROR_MESSAGE)
+        message_dict.get("text", "") + "\n\n" + translate(locale, TIMEOUT_ERROR_MESSAGE)
     )
     client.chat_update(
         channel=channel_id,

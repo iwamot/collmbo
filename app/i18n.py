@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Optional
 
 from litellm.types.utils import ModelResponse
 
@@ -24,12 +24,7 @@ _locale_to_lang = {
 _translation_result_cache: dict[str, str] = {}
 
 
-def translate(
-    *,
-    locale: Optional[str],
-    text: str,
-    completion_fn: Callable = call_litellm_completion,
-) -> str:
+def translate(locale: Optional[str], text: str) -> str:
     lang = None if locale is None else _locale_to_lang.get(locale)
     if lang is None or lang == "English":
         return text
@@ -37,7 +32,7 @@ def translate(
     cached_result = _translation_result_cache.get(f"{lang}:{text}")
     if cached_result is not None:
         return cached_result
-    response = completion_fn(
+    response = call_litellm_completion(
         messages=[
             {
                 "role": "system",
