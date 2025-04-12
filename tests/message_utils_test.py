@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from slack_bolt import BoltContext
@@ -26,28 +26,12 @@ def mock_context():
     return context
 
 
-@pytest.mark.parametrize(
-    "template, bot_user_id, translate_markdown, expected_content",
-    [
-        (
-            "Hello, {bot_user_id}!",
-            "U12345678",
-            False,
-            "Hello, U12345678!",
-        ),
-        (
-            "Hello, *{bot_user_id}* and _you_!",
-            "U12345678",
-            True,
-            "Hello, **U12345678** and *you*!",
-        ),
-    ],
-)
-def test_build_system_message(
-    template, bot_user_id, translate_markdown, expected_content
-):
-    result = build_system_message(template, bot_user_id, translate_markdown)
-    assert result == {"role": "system", "content": expected_content}
+@patch("app.message_utils.SYSTEM_TEXT", "Hi, {bot_user_id}")
+@patch("app.message_utils.maybe_slack_to_markdown", side_effect=lambda x: x)
+def test_build_system_message(mock_markdown):
+    result = build_system_message("U12345")
+
+    assert result == {"role": "system", "content": "Hi, U12345"}
 
 
 @pytest.mark.parametrize(
@@ -86,6 +70,7 @@ def test_format_litellm_message_content(content, expected):
     assert result == expected
 
 
+@patch("app.message_utils.TRANSLATE_MARKDOWN", True)
 @pytest.mark.parametrize(
     "content, expected",
     [
@@ -141,10 +126,10 @@ else:
     ],
 )
 def test_maybe_slack_to_markdown_enabled(content, expected):
-    result = maybe_slack_to_markdown(content, translate_markdown=True)
-    assert result == expected
+    assert maybe_slack_to_markdown(content) == expected
 
 
+@patch("app.message_utils.TRANSLATE_MARKDOWN", False)
 @pytest.mark.parametrize(
     "content",
     [
@@ -173,8 +158,7 @@ else:
     ],
 )
 def test_maybe_slack_to_markdown_disabled(content):
-    result = maybe_slack_to_markdown(content, translate_markdown=False)
-    assert result == content
+    assert maybe_slack_to_markdown(content) == content
 
 
 @pytest.mark.parametrize(
