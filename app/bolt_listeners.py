@@ -9,11 +9,7 @@ from app.env import LITELLM_TIMEOUT_SECONDS, PROMPT_CACHING_ENABLED
 from app.i18n import translate
 from app.litellm_ops import reply_to_slack_with_litellm, trim_messages_to_fit_context
 from app.message_utils import build_system_message, convert_replies_to_messages
-from app.slack_utils import (
-    get_replies,
-    is_in_thread_started_by_app_mention,
-    is_this_app_mentioned,
-)
+from app.slack_utils import find_parent_post, get_replies, is_post_this_app_mentioned
 
 TIMEOUT_ERROR_MESSAGE = (
     f":warning: Apologies! It seems that the AI didn't respond within the "
@@ -110,13 +106,16 @@ def should_ignore_post(
     """
     if payload.get("bot_id") is not None:
         return True
-    return (
-        payload.get("channel_type") != "im"
-        and not is_this_app_mentioned(context.bot_user_id, payload["text"])
-        and not is_in_thread_started_by_app_mention(
-            client, context, payload.get("thread_ts")
-        )
+    if payload.get("channel_type") == "im":
+        return False
+    if is_post_this_app_mentioned(context.bot_user_id, payload):
+        return False
+    parent_post = find_parent_post(
+        client=client,
+        channel_id=context.channel_id,
+        thread_ts=payload.get("thread_ts"),
     )
+    return not is_post_this_app_mentioned(context.bot_user_id, parent_post)
 
 
 def post_loading_reply(
