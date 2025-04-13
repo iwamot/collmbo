@@ -5,22 +5,22 @@ This module contains utilities for direct Slack API interactions.
 import time
 from typing import Optional
 
-from slack_bolt import BoltContext
 from slack_sdk.web import WebClient
 
 
-def is_this_app_mentioned(bot_user_id: Optional[str], text: str) -> bool:
+def is_post_this_app_mentioned(
+    bot_user_id: Optional[str], post: Optional[dict]
+) -> bool:
     """
     Checks whether the bot is mentioned in a Slack post.
 
     Args:
         bot_user_id (Optional[str]): The bot's user ID.
-        text (str): The content of the Slack post.
-
+        post (Optional[dict]): The Slack post.
     Returns:
         bool: True if the bot is mentioned, False otherwise.
     """
-    return f"<@{bot_user_id}>" in text
+    return post is not None and f"<@{bot_user_id}>" in post.get("text", "")
 
 
 def find_parent_post(
@@ -46,30 +46,6 @@ def find_parent_post(
         inclusive=True,
     ).get("messages", [])
     return posts[0] if posts else None
-
-
-def is_in_thread_started_by_app_mention(
-    client: WebClient,
-    context: BoltContext,
-    thread_ts: Optional[str],
-) -> bool:
-    """
-    Checks if a Slack thread was started by a post that mentions the bot.
-
-    Args:
-        client (WebClient): The Slack WebClient instance.
-        context (BoltContext): The Bolt context object.
-        thread_ts (Optional[str]): The timestamp of the thread.
-
-    Returns:
-        bool: True if the thread was started by a post that mentions the bot, False otherwise.
-    """
-    if context.channel_id is None or thread_ts is None:
-        return False
-    parent_post = find_parent_post(client, context.channel_id, thread_ts)
-    return parent_post is not None and is_this_app_mentioned(
-        context.bot_user_id, parent_post.get("text", "")
-    )
 
 
 def get_thread_replies(
