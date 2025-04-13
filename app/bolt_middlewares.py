@@ -33,11 +33,7 @@ def before_authorize(
     Returns:
         Optional[BoltResponse]: A BoltResponse object if the event is skipped, None otherwise.
     """
-    if (
-        is_event(body)
-        and payload.get("type") == "message"
-        and payload.get("subtype") in ["message_changed", "message_deleted"]
-    ):
+    if should_skip_event(body, payload):
         logger.debug(
             "Skipped the following middleware and listeners "
             f"for this message event (subtype: {payload.get('subtype')})"
@@ -45,6 +41,23 @@ def before_authorize(
         return BoltResponse(status=200, body="")
     next_()
     return None
+
+
+def should_skip_event(body: dict, payload: dict) -> bool:
+    """
+    Determine if the event should be skipped based on its type and subtype.
+
+    Args:
+        body (dict): The request body.
+        payload (dict): The request payload.
+    Returns:
+        bool: True if the event should be skipped, False otherwise.
+    """
+    return (
+        is_event(body)
+        and payload.get("type") == "message"
+        and payload.get("subtype") in ["message_changed", "message_deleted"]
+    )
 
 
 def set_locale(

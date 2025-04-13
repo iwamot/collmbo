@@ -10,7 +10,7 @@ import os
 import signal
 import sys
 from types import FrameType
-from typing import Callable, Optional
+from typing import Optional
 
 from slack_bolt import Ack, App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
@@ -21,7 +21,7 @@ from app.bolt_middlewares import before_authorize, set_locale
 from app.env import SLACK_APP_LOG_LEVEL, USE_SLACK_LANGUAGE
 
 
-def main(slack_bot_token: str, slack_app_token: str) -> None:
+def main() -> None:
     """
     Main entry point for Collmbo, the Slack chatbot application.
 
@@ -33,13 +33,14 @@ def main(slack_bot_token: str, slack_app_token: str) -> None:
         None
     """
     logging.basicConfig(level=SLACK_APP_LOG_LEVEL)
-    app = create_bolt_app(slack_bot_token)
-    slack_handler = SocketModeHandler(app, slack_app_token)
+    app = create_bolt_app(os.environ["SLACK_BOT_TOKEN"], USE_SLACK_LANGUAGE)
+    append_rate_limit_retry_handler(app.client.retry_handlers, 2)
+    slack_handler = SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"])
     register_signal_handlers(slack_handler)
     slack_handler.start()
 
 
-def create_bolt_app(slack_bot_token: str) -> App:
+def create_bolt_app(slack_bot_token: str, use_slack_language: bool) -> App:
     """
     Create and configure a Slack Bolt app instance.
 
@@ -54,9 +55,8 @@ def create_bolt_app(slack_bot_token: str) -> App:
         before_authorize=before_authorize,
         process_before_response=True,
     )
-    app.client.retry_handlers.append(RateLimitErrorRetryHandler(max_retry_count=2))
     app.event("message")(ack=just_ack, lazy=[respond_to_new_post])
-    if USE_SLACK_LANGUAGE:
+    if use_slack_language:
         app.middleware(set_locale)
     return app
 
@@ -76,43 +76,18 @@ def just_ack(ack: Ack) -> None:
     ack()
 
 
-def signal_handler(
-    signum: int, _: Optional[FrameType], slack_handler: SocketModeHandler
-) -> None:
+def append_rate_limit_retry_handler(retry_handlers: list, max_retry_count: int) -> None:
     """
-    Handle termination signals for graceful shutdown.
+    Append a RateLimitErrorRetryHandler to the list of retry handlers.
 
     Args:
-        signum (int): The signal number received.
-        _ (Optional[FrameType]): The current stack frame. Not used.
-        slack_handler (SocketModeHandler): The active SocketModeHandler instance to shut down.
+        retry_handlers (list): The list of existing retry handlers.
+        max_retry_count (int): The maximum number of retries for rate limit errors.
 
     Returns:
         None
     """
-    logging.getLogger(__name__).info(
-        "Received %s, shutting down...", signal.Signals(signum).name
-    )
-    try:
-        slack_handler.close()
-    except Exception:
-        pass
-    sys.exit(0)
-
-
-def make_signal_handler(
-    slack_handler: SocketModeHandler,
-) -> Callable[[int, Optional[FrameType]], None]:
-    """
-    Create a signal handler for graceful shutdown.
-
-    Args:
-        slack_handler (SocketModeHandler): The active SocketModeHandler instance to shut down.
-
-    Returns:
-        Callable[[int, Optional[FrameType]], None]: A function that handles signals.
-    """
-    return lambda signum, frame: signal_handler(signum, frame, slack_handler)
+    retry_handlers.append(RateLimitErrorRetryHandler(max_retry_count=max_retry_count))
 
 
 def register_signal_handlers(slack_handler: SocketModeHandler) -> None:
@@ -125,9 +100,20 @@ def register_signal_handlers(slack_handler: SocketModeHandler) -> None:
     Returns:
         None
     """
+
+    def handler(signum: int, _: Optional[FrameType]) -> None:
+        logging.getLogger(__name__).info(
+            "Received %s, shutting down...", signal.Signals(signum).name
+        )
+        try:
+            slack_handler.close()
+        except Exception:
+            pass
+        sys.exit(0)
+
     for signum in (signal.SIGTERM, signal.SIGINT):
-        signal.signal(signum, make_signal_handler(slack_handler))
+        signal.signal(signum, handler)
 
 
-if __name__ == "__main__":  # pragma: no cover
-    main(os.environ["SLACK_BOT_TOKEN"], os.environ["SLACK_APP_TOKEN"])
+if __name__ == "__main__":
+    main()
