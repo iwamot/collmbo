@@ -42,10 +42,13 @@ def get_pdf_content_if_exists(
                 continue
             encoded_pdf = base64.b64encode(pdf_bytes).decode("utf-8")
 
-            image_url_item = {
-                "type": "image_url",
-                "image_url": {"url": f"data:application/pdf;base64,{encoded_pdf}"},
+            file_item = {
+                "type": "file",
+                "file": {
+                    "filename": file.get("name"),
+                    "file_data": f"data:application/pdf;base64,{encoded_pdf}",
+                },
             }
-            content.append(image_url_item)
+            content.append(file_item)
 
     return content
