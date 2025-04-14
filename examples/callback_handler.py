@@ -26,6 +26,8 @@ class CallbackHandler(CustomLogger):
                     for content in message["content"]:
                         if content["type"] == "image_url":
                             content["image_url"]["url"] = "(omitted)"
+                        elif content["type"] == "file":
+                            content["file"]["file_data"] = "(omitted)"
         logger = logging.getLogger("Collmbo")
         logger.info(f"model call details: {json.dumps(model_call_dict)}")
 
