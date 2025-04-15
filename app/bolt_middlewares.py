@@ -6,10 +6,9 @@ import logging
 from typing import Callable, Optional
 
 from slack_bolt import BoltContext, BoltResponse
-from slack_bolt.request.payload_utils import is_event
 from slack_sdk.web import WebClient
 
-from app.bolt_utils import extract_user_id_from_context
+from app.bolt_logic import extract_user_id_from_context, should_skip_event
 
 
 def before_authorize(
@@ -41,23 +40,6 @@ def before_authorize(
         return BoltResponse(status=200, body="")
     next_()
     return None
-
-
-def should_skip_event(body: dict, payload: dict) -> bool:
-    """
-    Determine if the event should be skipped based on its type and subtype.
-
-    Args:
-        body (dict): The request body.
-        payload (dict): The request payload.
-    Returns:
-        bool: True if the event should be skipped, False otherwise.
-    """
-    return (
-        is_event(body)
-        and payload.get("type") == "message"
-        and payload.get("subtype") in ["message_changed", "message_deleted"]
-    )
 
 
 def set_locale(
