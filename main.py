@@ -14,9 +14,9 @@ from typing import Optional
 
 from slack_bolt import Ack, App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
-from slack_sdk.http_retry.builtin_handlers import RateLimitErrorRetryHandler
 
 from app.bolt_listeners import respond_to_new_post
+from app.bolt_logic import append_rate_limit_retry_handler
 from app.bolt_middlewares import before_authorize, set_locale
 from app.env import SLACK_APP_LOG_LEVEL, USE_SLACK_LANGUAGE
 
@@ -74,20 +74,6 @@ def just_ack(ack: Ack) -> None:
         None
     """
     ack()
-
-
-def append_rate_limit_retry_handler(retry_handlers: list, max_retry_count: int) -> None:
-    """
-    Append a RateLimitErrorRetryHandler to the list of retry handlers.
-
-    Args:
-        retry_handlers (list): The list of existing retry handlers.
-        max_retry_count (int): The maximum number of retries for rate limit errors.
-
-    Returns:
-        None
-    """
-    retry_handlers.append(RateLimitErrorRetryHandler(max_retry_count=max_retry_count))
 
 
 def register_signal_handlers(slack_handler: SocketModeHandler) -> None:
