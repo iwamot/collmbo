@@ -110,7 +110,7 @@ if LITELLM_CALLBACK_MODULE_NAME is not None:
 # Remove old messages to make sure we have room for max_input_tokens
 def trim_messages_to_fit_context(
     messages: list[dict],
-) -> Tuple[list[dict], int, int]:
+) -> Tuple[int, int]:
     model_info = litellm.utils.get_model_info(LITELLM_MODEL_TYPE)
     max_input_tokens = model_info.get("max_input_tokens") or model_info.get(
         "max_tokens"
@@ -140,7 +140,7 @@ def trim_messages_to_fit_context(
             # Fall through and let the LiteLLM error handler deal with it
             break
 
-    return messages, messages_tokens, tools_tokens
+    return messages_tokens, tools_tokens
 
 
 def start_receiving_litellm_response(
