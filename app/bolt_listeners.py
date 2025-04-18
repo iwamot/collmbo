@@ -15,6 +15,7 @@ from app.bolt_logic import (
 from app.env import LITELLM_TIMEOUT_SECONDS, PROMPT_CACHING_ENABLED
 from app.i18n import translate
 from app.litellm_ops import reply_to_slack_with_litellm, trim_messages_to_fit_context
+from app.message_logic import set_cache_points_if_needed
 from app.message_utils import build_system_message, convert_replies_to_messages
 
 TIMEOUT_ERROR_MESSAGE = (
@@ -197,22 +198,12 @@ def build_messages(
     messages = [system_message] + convert_replies_to_messages(
         replies, context, client.logger
     )
-    messages, messages_tokens, tools_tokens = trim_messages_to_fit_context(messages)
-
-    if (
-        PROMPT_CACHING_ENABLED
-        and messages_tokens + tools_tokens >= 1024
-        and len([m for m in messages if m.get("role") == "user"]) > 1
-    ):
-        # Set cache points for the last two user messages
-        user_messages_found = 0
-        for message in reversed(messages):
-            if message.get("role") == "user":
-                message["content"][-1]["cache_control"] = {"type": "ephemeral"}
-                user_messages_found += 1
-                if user_messages_found >= 2:
-                    break
-
+    messages_tokens, tools_tokens = trim_messages_to_fit_context(messages)
+    set_cache_points_if_needed(
+        messages=messages,
+        total_tokens=messages_tokens + tools_tokens,
+        prompt_cache_enabled=PROMPT_CACHING_ENABLED,
+    )
     return messages
 
 
