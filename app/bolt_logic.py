@@ -5,6 +5,7 @@ This module contains logic for handling Slack events and interactions.
 from typing import Optional
 
 from slack_bolt import BoltContext
+from slack_bolt.authorization.authorize_result import AuthorizeResult
 from slack_bolt.request.payload_utils import is_event
 from slack_sdk.http_retry.builtin_handlers import RateLimitErrorRetryHandler
 
@@ -107,3 +108,20 @@ def determine_thread_ts_to_reply(payload: dict) -> Optional[str]:
     if thread_ts is None and not is_post_in_dm(payload):
         thread_ts = payload["ts"]
     return thread_ts
+
+
+def has_read_files_scope(authorize_result: Optional[AuthorizeResult]) -> bool:
+    """
+    Check if the bot has the "files:read" scope.
+
+    Args:
+        authorize_result (Optional[AuthorizeResult]): The authorization result.
+
+    Returns:
+        bool: True if the bot has the "files:read" scope, False otherwise.
+    """
+    return (
+        authorize_result is not None
+        and authorize_result.bot_scopes is not None
+        and "files:read" in authorize_result.bot_scopes
+    )
