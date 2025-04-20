@@ -1,3 +1,8 @@
+"""
+This module contains the logic for responding to new Slack posts.
+"""
+
+import logging
 import time
 from typing import Optional
 
@@ -8,15 +13,40 @@ from slack_sdk.web import SlackResponse, WebClient
 from app.bolt_logic import (
     determine_thread_ts_to_reply,
     extract_user_id_from_context,
+    has_read_files_scope,
     is_post_from_bot,
     is_post_in_dm,
     is_post_mentioned,
 )
-from app.env import LITELLM_TIMEOUT_SECONDS, PROMPT_CACHING_ENABLED
+from app.env import (
+    IMAGE_FILE_ACCESS_ENABLED,
+    LITELLM_TIMEOUT_SECONDS,
+    PDF_FILE_ACCESS_ENABLED,
+    PROMPT_CACHING_ENABLED,
+    REDACT_CREDIT_CARD_PATTERN,
+    REDACT_EMAIL_PATTERN,
+    REDACT_PHONE_PATTERN,
+    REDACT_SSN_PATTERN,
+    REDACT_USER_DEFINED_PATTERN,
+    REDACTION_ENABLED,
+    SYSTEM_TEXT,
+    TRANSLATE_MARKDOWN,
+)
 from app.i18n import translate
+from app.litellm_image_ops import get_image_content_if_exists
 from app.litellm_ops import reply_to_slack_with_litellm, trim_messages_to_fit_context
-from app.message_logic import set_cache_points_if_needed
-from app.message_utils import build_system_message, convert_replies_to_messages
+from app.litellm_pdf_ops import get_pdf_content_if_exists
+from app.message_logic import (
+    build_assistant_message,
+    build_slack_user_prefixed_text,
+    build_system_message,
+    build_user_message,
+    maybe_redact_string,
+    maybe_set_cache_points,
+    maybe_slack_to_markdown,
+    remove_bot_mention,
+    unescape_slack_formatting,
+)
 
 TIMEOUT_ERROR_MESSAGE = (
     f":warning: Apologies! It seems that the AI didn't respond within the "
@@ -25,6 +55,15 @@ TIMEOUT_ERROR_MESSAGE = (
     "customized settings on your infrastructure. :bow:"
 )
 LOADING_TEXT = ":hourglass_flowing_sand: Wait a second, please ..."
+
+REDACT_PATTERNS = [
+    (REDACT_EMAIL_PATTERN, "[EMAIL]"),
+    (REDACT_CREDIT_CARD_PATTERN, "[CREDIT CARD]"),
+    (REDACT_PHONE_PATTERN, "[PHONE]"),
+    (REDACT_SSN_PATTERN, "[SSN]"),
+    (REDACT_USER_DEFINED_PATTERN, "[REDACTED]"),
+]
+MAX_PDF_FILES = 5
 
 
 def respond_to_new_post(
@@ -188,7 +227,24 @@ def build_messages(
     channel_id: str,
     user_id: str,
 ) -> list[dict]:
-    system_message = build_system_message(context.bot_user_id)
+    """
+    Builds the conversation history for the Slack post.
+
+    Args:
+        client (WebClient): The Slack WebClient instance.
+        context (BoltContext): The Bolt context object.
+        payload (dict): The payload of the incoming Slack post.
+        channel_id (str): The ID of the channel where the post was made.
+        user_id (str): The ID of the user who made the post.
+
+    Returns:
+        list[dict]: A list of messages representing the conversation history.
+    """
+    system_message = build_system_message(
+        system_text_template=SYSTEM_TEXT,
+        bot_user_id=context.bot_user_id,
+        translate_markdown=TRANSLATE_MARKDOWN,
+    )
     replies = get_replies(
         client=client,
         payload=payload,
@@ -199,7 +255,7 @@ def build_messages(
         replies, context, client.logger
     )
     messages_tokens, tools_tokens = trim_messages_to_fit_context(messages)
-    set_cache_points_if_needed(
+    maybe_set_cache_points(
         messages=messages,
         total_tokens=messages_tokens + tools_tokens,
         prompt_cache_enabled=PROMPT_CACHING_ENABLED,
@@ -293,6 +349,18 @@ def handle_timeout_error(
     locale: Optional[str],
     wip_reply: Optional[SlackResponse],
 ):
+    """
+    Handles timeout errors by updating the loading reply with an error message.
+
+    Args:
+        client (WebClient): The Slack WebClient instance.
+        channel_id (str): The ID of the channel where the post was made.
+        locale (Optional[str]): The locale for translation.
+        wip_reply (Optional[SlackResponse]): The loading reply to update.
+
+    Returns:
+        None
+    """
     if wip_reply is None:
         return
     message_dict: dict = wip_reply.get("message", {})
@@ -306,6 +374,83 @@ def handle_timeout_error(
     )
 
 
+def convert_replies_to_messages(
+    replies: list[dict],
+    context: BoltContext,
+    logger: logging.Logger,
+) -> list[dict]:
+    """
+    Converts Slack replies to a list of messages for the language model.
+
+    Args:
+        replies (list[dict]): The list of replies to convert.
+        context (BoltContext): The Bolt context object.
+        logger (logging.Logger): The logger instance.
+
+    Returns:
+        list[dict]: A list of messages representing the conversation history.
+    """
+    messages: list[dict] = []
+    pdf_count = 0
+
+    # Process replies in reverse order to prioritize recent PDFs and avoid unnecessary downloads
+    for reply in reversed(replies):
+        text = remove_bot_mention(reply.get("text", ""), context.bot_user_id)
+        text = maybe_redact_string(
+            input_string=text,
+            patterns=REDACT_PATTERNS,
+            redaction_enabled=REDACTION_ENABLED,
+        )
+        text = unescape_slack_formatting(text)
+        text = maybe_slack_to_markdown(text, TRANSLATE_MARKDOWN)
+        text = build_slack_user_prefixed_text(reply, text)
+
+        if reply["user"] == context.bot_user_id:
+            messages.append(build_assistant_message(text))
+            continue
+
+        content = [{"type": "text", "text": text}]
+        if (
+            reply.get("bot_id") is None
+            and IMAGE_FILE_ACCESS_ENABLED
+            and has_read_files_scope(context.authorize_result)
+        ):
+            if context.bot_token is None:
+                raise ValueError("context.bot_token cannot be None")
+            content += get_image_content_if_exists(
+                bot_token=context.bot_token,
+                files=reply.get("files"),
+                logger=logger,
+            )
+
+        # Only process PDFs if we haven't reached the limit
+        if (
+            pdf_count < MAX_PDF_FILES
+            and reply.get("bot_id") is None
+            and PDF_FILE_ACCESS_ENABLED
+            and has_read_files_scope(context.authorize_result)
+        ):
+            if context.bot_token is None:
+                raise ValueError("context.bot_token cannot be None")
+            pdf_content = get_pdf_content_if_exists(
+                bot_token=context.bot_token,
+                files=reply.get("files"),
+                logger=logger,
+                max_pdfs=MAX_PDF_FILES,
+                current_pdf_count=pdf_count,
+            )
+
+            # Count and add PDFs
+            pdf_count += len(pdf_content)
+            content += pdf_content
+
+        messages.append(build_user_message(content))
+
+    # Reverse the messages to restore chronological order
+    messages.reverse()
+    return messages
+
+
 def handle_exception(
     *,
     client: WebClient,
@@ -313,6 +458,18 @@ def handle_exception(
     e: Exception,
     wip_reply: Optional[SlackResponse],
 ):
+    """
+    Handles exceptions by updating the loading reply with an error message.
+
+    Args:
+        client (WebClient): The Slack WebClient instance.
+        channel_id (str): The ID of the channel where the post was made.
+        e (Exception): The exception that occurred.
+        wip_reply (Optional[SlackResponse]): The loading reply to update.
+
+    Returns:
+        None
+    """
     message_dict: dict = wip_reply.get("message", {}) if wip_reply else {}
     text = message_dict.get("text", "") + "\n\n" + f":warning: Failed to reply: {e}"
     client.logger.exception(text)
