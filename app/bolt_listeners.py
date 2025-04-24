@@ -34,7 +34,7 @@ from app.env import (
 )
 from app.i18n import translate
 from app.litellm_image_ops import get_image_content_if_exists
-from app.litellm_ops import reply_to_slack_with_litellm, trim_messages_to_fit_context
+from app.litellm_ops import reply_to_slack_with_litellm, trim_messages_for_model_limit
 from app.litellm_pdf_ops import get_pdf_content_if_exists
 from app.message_logic import (
     build_assistant_message,
@@ -254,7 +254,7 @@ def build_messages(
     messages = [system_message] + convert_replies_to_messages(
         replies, context, client.logger
     )
-    messages_tokens, tools_tokens = trim_messages_to_fit_context(messages)
+    messages_tokens, tools_tokens = trim_messages_for_model_limit(messages)
     maybe_set_cache_points(
         messages=messages,
         total_tokens=messages_tokens + tools_tokens,
