@@ -30,7 +30,11 @@ from app.env import (
     TRANSLATE_MARKDOWN,
 )
 from app.exceptions import ContextOverflowError
-from app.litellm_logic import get_max_input_tokens
+from app.litellm_logic import (
+    calculate_max_context_tokens,
+    get_max_input_tokens,
+    trim_messages_to_max_context_tokens,
+)
 from app.message_logic import (
     convert_markdown_to_mrkdwn,
     format_assistant_reply_for_slack,
@@ -41,39 +45,6 @@ litellm.drop_params = True
 if LITELLM_CALLBACK_MODULE_NAME is not None:
     callback_module = import_module(LITELLM_CALLBACK_MODULE_NAME)
     litellm.callbacks = [callback_module.CallbackHandler()]
-
-
-# Remove old messages to make sure we have room for max_input_tokens
-def trim_messages_to_fit_context(
-    messages: list[dict],
-) -> Tuple[int, int]:
-    max_input_tokens = get_max_input_tokens(LITELLM_MODEL_TYPE)
-    if max_input_tokens is None:
-        raise ValueError("LiteLLM does not support the model type")
-
-    tools_tokens = 0
-    if LITELLM_TOOLS_MODULE_NAME is not None:
-        tools_tokens = calculate_tokens_necessary_for_tools()
-
-    max_context_tokens = max_input_tokens - tools_tokens - LITELLM_MAX_TOKENS - 1
-
-    while True:
-        messages_tokens = litellm.utils.token_counter(
-            model=LITELLM_MODEL_TYPE, messages=messages
-        )
-        if messages_tokens <= max_context_tokens:
-            break
-        if len(messages) == 2:
-            raise ContextOverflowError(messages_tokens, max_context_tokens)
-        for i, message in enumerate(messages):
-            if message["role"] in ("user", "assistant", "function"):
-                del messages[i]
-                break
-        else:
-            # Fall through and let the LiteLLM error handler deal with it
-            break
-
-    return messages_tokens, tools_tokens
 
 
 def reply_to_slack_with_litellm(
@@ -87,6 +58,22 @@ def reply_to_slack_with_litellm(
     wip_reply: Union[dict, SlackResponse],
     timeout_seconds: int,
 ) -> None:
+    """
+    Sends a reply to Slack using LiteLLM.
+
+    Args:
+        client (WebClient): The Slack WebClient instance.
+        channel (str): The Slack channel ID.
+        user_id (str): The user ID of the person who initiated the conversation.
+        thread_ts (Optional[str]): The timestamp of the thread to reply to.
+        messages (list[dict]): The list of messages to include in the reply.
+        loading_text (str): The text to display while waiting for a response.
+        wip_reply (Union[dict, SlackResponse]): The message object for the in-progress reply.
+        timeout_seconds (int): The timeout duration in seconds.
+
+    Returns:
+        None
+    """
     stream = start_receiving_litellm_response(
         temperature=LITELLM_TEMPERATURE,
         messages=messages,
@@ -103,6 +90,35 @@ def reply_to_slack_with_litellm(
         loading_text=loading_text,
         timeout_seconds=timeout_seconds,
     )
+
+
+def trim_messages_for_model_limit(messages: list[dict]) -> Tuple[int, int]:
+    """
+    Trims messages to fit within the maximum context tokens.
+
+    Args:
+        messages (list[dict]): The list of messages to trim.
+
+    Returns:
+        Tuple[int, int]: The number of tokens in the trimmed messages and the number of tokens used by tools.
+    """
+    max_input_tokens = get_max_input_tokens(LITELLM_MODEL_TYPE)
+    if max_input_tokens is None:
+        raise ValueError("LiteLLM does not support the model type")
+    tools_tokens = calculate_tokens_necessary_for_tools()
+    max_context_tokens = calculate_max_context_tokens(
+        max_input_tokens=max_input_tokens,
+        tools_tokens=tools_tokens,
+        max_output_tokens=LITELLM_MAX_TOKENS,
+    )
+    messages_tokens = trim_messages_to_max_context_tokens(
+        messages=messages,
+        model_type=LITELLM_MODEL_TYPE,
+        max_context_tokens=max_context_tokens,
+    )
+    if messages_tokens > max_context_tokens:
+        raise ContextOverflowError(messages_tokens, max_context_tokens)
+    return messages_tokens, tools_tokens
 
 
 @lru_cache(maxsize=1)
@@ -255,7 +271,7 @@ def consume_litellm_stream_to_write_reply(
         messages=messages,
         logger=client.logger,
     )
-    trim_messages_to_fit_context(messages)
+    trim_messages_for_model_limit(messages)
     reply_to_slack_with_litellm(
         client=client,
         wip_reply=wip_reply,
