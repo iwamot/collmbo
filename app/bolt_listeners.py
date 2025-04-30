@@ -390,6 +390,11 @@ def convert_replies_to_messages(
     Returns:
         list[dict]: A list of messages representing the conversation history.
     """
+
+    # Ignore trailing bot replies (including a loading reply)
+    while replies and replies[-1].get("user") == context.bot_user_id:
+        replies.pop()
+
     messages: list[dict] = []
     pdf_count = 0
 
