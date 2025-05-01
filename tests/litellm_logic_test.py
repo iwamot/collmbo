@@ -3,6 +3,7 @@ import pytest
 from app.litellm_logic import (
     calculate_max_context_tokens,
     get_max_input_tokens,
+    load_tools_from_module,
     trim_messages_to_max_context_tokens,
 )
 
@@ -94,3 +95,16 @@ def test_trim_messages_to_max_context_tokens(
 
     assert result == expected_tokens
     assert len(messages) == expected_len
+
+
+@pytest.mark.parametrize(
+    "module_name, expected_type",
+    [
+        ("examples.tools", list),
+        (None, type(None)),
+    ],
+)
+def test_load_tools_from_module_type(module_name, expected_type):
+    result = load_tools_from_module(module_name)
+
+    assert isinstance(result, expected_type)
