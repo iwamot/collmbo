@@ -33,6 +33,7 @@ from app.exceptions import ContextOverflowError
 from app.litellm_logic import (
     calculate_max_context_tokens,
     get_max_input_tokens,
+    load_tools_from_module,
     trim_messages_to_max_context_tokens,
 )
 from app.message_logic import (
@@ -74,7 +75,7 @@ def reply_to_slack_with_litellm(
     Returns:
         None
     """
-    stream = start_receiving_litellm_response(
+    stream = start_litellm_stream(
         temperature=LITELLM_TEMPERATURE,
         messages=messages,
         user=user_id,
@@ -105,7 +106,7 @@ def trim_messages_for_model_limit(messages: list[dict]) -> Tuple[int, int]:
     max_input_tokens = get_max_input_tokens(LITELLM_MODEL_TYPE)
     if max_input_tokens is None:
         raise ValueError("LiteLLM does not support the model type")
-    tools_tokens = calculate_tokens_necessary_for_tools()
+    tools_tokens = estimate_tools_tokens()
     max_context_tokens = calculate_max_context_tokens(
         max_input_tokens=max_input_tokens,
         tools_tokens=tools_tokens,
@@ -122,8 +123,13 @@ def trim_messages_for_model_limit(messages: list[dict]) -> Tuple[int, int]:
 
 
 @lru_cache(maxsize=1)
-def calculate_tokens_necessary_for_tools() -> int:
-    """Calculates the estimated number of prompt tokens necessary for loading Tools stuff"""
+def estimate_tools_tokens() -> int:
+    """
+    Estimates the number of tokens used by tools in LiteLLM.
+
+    Returns:
+        int: The estimated number of tokens used by tools.
+    """
     if LITELLM_TOOLS_MODULE_NAME is None:
         return 0
 
@@ -151,6 +157,20 @@ def call_litellm_completion(
     stream: bool = False,
     tools: Optional[list] = None,
 ) -> Union[ModelResponse, CustomStreamWrapper]:
+    """
+    Calls the LiteLLM completion API.
+
+    Args:
+        messages (list[dict]): The list of messages to send to the API.
+        user (str): The user ID of the person making the request.
+        max_tokens (int): The maximum number of tokens to generate.
+        temperature (float): The temperature for sampling.
+        stream (bool): Whether to stream the response.
+        tools (Optional[list]): The list of tools to use.
+
+    Returns:
+        Union[ModelResponse, CustomStreamWrapper]: The response from the API.
+    """
     return litellm.completion(
         model=LITELLM_MODEL,
         messages=messages,
@@ -167,16 +187,24 @@ def call_litellm_completion(
     )
 
 
-def start_receiving_litellm_response(
+def start_litellm_stream(
     *,
     temperature: float,
     messages: list[dict],
     user: str,
 ) -> CustomStreamWrapper:
-    if LITELLM_TOOLS_MODULE_NAME is not None:
-        tools = import_module(LITELLM_TOOLS_MODULE_NAME).tools
-    else:
-        tools = None
+    """
+    Starts a LiteLLM stream for generating completions.
+
+    Args:
+        temperature (float): The temperature for sampling.
+        messages (list[dict]): The list of messages to send to the API.
+        user (str): The user ID of the person making the request.
+
+    Returns:
+        CustomStreamWrapper: The stream wrapper for the response.
+    """
+    tools = load_tools_from_module(LITELLM_TOOLS_MODULE_NAME)
     response = call_litellm_completion(
         messages=messages,
         max_tokens=LITELLM_MAX_TOKENS,
