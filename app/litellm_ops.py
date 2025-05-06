@@ -32,7 +32,9 @@ from app.env import (
 from app.exceptions import ContextOverflowError
 from app.litellm_logic import (
     calculate_max_context_tokens,
+    extract_delta_content,
     get_max_input_tokens,
+    is_final_chunk,
     load_tools_from_module,
     trim_messages_to_max_context_tokens,
 )
@@ -314,6 +316,21 @@ def handle_litellm_stream(
     timeout_seconds: int,
     start_time: float,
 ) -> tuple[Optional[Message], bool]:
+    """
+    Handles the streaming response from LiteLLM and updates the Slack message.
+
+    Args:
+        stream (CustomStreamWrapper): The stream wrapper for the response.
+        assistant_message (dict): The assistant message to update.
+        wip_reply (Union[dict, SlackResponse]): The message object for the in-progress reply.
+        client (WebClient): The Slack WebClient instance.
+        channel (str): The Slack channel ID.
+        timeout_seconds (int): The timeout duration in seconds.
+        start_time (float): The start time of the request.
+
+    Returns:
+        tuple[Optional[Message], bool]: The response message and a flag indicating if the response is too long.
+    """
     response_chunks: list = []
     is_response_too_long = False
     threads: list[threading.Thread] = []
@@ -323,12 +340,12 @@ def handle_litellm_stream(
             if (time.time() - start_time) > timeout_seconds:
                 raise TimeoutError()
             response_chunks.append(chunk)
-            delta = chunk.choices[0].get("delta")
-            if delta is None or delta.get("content") is None:
+            delta_content = extract_delta_content(chunk)
+            if delta_content is None:
                 continue
-            buffered_text += delta["content"]
-            assistant_message["content"] += delta["content"]
-            is_final_chunk = chunk.choices[0].get("finish_reason") is not None
+            buffered_text += delta_content
+            assistant_message["content"] += delta_content
+            final_chunk = is_final_chunk(chunk)
             if len(buffered_text) >= SLACK_UPDATE_TEXT_BUFFER_SIZE:
                 spawn_reply_update_text(
                     client=client,
@@ -339,12 +356,12 @@ def handle_litellm_stream(
                 )
                 buffered_text = ""
                 if (
-                    not is_final_chunk
+                    not final_chunk
                     and len(wip_reply["message"]["text"].encode("utf-8")) > 3500
                 ):
                     is_response_too_long = True
                     break
-            if is_final_chunk:
+            if final_chunk:
                 break
     finally:
         for t in threads:
