@@ -27,7 +27,7 @@ def build_system_message(
     return {"role": "system", "content": system_text}
 
 
-def build_assistant_message(text: str) -> dict:
+def build_assistant_message(text: str = "") -> dict:
     """
     Build the assistant message for the bot.
 
