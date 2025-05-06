@@ -37,6 +37,7 @@ from app.litellm_logic import (
     trim_messages_to_max_context_tokens,
 )
 from app.message_logic import (
+    build_assistant_message,
     convert_markdown_to_mrkdwn,
     format_assistant_reply_for_slack,
 )
@@ -46,6 +47,35 @@ litellm.drop_params = True
 if LITELLM_CALLBACK_MODULE_NAME is not None:
     callback_module = import_module(LITELLM_CALLBACK_MODULE_NAME)
     litellm.callbacks = [callback_module.CallbackHandler()]
+
+
+def trim_messages_for_model_limit(messages: list[dict]) -> Tuple[int, int]:
+    """
+    Trims messages to fit within the maximum context tokens.
+
+    Args:
+        messages (list[dict]): The list of messages to trim.
+
+    Returns:
+        Tuple[int, int]: The number of tokens in the trimmed messages and the number of tokens used by tools.
+    """
+    max_input_tokens = get_max_input_tokens(LITELLM_MODEL_TYPE)
+    if max_input_tokens is None:
+        raise ValueError("LiteLLM does not support the model type")
+    tools_tokens = estimate_tools_tokens()
+    max_context_tokens = calculate_max_context_tokens(
+        max_input_tokens=max_input_tokens,
+        tools_tokens=tools_tokens,
+        max_output_tokens=LITELLM_MAX_TOKENS,
+    )
+    messages_tokens = trim_messages_to_max_context_tokens(
+        messages=messages,
+        model_type=LITELLM_MODEL_TYPE,
+        max_context_tokens=max_context_tokens,
+    )
+    if messages_tokens > max_context_tokens:
+        raise ContextOverflowError(messages_tokens, max_context_tokens)
+    return messages_tokens, tools_tokens
 
 
 def reply_to_slack_with_litellm(
@@ -80,7 +110,7 @@ def reply_to_slack_with_litellm(
         messages=messages,
         user=user_id,
     )
-    consume_litellm_stream_to_write_reply(
+    stream_litellm_reply_to_slack(
         client=client,
         wip_reply=wip_reply,
         channel=channel,
@@ -91,61 +121,6 @@ def reply_to_slack_with_litellm(
         loading_text=loading_text,
         timeout_seconds=timeout_seconds,
     )
-
-
-def trim_messages_for_model_limit(messages: list[dict]) -> Tuple[int, int]:
-    """
-    Trims messages to fit within the maximum context tokens.
-
-    Args:
-        messages (list[dict]): The list of messages to trim.
-
-    Returns:
-        Tuple[int, int]: The number of tokens in the trimmed messages and the number of tokens used by tools.
-    """
-    max_input_tokens = get_max_input_tokens(LITELLM_MODEL_TYPE)
-    if max_input_tokens is None:
-        raise ValueError("LiteLLM does not support the model type")
-    tools_tokens = estimate_tools_tokens()
-    max_context_tokens = calculate_max_context_tokens(
-        max_input_tokens=max_input_tokens,
-        tools_tokens=tools_tokens,
-        max_output_tokens=LITELLM_MAX_TOKENS,
-    )
-    messages_tokens = trim_messages_to_max_context_tokens(
-        messages=messages,
-        model_type=LITELLM_MODEL_TYPE,
-        max_context_tokens=max_context_tokens,
-    )
-    if messages_tokens > max_context_tokens:
-        raise ContextOverflowError(messages_tokens, max_context_tokens)
-    return messages_tokens, tools_tokens
-
-
-@lru_cache(maxsize=1)
-def estimate_tools_tokens() -> int:
-    """
-    Estimates the number of tokens used by tools in LiteLLM.
-
-    Returns:
-        int: The estimated number of tokens used by tools.
-    """
-    if LITELLM_TOOLS_MODULE_NAME is None:
-        return 0
-
-    def _calculate_prompt_tokens(tools) -> int:
-        response = call_litellm_completion(
-            messages=[{"role": "user", "content": "hello"}],
-            user="system",
-            tools=tools,
-        )
-        if not isinstance(response, ModelResponse):
-            raise TypeError("Expected ModelResponse when streaming is disabled")
-        return response["usage"]["prompt_tokens"]
-
-    # TODO: If there is a better way to calculate this, replace the logic with it
-    module = import_module(LITELLM_TOOLS_MODULE_NAME)
-    return _calculate_prompt_tokens(module.tools) - _calculate_prompt_tokens(None)
 
 
 def call_litellm_completion(
@@ -187,6 +162,32 @@ def call_litellm_completion(
     )
 
 
+@lru_cache(maxsize=1)
+def estimate_tools_tokens() -> int:
+    """
+    Estimates the number of tokens used by tools in LiteLLM.
+
+    Returns:
+        int: The estimated number of tokens used by tools.
+    """
+    if LITELLM_TOOLS_MODULE_NAME is None:
+        return 0
+
+    def calculate_prompt_tokens(tools) -> int:
+        response = call_litellm_completion(
+            messages=[{"role": "user", "content": "hello"}],
+            user="system",
+            tools=tools,
+        )
+        if not isinstance(response, ModelResponse):
+            raise TypeError("Expected ModelResponse when streaming is disabled")
+        return response["usage"]["prompt_tokens"]
+
+    # TODO: If there is a better way to calculate this, replace the logic with it
+    module = import_module(LITELLM_TOOLS_MODULE_NAME)
+    return calculate_prompt_tokens(module.tools) - calculate_prompt_tokens(None)
+
+
 def start_litellm_stream(
     *,
     temperature: float,
@@ -218,7 +219,7 @@ def start_litellm_stream(
     return response
 
 
-def consume_litellm_stream_to_write_reply(
+def stream_litellm_reply_to_slack(
     *,
     client: WebClient,
     wip_reply: Union[dict, SlackResponse],
@@ -230,51 +231,42 @@ def consume_litellm_stream_to_write_reply(
     loading_text: str,
     timeout_seconds: int,
 ):
+    """
+    Streams the LiteLLM response and updates the Slack message.
+
+    Args:
+        client (WebClient): The Slack WebClient instance.
+        wip_reply (Union[dict, SlackResponse]): The message object for the in-progress reply.
+        channel (str): The Slack channel ID.
+        user_id (str): The user ID of the person who initiated the conversation.
+        messages (list[dict]): The list of messages to include in the reply.
+        stream (CustomStreamWrapper): The stream wrapper for the response.
+        thread_ts (Optional[str]): The timestamp of the thread to reply to.
+        loading_text (str): The text to display while waiting for a response.
+        timeout_seconds (int): The timeout duration in seconds.
+
+    Returns:
+        None
+    """
     start_time = time.time()
-    assistant_reply = {
-        "role": "assistant",
-        "content": "",
-    }
-
-    response_message, is_response_too_long = handle_litellm_stream(
-        stream=stream,
-        assistant_reply=assistant_reply,
-        wip_reply=wip_reply,
-        client=client,
-        channel=channel,
-        timeout_seconds=timeout_seconds,
-        start_time=start_time,
-    )
-
-    # Append any remaining text to the message
-    if len(assistant_reply["content"]) > 0:
-        update_reply_text(
+    while True:
+        assistant_message = build_assistant_message()
+        response_message, is_response_too_long = handle_litellm_stream(
+            stream=stream,
+            assistant_message=assistant_message,
+            wip_reply=wip_reply,
             client=client,
             channel=channel,
-            wip_reply=wip_reply,
-            assistant_content=assistant_reply["content"],
-            with_loading_character=False,
+            timeout_seconds=int(timeout_seconds - (time.time() - start_time)),
+            start_time=start_time,
         )
-
-    messages.append(assistant_reply)
-
-    # If the response is too long, post a new message instead
-    if is_response_too_long:
-        next_wip_reply = client.chat_postMessage(
+        messages.append(assistant_message)
+        if not is_response_too_long:
+            break
+        wip_reply = client.chat_postMessage(
             channel=channel,
             thread_ts=thread_ts,
             text=SLACK_LOADING_CHARACTER,
-        )
-        consume_litellm_stream_to_write_reply(
-            client=client,
-            wip_reply=next_wip_reply,
-            channel=channel,
-            user_id=user_id,
-            messages=messages,
-            stream=stream,
-            thread_ts=thread_ts,
-            loading_text=loading_text,
-            timeout_seconds=int(timeout_seconds - (time.time() - start_time)),
         )
 
     if (
@@ -295,7 +287,7 @@ def consume_litellm_stream_to_write_reply(
     process_tool_calls(
         response_message=response_message,
         tools_module_name=LITELLM_TOOLS_MODULE_NAME,
-        assistant_reply=assistant_reply,
+        assistant_message=assistant_message,
         messages=messages,
         logger=client.logger,
     )
@@ -315,7 +307,7 @@ def consume_litellm_stream_to_write_reply(
 def handle_litellm_stream(
     *,
     stream: CustomStreamWrapper,
-    assistant_reply: dict,
+    assistant_message: dict,
     wip_reply: Union[dict, SlackResponse],
     client: WebClient,
     channel: str,
@@ -335,14 +327,14 @@ def handle_litellm_stream(
             if delta is None or delta.get("content") is None:
                 continue
             buffered_text += delta["content"]
-            assistant_reply["content"] += delta["content"]
+            assistant_message["content"] += delta["content"]
             is_final_chunk = chunk.choices[0].get("finish_reason") is not None
             if len(buffered_text) >= SLACK_UPDATE_TEXT_BUFFER_SIZE:
                 spawn_reply_update_text(
                     client=client,
                     channel=channel,
                     wip_reply=wip_reply,
-                    assistant_content=assistant_reply["content"],
+                    assistant_content=assistant_message["content"],
                     threads=threads,
                 )
                 buffered_text = ""
@@ -360,10 +352,22 @@ def handle_litellm_stream(
                 t.join()
             except Exception:
                 pass
+
+    # Final update to remove the loading character after stream ends
+    if len(assistant_message["content"]) > 0:
+        update_reply_text(
+            client=client,
+            channel=channel,
+            wip_reply=wip_reply,
+            assistant_content=assistant_message["content"],
+            with_loading_character=False,
+        )
+
     return build_litellm_response(response_chunks), is_response_too_long
 
 
 def update_reply_text(
+    *,
     client: WebClient,
     channel: str,
     wip_reply: Union[dict, SlackResponse],
@@ -394,7 +398,12 @@ def spawn_reply_update_text(
 ) -> None:
     thread = threading.Thread(
         target=update_reply_text,
-        args=(client, channel, wip_reply, assistant_content),
+        kwargs={
+            "client": client,
+            "channel": channel,
+            "wip_reply": wip_reply,
+            "assistant_content": assistant_content,
+        },
     )
     thread.daemon = True
     thread.start()
@@ -417,19 +426,25 @@ def process_tool_calls(
     *,
     response_message: Message,
     tools_module_name: str,
-    assistant_reply: dict,
+    assistant_message: dict,
     messages: list[dict],
     logger: logging.Logger,
 ) -> None:
     if response_message.tool_calls is None:
         return
-    assistant_reply["tool_calls"] = response_message.model_dump()["tool_calls"]
+    assistant_message["tool_calls"] = response_message.model_dump()["tool_calls"]
     tools_module = import_module(tools_module_name)
     for tool_call in response_message.tool_calls:
-        process_tool_call(tool_call, tools_module, messages, logger)
+        process_tool_call(
+            tool_call=tool_call,
+            tools_module=tools_module,
+            messages=messages,
+            logger=logger,
+        )
 
 
 def process_tool_call(
+    *,
     tool_call: ChatCompletionMessageToolCall,
     tools_module: ModuleType,
     messages: list[dict],
