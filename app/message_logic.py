@@ -3,7 +3,7 @@ This module contains functions to handle message logic.
 """
 
 import re
-from typing import List, Optional, Tuple
+from typing import Optional
 
 
 def build_system_message(
@@ -53,6 +53,26 @@ def build_user_message(content: list[dict]) -> dict:
     return {"role": "user", "content": content}
 
 
+def build_tool_message(*, tool_call_id: str, name: str, content: str) -> dict:
+    """
+    Build the tool message.
+
+    Args:
+        - tool_call_id (str): The ID of the tool call.
+        - name (str): The name of the tool.
+        - content (str): The content of the tool message.
+
+    Returns:
+        - dict: The tool message with "tool_call_id", "role", "name", and "content".
+    """
+    return {
+        "tool_call_id": tool_call_id,
+        "role": "tool",
+        "name": name,
+        "content": content,
+    }
+
+
 def remove_bot_mention(text: str, bot_user_id: Optional[str]) -> str:
     """
     Remove the bot mention from the text.
@@ -69,7 +89,7 @@ def remove_bot_mention(text: str, bot_user_id: Optional[str]) -> str:
 
 def maybe_redact_string(
     input_string: str,
-    patterns: List[Tuple[str, str]],
+    patterns: list[tuple[str, str]],
     redaction_enabled: bool,
 ) -> str:
     """
