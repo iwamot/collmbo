@@ -5,7 +5,7 @@ from typing import Optional
 
 from PIL import Image
 
-from app.slack_file_download_ops import download_slack_file_content
+from app.slack_file_service import download_slack_file_content
 
 SUPPORTED_IMAGE_FORMATS = ["jpeg", "png", "gif", "webp"]
 SUPPORTED_IMAGE_MIME_TYPES = [f"image/{fmt}" for fmt in SUPPORTED_IMAGE_FORMATS]
