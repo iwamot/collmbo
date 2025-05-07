@@ -1,3 +1,7 @@
+"""
+This module loads and exposes environment variables used by the app.
+"""
+
 import os
 
 DEFAULT_SYSTEM_TEXT = """

@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 from slack_sdk.errors import SlackApiError
 
-from app.slack_file_download_ops import download_slack_file_content
+from app.slack_file_service import download_slack_file_content
 
 
 @pytest.mark.parametrize(

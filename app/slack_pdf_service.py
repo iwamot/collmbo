@@ -2,7 +2,7 @@ import base64
 import logging
 from typing import Optional
 
-from app.slack_file_download_ops import download_slack_file_content
+from app.slack_file_service import download_slack_file_content
 
 
 def get_pdf_content_if_exists(
