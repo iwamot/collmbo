@@ -1,7 +1,7 @@
 import base64
 import logging
 from io import BytesIO
-from typing import Optional, Tuple
+from typing import Optional
 
 from PIL import Image
 
@@ -56,7 +56,7 @@ def get_image_content_if_exists(
     return content
 
 
-def encode_image_and_guess_format(image_data: bytes) -> Tuple[str, Optional[str]]:
+def encode_image_and_guess_format(image_data: bytes) -> tuple[str, Optional[str]]:
     try:
         image = Image.open(BytesIO(image_data))
         image_format = image.format

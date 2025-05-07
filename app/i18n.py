@@ -2,7 +2,7 @@ from typing import Optional
 
 from litellm.types.utils import ModelResponse
 
-from app.litellm_ops import call_litellm_completion
+from app.litellm_service import call_litellm_completion
 
 # https://slack.com/help/articles/215058658-Manage-your-language-preferences
 _locale_to_lang = {

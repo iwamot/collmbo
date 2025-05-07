@@ -1,3 +1,7 @@
+"""
+This module provides functions to interact with the LiteLLM API.
+"""
+
 import json
 import logging
 import os
@@ -6,7 +10,7 @@ import time
 from functools import lru_cache
 from importlib import import_module
 from types import ModuleType
-from typing import Optional, Tuple, Union
+from typing import Optional, Union
 
 import litellm
 from litellm.litellm_core_utils.streaming_handler import CustomStreamWrapper
@@ -40,6 +44,7 @@ from app.litellm_logic import (
 )
 from app.message_logic import (
     build_assistant_message,
+    build_tool_message,
     convert_markdown_to_mrkdwn,
     format_assistant_reply_for_slack,
 )
@@ -51,7 +56,7 @@ if LITELLM_CALLBACK_MODULE_NAME is not None:
     litellm.callbacks = [callback_module.CallbackHandler()]
 
 
-def trim_messages_for_model_limit(messages: list[dict]) -> Tuple[int, int]:
+def trim_messages_for_model_limit(messages: list[dict]) -> tuple[int, int]:
     """
     Trims messages to fit within the maximum context tokens.
 
@@ -59,7 +64,7 @@ def trim_messages_for_model_limit(messages: list[dict]) -> Tuple[int, int]:
         messages (list[dict]): The list of messages to trim.
 
     Returns:
-        Tuple[int, int]: The number of tokens in the trimmed messages and the number of tokens used by tools.
+        tuple[int, int]: The number of tokens in the messages and tool definitions.
     """
     max_input_tokens = get_max_input_tokens(LITELLM_MODEL_TYPE)
     if max_input_tokens is None:
@@ -329,7 +334,7 @@ def handle_litellm_stream(
         start_time (float): The start time of the request.
 
     Returns:
-        tuple[Optional[Message], bool]: The response message and a flag indicating if the response is too long.
+        tuple[Optional[Message], bool]: The response and whether it exceeded the length limit.
     """
     response_chunks: list = []
     is_response_too_long = False
@@ -347,7 +352,7 @@ def handle_litellm_stream(
             assistant_message["content"] += delta_content
             final_chunk = is_final_chunk(chunk)
             if len(buffered_text) >= SLACK_UPDATE_TEXT_BUFFER_SIZE:
-                spawn_reply_update_text(
+                spawn_update_reply_text(
                     client=client,
                     channel=channel,
                     wip_reply=wip_reply,
@@ -380,32 +385,10 @@ def handle_litellm_stream(
             with_loading_character=False,
         )
 
-    return build_litellm_response(response_chunks), is_response_too_long
+    return extract_message_from_chunks(response_chunks), is_response_too_long
 
 
-def update_reply_text(
-    *,
-    client: WebClient,
-    channel: str,
-    wip_reply: Union[dict, SlackResponse],
-    assistant_content: str,
-    with_loading_character: bool = True,
-) -> None:
-    assistant_reply_text = format_assistant_reply_for_slack(assistant_content)
-    if TRANSLATE_MARKDOWN:
-        assistant_reply_text = convert_markdown_to_mrkdwn(assistant_reply_text)
-    wip_reply["message"]["text"] = assistant_reply_text
-    text = assistant_reply_text
-    if with_loading_character:
-        text += SLACK_LOADING_CHARACTER
-    client.chat_update(
-        channel=channel,
-        ts=wip_reply["message"]["ts"],
-        text=text,
-    )
-
-
-def spawn_reply_update_text(
+def spawn_update_reply_text(
     *,
     client: WebClient,
     channel: str,
@@ -413,6 +396,19 @@ def spawn_reply_update_text(
     assistant_content: str,
     threads: list[threading.Thread],
 ) -> None:
+    """
+    Spawns a thread to update the Slack message with the assistant's reply.
+
+    Args:
+        client (WebClient): The Slack WebClient instance.
+        channel (str): The Slack channel ID.
+        wip_reply (Union[dict, SlackResponse]): The message object for the in-progress reply.
+        assistant_content (str): The content of the assistant's reply.
+        threads (list[threading.Thread]): The list of threads to manage.
+
+    Returns:
+        None
+    """
     thread = threading.Thread(
         target=update_reply_text,
         kwargs={
@@ -427,7 +423,51 @@ def spawn_reply_update_text(
     threads.append(thread)
 
 
-def build_litellm_response(chunks: list) -> Optional[Message]:
+def update_reply_text(
+    *,
+    client: WebClient,
+    channel: str,
+    wip_reply: Union[dict, SlackResponse],
+    assistant_content: str,
+    with_loading_character: bool = True,
+) -> None:
+    """
+    Updates the Slack message with the assistant's reply.
+
+    Args:
+        client (WebClient): The Slack WebClient instance.
+        channel (str): The Slack channel ID.
+        wip_reply (Union[dict, SlackResponse]): The message object for the in-progress reply.
+        assistant_content (str): The content of the assistant's reply.
+        with_loading_character (bool): Whether to append a loading character.
+
+    Returns:
+        None
+    """
+    assistant_reply_text = format_assistant_reply_for_slack(assistant_content)
+    if TRANSLATE_MARKDOWN:
+        assistant_reply_text = convert_markdown_to_mrkdwn(assistant_reply_text)
+    wip_reply["message"]["text"] = assistant_reply_text
+    text = assistant_reply_text
+    if with_loading_character:
+        text += SLACK_LOADING_CHARACTER
+    client.chat_update(
+        channel=channel,
+        ts=wip_reply["message"]["ts"],
+        text=text,
+    )
+
+
+def extract_message_from_chunks(chunks: list) -> Optional[Message]:
+    """
+    Extracts the message from the chunks of the model response.
+
+    Args:
+        chunks (list): The list of chunks from the model response.
+
+    Returns:
+        Optional[Message]: The extracted message, or None if not found.
+    """
     response = litellm.stream_chunk_builder(chunks)
     if response is None:
         raise RuntimeError(
@@ -447,6 +487,19 @@ def process_tool_calls(
     messages: list[dict],
     logger: logging.Logger,
 ) -> None:
+    """
+    Processes the tool calls in the response message.
+
+    Args:
+        response_message (Message): The response message containing tool calls.
+        tools_module_name (str): The name of the module containing the tools.
+        assistant_message (dict): The assistant message to update.
+        messages (list[dict]): The list of messages to include in the reply.
+        logger (logging.Logger): The logger instance.
+
+    Returns:
+        None
+    """
     if response_message.tool_calls is None:
         return
     assistant_message["tool_calls"] = response_message.model_dump()["tool_calls"]
@@ -467,6 +520,18 @@ def process_tool_call(
     messages: list[dict],
     logger: logging.Logger,
 ) -> None:
+    """
+    Processes a single tool call and updates the messages list.
+
+    Args:
+        tool_call (ChatCompletionMessageToolCall): The tool call to process.
+        tools_module (ModuleType): The module containing the tools.
+        messages (list[dict]): The list of messages to include in the reply.
+        logger (logging.Logger): The logger instance.
+
+    Returns:
+        None
+    """
     function_name = tool_call.function.name
     if function_name is None:
         logger.warning(
@@ -477,11 +542,9 @@ def process_tool_call(
     function_to_call = getattr(tools_module, function_name)
     function_args = json.loads(tool_call.function.arguments)
     function_response = function_to_call(**function_args)
-    messages.append(
-        {
-            "tool_call_id": tool_call.id,
-            "role": "tool",
-            "name": function_name,
-            "content": function_response,
-        }
+    tool_message = build_tool_message(
+        tool_call_id=tool_call.id,
+        name=function_name,
+        content=function_response,
     )
+    messages.append(tool_message)

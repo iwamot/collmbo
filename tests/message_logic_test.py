@@ -4,6 +4,7 @@ from app.message_logic import (
     build_assistant_message,
     build_slack_user_prefixed_text,
     build_system_message,
+    build_tool_message,
     build_user_message,
     convert_markdown_to_mrkdwn,
     format_assistant_reply_for_slack,
@@ -81,6 +82,39 @@ def test_build_assistant_message(text, expected):
 )
 def test_build_user_message(content, expected):
     result = build_user_message(content)
+
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "tool_call_id, name, content, expected",
+    [
+        (
+            "abc123",
+            "get_weather",
+            "Sunny",
+            {
+                "tool_call_id": "abc123",
+                "role": "tool",
+                "name": "get_weather",
+                "content": "Sunny",
+            },
+        ),
+        (
+            "xyz789",
+            "translate",
+            "",
+            {
+                "tool_call_id": "xyz789",
+                "role": "tool",
+                "name": "translate",
+                "content": "",
+            },
+        ),
+    ],
+)
+def test_build_tool_message(tool_call_id, name, content, expected):
+    result = build_tool_message(tool_call_id=tool_call_id, name=name, content=content)
 
     assert result == expected
 
