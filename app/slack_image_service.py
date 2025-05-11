@@ -9,7 +9,7 @@ from typing import Optional
 from PIL import Image
 
 from app.message_logic import build_image_url_item
-from app.slack_file_service import download_slack_file_content
+from app.slack_file_service import get_slack_file_content
 
 SUPPORTED_IMAGE_FORMATS = ["jpeg", "png", "gif", "webp"]
 SUPPORTED_IMAGE_MIME_TYPES = [f"image/{fmt}" for fmt in SUPPORTED_IMAGE_FORMATS]
@@ -45,7 +45,7 @@ def build_image_url_items_from_slack_files(
             logger.warning("Skipped an image file due to missing 'url_private'")
             continue
 
-        image_bytes = download_slack_file_content(
+        image_bytes = get_slack_file_content(
             url=file_url,
             token=bot_token,
             expected_content_types=SUPPORTED_IMAGE_MIME_TYPES,
