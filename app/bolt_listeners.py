@@ -32,7 +32,6 @@ from app.env import (
     SYSTEM_TEXT,
     TRANSLATE_MARKDOWN,
 )
-from app.i18n import translate
 from app.litellm_service import (
     reply_to_slack_with_litellm,
     trim_messages_for_model_limit,
@@ -50,6 +49,7 @@ from app.message_logic import (
 )
 from app.slack_image_service import build_image_url_items_from_slack_files
 from app.slack_pdf_service import build_pdf_file_items_from_slack_files
+from app.translation_service import translate
 
 TIMEOUT_ERROR_MESSAGE = (
     f":warning: Apologies! It seems that the AI didn't respond within the "
