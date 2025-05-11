@@ -24,10 +24,10 @@ def test_download_slack_file_content_success(
         return mock_response
 
     content = download_slack_file_content(
-        "https://example.com/file",
-        "xoxb-fake-token",
-        expected_content_types,
-        mock_http_get,
+        url="https://example.com/file",
+        token="xoxb-fake-token",
+        expected_content_types=expected_content_types,
+        http_get=mock_http_get,
     )
     assert content == b"fake-content"
 
@@ -53,8 +53,8 @@ def test_download_slack_file_content_failure(
 
     with pytest.raises(SlackApiError):
         download_slack_file_content(
-            "https://example.com/file",
-            "xoxb-fake-token",
-            expected_content_types,
-            mock_http_get,
+            url="https://example.com/file",
+            token="xoxb-fake-token",
+            expected_content_types=expected_content_types,
+            http_get=mock_http_get,
         )
