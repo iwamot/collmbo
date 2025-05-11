@@ -2,6 +2,7 @@
 This module contains functions to handle message logic.
 """
 
+import base64
 import re
 from typing import Optional
 
@@ -70,6 +71,45 @@ def build_tool_message(*, tool_call_id: str, name: str, content: str) -> dict:
         "role": "tool",
         "name": name,
         "content": content,
+    }
+
+
+def build_image_url_item(mime_type: str, image_bytes: bytes) -> dict:
+    """
+    Build an image URL item for the bot.
+
+    Args:
+        - mime_type (str): The MIME type of the image.
+        - image_bytes (bytes): The image data in bytes.
+
+    Returns:
+        - dict: The image URL content as a dictionary with "type" and "image_url".
+    """
+    encoded_image = base64.b64encode(image_bytes).decode("utf-8")
+    return {
+        "type": "image_url",
+        "image_url": {"url": f"data:{mime_type};base64,{encoded_image}"},
+    }
+
+
+def build_pdf_file_item(filename: Optional[str], pdf_bytes: bytes) -> dict:
+    """
+    Build a PDF file item for the bot.
+
+    Args:
+        - filename (Optional[str]): The name of the PDF file.
+        - pdf_bytes (bytes): The PDF data in bytes.
+
+    Returns:
+        - dict: The PDF file content as a dictionary with "type" and "file".
+    """
+    encoded_pdf = base64.b64encode(pdf_bytes).decode("utf-8")
+    return {
+        "type": "file",
+        "file": {
+            "filename": filename or "unnamed.pdf",
+            "file_data": f"data:application/pdf;base64,{encoded_pdf}",
+        },
     }
 
 

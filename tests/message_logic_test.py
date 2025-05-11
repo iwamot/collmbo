@@ -1,7 +1,11 @@
+import base64
+
 import pytest
 
 from app.message_logic import (
     build_assistant_message,
+    build_image_url_item,
+    build_pdf_file_item,
     build_slack_user_prefixed_text,
     build_system_message,
     build_tool_message,
@@ -115,6 +119,70 @@ def test_build_user_message(content, expected):
 )
 def test_build_tool_message(tool_call_id, name, content, expected):
     result = build_tool_message(tool_call_id=tool_call_id, name=name, content=content)
+
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "mime_type, image_bytes, expected",
+    [
+        (
+            "image/png",
+            b"\x89PNG\r\n\x1a\n...",
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/png;base64,{base64.b64encode(b'\x89PNG\r\n\x1a\n...').decode()}"
+                },
+            },
+        ),
+        (
+            "image/gif",
+            b"GIF89a",
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/gif;base64,{base64.b64encode(b'GIF89a').decode()}"
+                },
+            },
+        ),
+    ],
+)
+def test_build_image_url_item(mime_type, image_bytes, expected):
+    result = build_image_url_item(mime_type, image_bytes)
+
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "filename, pdf_bytes, expected",
+    [
+        (
+            "document.pdf",
+            b"%PDF-1.4 content",
+            {
+                "type": "file",
+                "file": {
+                    "filename": "document.pdf",
+                    "file_data": f"data:application/pdf;base64,{base64.b64encode(b'%PDF-1.4 content').decode()}",
+                },
+            },
+        ),
+        (
+            None,
+            b"%PDF-1.7 content",
+            {
+                "type": "file",
+                "file": {
+                    "filename": "unnamed.pdf",
+                    "file_data": f"data:application/pdf;base64,{base64.b64encode(b'%PDF-1.7 content').decode()}",
+                },
+            },
+        ),
+    ],
+)
+def test_build_pdf_file_item(filename, pdf_bytes, expected):
+    result = build_pdf_file_item(filename, pdf_bytes)
 
     assert result == expected
 

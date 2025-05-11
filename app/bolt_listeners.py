@@ -48,8 +48,8 @@ from app.message_logic import (
     remove_bot_mention,
     unescape_slack_formatting,
 )
-from app.slack_image_service import get_image_content_if_exists
-from app.slack_pdf_service import get_pdf_content_if_exists
+from app.slack_image_service import build_image_url_items_from_slack_files
+from app.slack_pdf_service import build_pdf_file_items_from_slack_files
 
 TIMEOUT_ERROR_MESSAGE = (
     f":warning: Apologies! It seems that the AI didn't respond within the "
@@ -66,7 +66,7 @@ REDACT_PATTERNS = [
     (REDACT_SSN_PATTERN, "[SSN]"),
     (REDACT_USER_DEFINED_PATTERN, "[REDACTED]"),
 ]
-MAX_PDF_FILES = 5
+MAX_PDF_SLOTS = 5
 
 
 def respond_to_new_post(
@@ -399,7 +399,7 @@ def convert_replies_to_messages(
         replies.pop()
 
     messages: list[dict] = []
-    pdf_count = 0
+    used_pdf_slots = 0
 
     # Process replies in reverse order to prioritize recent PDFs and avoid unnecessary downloads
     for reply in reversed(replies):
@@ -425,7 +425,7 @@ def convert_replies_to_messages(
         ):
             if context.bot_token is None:
                 raise ValueError("context.bot_token cannot be None")
-            content += get_image_content_if_exists(
+            content += build_image_url_items_from_slack_files(
                 bot_token=context.bot_token,
                 files=reply.get("files"),
                 logger=logger,
@@ -433,24 +433,24 @@ def convert_replies_to_messages(
 
         # Only process PDFs if we haven't reached the limit
         if (
-            pdf_count < MAX_PDF_FILES
+            used_pdf_slots < MAX_PDF_SLOTS
             and reply.get("bot_id") is None
             and PDF_FILE_ACCESS_ENABLED
             and has_read_files_scope(context.authorize_result)
         ):
             if context.bot_token is None:
                 raise ValueError("context.bot_token cannot be None")
-            pdf_content = get_pdf_content_if_exists(
+            pdf_file_items = build_pdf_file_items_from_slack_files(
                 bot_token=context.bot_token,
                 files=reply.get("files"),
                 logger=logger,
-                max_pdfs=MAX_PDF_FILES,
-                current_pdf_count=pdf_count,
+                pdf_slots=MAX_PDF_SLOTS,
+                used_pdf_slots=used_pdf_slots,
             )
 
             # Count and add PDFs
-            pdf_count += len(pdf_content)
-            content += pdf_content
+            used_pdf_slots += len(pdf_file_items)
+            content += pdf_file_items
 
         messages.append(build_user_message(content))
 

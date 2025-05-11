@@ -5,6 +5,7 @@ from slack_sdk.errors import SlackApiError
 
 
 def download_slack_file_content(
+    *,
     url: str,
     token: str,
     expected_content_types: list[str],

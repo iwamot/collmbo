@@ -1,54 +1,59 @@
-import base64
+"""
+This module provides functionality to handle PDFs from Slack files.
+"""
+
 import logging
 from typing import Optional
 
+from app.message_logic import build_pdf_file_item
 from app.slack_file_service import download_slack_file_content
 
 
-def get_pdf_content_if_exists(
+def build_pdf_file_items_from_slack_files(
     *,
     bot_token: str,
     files: Optional[list[dict]],
     logger: logging.Logger,
-    max_pdfs: int = 5,
-    current_pdf_count: int = 0,
+    pdf_slots: int = 5,
+    used_pdf_slots: int = 0,
 ) -> list[dict]:
-    content: list[dict] = []
-    if not files:
-        return content
+    """
+    Build PDF file items from Slack files.
 
-    remaining_slots = max_pdfs - current_pdf_count
-    if remaining_slots <= 0:
-        return content
+    Args:
+        - bot_token (str): The bot token for Slack API.
+        - files (Optional[list[dict]]): The list of files from Slack.
+        - logger (logging.Logger): The logger instance.
+        - pdf_slots (int): The number of PDF slots available.
+        - used_pdf_slots (int): The number of PDF slots already used.
+
+    Returns:
+        - list[dict]: A list of dictionaries containing PDF file content.
+    """
+    pdf_file_items: list[dict] = []
+    if not files:
+        return pdf_file_items
 
     for file in files:
-        if len(content) >= remaining_slots:
+        if len(pdf_file_items) >= (pdf_slots - used_pdf_slots):
             break
-        mime_type = file.get("mimetype")
-        if mime_type == "application/pdf":
-            file_url = file.get("url_private")
-            if file_url is None:
-                logger.warning("Skipped a PDF file due to missing 'url_private'")
-                continue
-            pdf_bytes = download_slack_file_content(
-                file_url, bot_token, ["application/pdf", "binary/octet-stream"]
-            )
-            if not pdf_bytes.startswith(b"%PDF-"):
-                skipped_file_message = (
-                    f"Skipped a file because it does not have a valid PDF header "
-                    f"(url: {file_url})"
-                )
-                logger.warning(skipped_file_message)
-                continue
-            encoded_pdf = base64.b64encode(pdf_bytes).decode("utf-8")
+        if file.get("mimetype") != "application/pdf":
+            continue
+        file_url = file.get("url_private")
+        if file_url is None:
+            logger.warning("Skipped a PDF file due to missing 'url_private'")
+            continue
 
-            file_item = {
-                "type": "file",
-                "file": {
-                    "filename": file.get("name"),
-                    "file_data": f"data:application/pdf;base64,{encoded_pdf}",
-                },
-            }
-            content.append(file_item)
+        pdf_bytes = download_slack_file_content(
+            url=file_url,
+            token=bot_token,
+            expected_content_types=["application/pdf", "binary/octet-stream"],
+        )
+        if not pdf_bytes.startswith(b"%PDF-"):
+            logger.warning(f"Skipped invalid PDF (url: {file_url})")
+            continue
 
-    return content
+        file_item = build_pdf_file_item(file.get("name"), pdf_bytes)
+        pdf_file_items.append(file_item)
+
+    return pdf_file_items
