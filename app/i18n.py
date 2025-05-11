@@ -15,8 +15,8 @@ _locale_to_lang = {
     "it-IT": "Italian",
     "pt-BR": "Portuguese",
     "ja-JP": "Japanese",
-    "zh-CN": "Chinese",
-    "zh-TW": "Chinese",
+    "zh-CN": "Simplified Chinese",
+    "zh-TW": "Traditional Chinese",
     "ko-KR": "Korean",
 }
 
