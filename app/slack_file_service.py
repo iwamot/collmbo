@@ -1,18 +1,31 @@
-from typing import Callable
+"""
+This module provides a function to download files from Slack.
+"""
 
 import requests
 from slack_sdk.errors import SlackApiError
 
 
-def download_slack_file_content(
+def get_slack_file_content(
     *,
     url: str,
     token: str,
     expected_content_types: list[str],
-    http_get: Callable[..., requests.Response] = requests.get,
 ) -> bytes:
-    headers = {"Authorization": f"Bearer {token}"}
-    response = http_get(url, headers=headers)
+    """
+    Get the content of a Slack file.
+
+    Args:
+        - url (str): The URL of the Slack file.
+        - token (str): The bot token for Slack API.
+        - expected_content_types (list[str]): A list of expected content types.
+
+    Returns:
+        - bytes: The content of the Slack file.
+    """
+    response = requests.get(
+        url, headers={"Authorization": f"Bearer {token}"}, timeout=10
+    )
     if response.status_code != 200:
         raise SlackApiError(
             f"Request to {url} failed with status code {response.status_code}", response
