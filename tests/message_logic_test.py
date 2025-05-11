@@ -132,7 +132,8 @@ def test_build_tool_message(tool_call_id, name, content, expected):
             {
                 "type": "image_url",
                 "image_url": {
-                    "url": f"data:image/png;base64,{base64.b64encode(b'\x89PNG\r\n\x1a\n...').decode()}"
+                    "url": "data:image/png;base64,"
+                    + base64.b64encode(b"\x89PNG\r\n\x1a\n...").decode()
                 },
             },
         ),
