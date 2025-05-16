@@ -6,7 +6,7 @@ import logging
 import time
 from typing import Optional
 
-from litellm.exceptions import Timeout
+from litellm import ContextWindowExceededError, Timeout
 from slack_bolt import BoltContext
 from slack_sdk.web import SlackResponse, WebClient
 
@@ -32,15 +32,13 @@ from app.env import (
     SYSTEM_TEXT,
     TRANSLATE_MARKDOWN,
 )
-from app.litellm_service import (
-    reply_to_slack_with_litellm,
-    trim_messages_for_model_limit,
-)
+from app.litellm_service import reply_to_slack_with_litellm
 from app.message_logic import (
     build_assistant_message,
     build_slack_user_prefixed_text,
     build_system_message,
     build_user_message,
+    filter_replies_after_last_marker,
     maybe_redact_string,
     maybe_set_cache_points,
     maybe_slack_to_markdown,
@@ -51,13 +49,17 @@ from app.slack_image_service import build_image_url_items_from_slack_files
 from app.slack_pdf_service import build_pdf_file_items_from_slack_files
 from app.translation_service import translate
 
+LOADING_TEXT = ":hourglass_flowing_sand: Wait a second, please ..."
 TIMEOUT_ERROR_MESSAGE = (
     f":warning: Apologies! It seems that the AI didn't respond within the "
     f"{LITELLM_TIMEOUT_SECONDS}-second timeframe. Please try your request again later. "
     "If you wish to extend the timeout limit, you may consider deploying this app with "
     "customized settings on your infrastructure. :bow:"
 )
-LOADING_TEXT = ":hourglass_flowing_sand: Wait a second, please ..."
+CONTEXT_WINDOW_EXCEEDED_ERROR_MESSAGE = (
+    ":warning: The conversation has grown too long for the AI to process. "
+    "To continue, only your upcoming messages will be used and previous ones will be ignored."
+)
 
 REDACT_PATTERNS = [
     (REDACT_EMAIL_PATTERN, "[EMAIL]"),
@@ -134,6 +136,13 @@ def respond_to_new_post(
             client=client,
             channel_id=context.channel_id,
             locale=context.get("locale"),
+            wip_reply=wip_reply,
+        )
+    except ContextWindowExceededError as e:
+        handle_context_window_exceeded_error(
+            client=client,
+            channel_id=context.channel_id,
+            e=e,
             wip_reply=wip_reply,
         )
     except Exception as e:
@@ -254,13 +263,16 @@ def build_messages(
         channel_id=channel_id,
         user_id=user_id,
     )
-    messages = [system_message] + convert_replies_to_messages(
-        replies, context, client.logger
+    filtered_replies = filter_replies_after_last_marker(
+        replies=replies,
+        bot_user_id=context.bot_user_id,
+        marker_text=CONTEXT_WINDOW_EXCEEDED_ERROR_MESSAGE,
     )
-    messages_tokens, tools_tokens = trim_messages_for_model_limit(messages)
+    messages = [system_message] + convert_replies_to_messages(
+        filtered_replies, context, client.logger
+    )
     maybe_set_cache_points(
         messages=messages,
-        total_tokens=messages_tokens + tools_tokens,
         prompt_cache_enabled=PROMPT_CACHING_ENABLED,
     )
     return messages
@@ -345,38 +357,6 @@ def get_dm_replies(client: WebClient, channel_id: str) -> list[dict]:
     return list(reversed(replies))
 
 
-def handle_timeout_error(
-    *,
-    client: WebClient,
-    channel_id: str,
-    locale: Optional[str],
-    wip_reply: Optional[SlackResponse],
-):
-    """
-    Handles timeout errors by updating the loading reply with an error message.
-
-    Args:
-        client (WebClient): The Slack WebClient instance.
-        channel_id (str): The ID of the channel where the post was made.
-        locale (Optional[str]): The locale for translation.
-        wip_reply (Optional[SlackResponse]): The loading reply to update.
-
-    Returns:
-        None
-    """
-    if wip_reply is None:
-        return
-    message_dict: dict = wip_reply.get("message", {})
-    text = (
-        message_dict.get("text", "") + "\n\n" + translate(locale, TIMEOUT_ERROR_MESSAGE)
-    )
-    client.chat_update(
-        channel=channel_id,
-        ts=wip_reply["message"]["ts"],
-        text=text,
-    )
-
-
 def convert_replies_to_messages(
     replies: list[dict],
     context: BoltContext,
@@ -457,6 +437,74 @@ def convert_replies_to_messages(
     # Reverse the messages to restore chronological order
     messages.reverse()
     return messages
+
+
+def handle_timeout_error(
+    *,
+    client: WebClient,
+    channel_id: str,
+    locale: Optional[str],
+    wip_reply: Optional[SlackResponse],
+):
+    """
+    Handles timeout errors by updating the loading reply with an error message.
+
+    Args:
+        client (WebClient): The Slack WebClient instance.
+        channel_id (str): The ID of the channel where the post was made.
+        locale (Optional[str]): The locale for translation.
+        wip_reply (Optional[SlackResponse]): The loading reply to update.
+
+    Returns:
+        None
+    """
+    if wip_reply is None:
+        return
+    message_dict: dict = wip_reply.get("message", {})
+    text = (
+        message_dict.get("text", "") + "\n\n" + translate(locale, TIMEOUT_ERROR_MESSAGE)
+    )
+    client.chat_update(
+        channel=channel_id,
+        ts=wip_reply["message"]["ts"],
+        text=text,
+    )
+
+
+def handle_context_window_exceeded_error(
+    *,
+    client: WebClient,
+    channel_id: str,
+    e: ContextWindowExceededError,
+    wip_reply: Optional[SlackResponse],
+):
+    """
+    Handles context window exceeded errors by updating the loading reply with an error message.
+
+    Args:
+        client (WebClient): The Slack WebClient instance.
+        channel_id (str): The ID of the channel where the post was made.
+        e (ContextWindowExceededError): The exception that occurred.
+        wip_reply (Optional[SlackResponse]): The loading reply to update.
+
+    Returns:
+        None
+    """
+    if wip_reply is None:
+        return
+    message_dict: dict = wip_reply.get("message", {})
+    text = (
+        message_dict.get("text", "")
+        + "\n\n"
+        + CONTEXT_WINDOW_EXCEEDED_ERROR_MESSAGE
+        + "\n\n"
+        + f"Error: {e}"
+    )
+    client.chat_update(
+        channel=channel_id,
+        ts=wip_reply["message"]["ts"],
+        text=text,
+    )
 
 
 def handle_exception(

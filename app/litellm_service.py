@@ -7,7 +7,6 @@ import logging
 import os
 import threading
 import time
-from functools import lru_cache
 from importlib import import_module
 from types import ModuleType
 from typing import Optional, Union
@@ -26,21 +25,16 @@ from app.env import (
     LITELLM_CALLBACK_MODULE_NAME,
     LITELLM_MAX_TOKENS,
     LITELLM_MODEL,
-    LITELLM_MODEL_TYPE,
     LITELLM_TEMPERATURE,
     LITELLM_TOOLS_MODULE_NAME,
     SLACK_LOADING_CHARACTER,
     SLACK_UPDATE_TEXT_BUFFER_SIZE,
     TRANSLATE_MARKDOWN,
 )
-from app.exceptions import ContextOverflowError
 from app.litellm_logic import (
-    calculate_max_context_tokens,
     extract_delta_content,
-    get_max_input_tokens,
     is_final_chunk,
     load_tools_from_module,
-    trim_messages_to_max_context_tokens,
 )
 from app.message_logic import (
     build_assistant_message,
@@ -54,35 +48,6 @@ litellm.drop_params = True
 if LITELLM_CALLBACK_MODULE_NAME is not None:
     callback_module = import_module(LITELLM_CALLBACK_MODULE_NAME)
     litellm.callbacks = [callback_module.CallbackHandler()]
-
-
-def trim_messages_for_model_limit(messages: list[dict]) -> tuple[int, int]:
-    """
-    Trims messages to fit within the maximum context tokens.
-
-    Args:
-        messages (list[dict]): The list of messages to trim.
-
-    Returns:
-        tuple[int, int]: The number of tokens in the messages and tool definitions.
-    """
-    max_input_tokens = get_max_input_tokens(LITELLM_MODEL_TYPE)
-    if max_input_tokens is None:
-        raise ValueError("LiteLLM does not support the model type")
-    tools_tokens = estimate_tools_tokens()
-    max_context_tokens = calculate_max_context_tokens(
-        max_input_tokens=max_input_tokens,
-        tools_tokens=tools_tokens,
-        max_output_tokens=LITELLM_MAX_TOKENS,
-    )
-    messages_tokens = trim_messages_to_max_context_tokens(
-        messages=messages,
-        model_type=LITELLM_MODEL_TYPE,
-        max_context_tokens=max_context_tokens,
-    )
-    if messages_tokens > max_context_tokens:
-        raise ContextOverflowError(messages_tokens, max_context_tokens)
-    return messages_tokens, tools_tokens
 
 
 def reply_to_slack_with_litellm(
@@ -167,32 +132,6 @@ def call_litellm_completion(
         tools=tools,
         aws_region_name=os.environ.get("AWS_REGION_NAME"),
     )
-
-
-@lru_cache(maxsize=1)
-def estimate_tools_tokens() -> int:
-    """
-    Estimates the number of tokens used by tools in LiteLLM.
-
-    Returns:
-        int: The estimated number of tokens used by tools.
-    """
-    if LITELLM_TOOLS_MODULE_NAME is None:
-        return 0
-
-    def calculate_prompt_tokens(tools) -> int:
-        response = call_litellm_completion(
-            messages=[{"role": "user", "content": "hello"}],
-            user="system",
-            tools=tools,
-        )
-        if not isinstance(response, ModelResponse):
-            raise TypeError("Expected ModelResponse when streaming is disabled")
-        return response["usage"]["prompt_tokens"]
-
-    # TODO: If there is a better way to calculate this, replace the logic with it
-    module = import_module(LITELLM_TOOLS_MODULE_NAME)
-    return calculate_prompt_tokens(module.tools) - calculate_prompt_tokens(None)
 
 
 def start_litellm_stream(
@@ -298,7 +237,6 @@ def stream_litellm_reply_to_slack(
         messages=messages,
         logger=client.logger,
     )
-    trim_messages_for_model_limit(messages)
     reply_to_slack_with_litellm(
         client=client,
         wip_reply=wip_reply,
