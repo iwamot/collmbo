@@ -11,13 +11,75 @@ from app.message_logic import (
     build_tool_message,
     build_user_message,
     convert_markdown_to_mrkdwn,
+    filter_replies_after_last_marker,
     format_assistant_reply_for_slack,
+    is_last_marker_reply,
     maybe_redact_string,
     maybe_set_cache_points,
     maybe_slack_to_markdown,
     remove_bot_mention,
     unescape_slack_formatting,
 )
+
+
+@pytest.mark.parametrize(
+    "reply,bot_user_id,marker_text,expected",
+    [
+        ({"user": "U123", "text": "This is a marker."}, "U123", "marker", True),
+        ({"user": "U123", "text": "Hello world."}, "U123", "marker", False),
+        ({"user": "U456", "text": "This is a marker."}, "U123", "marker", False),
+        ({"user": "U123", "text": ""}, "U123", "marker", False),
+    ],
+)
+def test_is_last_marker_reply(reply, bot_user_id, marker_text, expected):
+    result = is_last_marker_reply(
+        reply=reply, bot_user_id=bot_user_id, marker_text=marker_text
+    )
+
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "replies,bot_user_id,marker_text,expected",
+    [
+        (
+            [
+                {"user": "U123", "text": "hello"},
+                {"user": "U123", "text": "marker"},
+                {"user": "U123", "text": "world"},
+            ],
+            "U123",
+            "marker",
+            [{"user": "U123", "text": "world"}],
+        ),
+        (
+            [
+                {"user": "U123", "text": "hello"},
+                {"user": "U456", "text": "marker"},
+                {"user": "U123", "text": "world"},
+            ],
+            "U123",
+            "marker",
+            [
+                {"user": "U123", "text": "hello"},
+                {"user": "U456", "text": "marker"},
+                {"user": "U123", "text": "world"},
+            ],
+        ),
+        (
+            [],
+            "U123",
+            "marker",
+            [],
+        ),
+    ],
+)
+def test_filter_replies_after_last_marker(replies, bot_user_id, marker_text, expected):
+    result = filter_replies_after_last_marker(
+        replies=replies, bot_user_id=bot_user_id, marker_text=marker_text
+    )
+
+    assert result == expected
 
 
 @pytest.mark.parametrize(
@@ -235,7 +297,11 @@ def test_remove_bot_mention(text, bot_user_id, expected):
 def test_maybe_redact_string(
     input_string, patterns, redaction_enabled, expected_output
 ):
-    result = maybe_redact_string(input_string, patterns, redaction_enabled)
+    result = maybe_redact_string(
+        input_string=input_string,
+        patterns=patterns,
+        redaction_enabled=redaction_enabled,
+    )
 
     assert result == expected_output
 
@@ -367,11 +433,10 @@ def test_build_slack_user_prefixed_text(reply, text, expected):
 
 
 @pytest.mark.parametrize(
-    "prompt_cache_enabled, total_tokens, input_messages, expected_messages",
+    "prompt_cache_enabled, input_messages, expected_messages",
     [
         (
             False,
-            2000,
             [
                 {"role": "user", "content": [{"type": "text", "text": "a"}]},
                 {"role": "user", "content": [{"type": "text", "text": "b"}]},
@@ -385,21 +450,6 @@ def test_build_slack_user_prefixed_text(reply, text, expected):
         ),
         (
             True,
-            500,
-            [
-                {"role": "user", "content": [{"type": "text", "text": "a"}]},
-                {"role": "user", "content": [{"type": "text", "text": "b"}]},
-                {"role": "user", "content": [{"type": "text", "text": "c"}]},
-            ],
-            [
-                {"role": "user", "content": [{"type": "text", "text": "a"}]},
-                {"role": "user", "content": [{"type": "text", "text": "b"}]},
-                {"role": "user", "content": [{"type": "text", "text": "c"}]},
-            ],
-        ),
-        (
-            True,
-            2000,
             [
                 {"role": "user", "content": [{"type": "text", "text": "a"}]},
             ],
@@ -409,7 +459,6 @@ def test_build_slack_user_prefixed_text(reply, text, expected):
         ),
         (
             True,
-            2000,
             [
                 {"role": "user", "content": [{"type": "text", "text": "a"}]},
                 {"role": "user", "content": [{"type": "text", "text": "b"}]},
@@ -439,7 +488,6 @@ def test_build_slack_user_prefixed_text(reply, text, expected):
         ),
         (
             True,
-            2000,
             [
                 {"role": "user", "content": [{"type": "text", "text": "a"}]},
                 {"role": "user", "content": [{"type": "text", "text": "b"}]},
@@ -471,7 +519,6 @@ def test_build_slack_user_prefixed_text(reply, text, expected):
         ),
         (
             True,
-            2000,
             [
                 {"role": "user", "content": [{"type": "text", "text": "x"}]},
                 {"role": "assistant", "content": "hi"},
@@ -503,7 +550,6 @@ def test_build_slack_user_prefixed_text(reply, text, expected):
         ),
         (
             True,
-            2000,
             [
                 {"role": "user", "content": [{"type": "text", "text": "a"}]},
                 {"role": "assistant", "content": "ignored"},
@@ -538,9 +584,9 @@ def test_build_slack_user_prefixed_text(reply, text, expected):
     ],
 )
 def test_maybe_set_cache_points(
-    prompt_cache_enabled, total_tokens, input_messages, expected_messages
+    prompt_cache_enabled, input_messages, expected_messages
 ):
-    maybe_set_cache_points(input_messages, total_tokens, prompt_cache_enabled)
+    maybe_set_cache_points(input_messages, prompt_cache_enabled)
 
     assert input_messages == expected_messages
 

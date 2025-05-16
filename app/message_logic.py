@@ -7,6 +7,54 @@ import re
 from typing import Optional
 
 
+def is_last_marker_reply(
+    *,
+    reply: dict,
+    bot_user_id: Optional[str],
+    marker_text: str,
+) -> bool:
+    """
+    Check if the reply is the last marker reply.
+
+    Args:
+        - reply (dict): The reply dictionary.
+        - bot_user_id (Optional[str]): The bot's user ID.
+        - marker_text (str): The marker text to check.
+
+    Returns:
+        - bool: True if the reply is the last marker reply, False otherwise.
+    """
+    return reply.get("user") == bot_user_id and marker_text in reply.get("text", "")
+
+
+def filter_replies_after_last_marker(
+    *,
+    replies: list[dict],
+    bot_user_id: Optional[str],
+    marker_text: str,
+) -> list[dict]:
+    """
+    Filter replies to only include those after the last marker reply.
+
+    Args:
+        - replies (list[dict]): The list of replies.
+        - bot_user_id (Optional[str]): The bot's user ID.
+        - marker_text (str): The marker text to check.
+
+    Returns:
+        - list[dict]: The filtered list of replies.
+    """
+    for i, reply in enumerate(reversed(replies)):
+        if is_last_marker_reply(
+            reply=reply,
+            bot_user_id=bot_user_id,
+            marker_text=marker_text,
+        ):
+            new_start = len(replies) - i
+            return replies[new_start:]
+    return replies
+
+
 def build_system_message(
     system_text_template: str,
     bot_user_id: Optional[str],
@@ -128,6 +176,7 @@ def remove_bot_mention(text: str, bot_user_id: Optional[str]) -> str:
 
 
 def maybe_redact_string(
+    *,
     input_string: str,
     patterns: list[tuple[str, str]],
     redaction_enabled: bool,
@@ -217,7 +266,6 @@ def build_slack_user_prefixed_text(reply: dict, text: str) -> str:
 
 def maybe_set_cache_points(
     messages: list[dict],
-    total_tokens: int,
     prompt_cache_enabled: bool,
 ) -> None:
     """
@@ -233,7 +281,6 @@ def maybe_set_cache_points(
     """
     if not (
         prompt_cache_enabled
-        and total_tokens >= 1024
         and len([m for m in messages if m.get("role") == "user"]) >= 2
     ):
         return
