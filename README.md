@@ -98,12 +98,12 @@ AZURE_API_BASE=...
 AZURE_API_VERSION=...
 ```
 
-### Amazon Bedrock (Claude 3.7 Sonnet)
+### Amazon Bedrock (Claude Sonnet 4)
 
 ```sh
 SLACK_APP_TOKEN=...
 SLACK_BOT_TOKEN=...
-LITELLM_MODEL=bedrock/us.anthropic.claude-3-7-sonnet-20250219-v1:0
+LITELLM_MODEL=bedrock/us.anthropic.claude-sonnet-4-20250514-v1:0
 
 # You can specify a Bedrock region if it's different from your default AWS region
 AWS_REGION_NAME=us-west-2
