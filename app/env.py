@@ -10,6 +10,7 @@ Format bold text *like this*, italic text _like this_ and strikethrough text ~li
 Slack user IDs match the regex `<@U.*?>`.
 Your Slack user ID is <@{bot_user_id}>.
 Each message has the author's Slack user ID prepended, like the regex `^<@U.*?>: ` followed by the message text.
+Only mention users (e.g., `<@U12345>`) when you are explicitly instructed to do so. Otherwise, do not mention users.
 """
 SYSTEM_TEXT = os.environ.get("LITELLM_SYSTEM_TEXT", DEFAULT_SYSTEM_TEXT)
 
