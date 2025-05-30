@@ -1,11 +1,8 @@
 FROM python:3.13.3-slim-bookworm AS builder
-ARG USE_BEDROCK=false
-COPY requirements.txt /build/
+ARG FLAVOR=slim
 WORKDIR /build/
+COPY ${FLAVOR}-requirements.txt /build/requirements.txt
 RUN pip install --no-cache-dir -U pip
-RUN if [ "$USE_BEDROCK" = "true" ]; then \
-        echo boto3 >> requirements.txt; \
-    fi
 RUN pip install --no-cache-dir -r requirements.txt
 
 FROM python:3.13.3-slim-bookworm AS app
