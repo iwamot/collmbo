@@ -20,5 +20,5 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Run mypy verification
         run: |
-          pip install -r requirements.txt
-          pip install "mypy==1.15.0" boto3 pytest types-requests && mypy *.py app/*.py tests/*.py
+          pip install -r slim-requirements.txt
+          pip install "mypy==1.15.0" pytest types-requests && mypy *.py app/*.py tests/*.py
