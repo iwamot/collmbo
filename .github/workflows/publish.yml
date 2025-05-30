@@ -21,10 +21,8 @@ jobs:
           - linux/amd64
           - linux/arm64
         flavor:
-          - name: slim
-            use_bedrock: false
-          - name: full
-            use_bedrock: true
+          - slim
+          - full
     steps:
       - name: Prepare
         run: |
@@ -59,11 +57,11 @@ jobs:
         with:
           platforms: ${{ matrix.platform }}
           build-args: |
-            USE_BEDROCK=${{ matrix.flavor.use_bedrock }}
+            FLAVOR=${{ matrix.flavor }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=registry,ref=${{ env.REGISTRY_IMAGE }}:cache-${{ env.PLATFORM_PAIR }}-${{ matrix.flavor.name }}
-          cache-to: type=registry,ref=${{ env.REGISTRY_IMAGE }}:cache-${{ env.PLATFORM_PAIR }}-${{ matrix.flavor.name }},mode=max
+          cache-from: type=registry,ref=${{ env.REGISTRY_IMAGE }}:cache-${{ env.PLATFORM_PAIR }}-${{ matrix.flavor }}
+          cache-to: type=registry,ref=${{ env.REGISTRY_IMAGE }}:cache-${{ env.PLATFORM_PAIR }}-${{ matrix.flavor }},mode=max
 
       - name: Export digest
         run: |
@@ -74,7 +72,7 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: digests-${{ env.PLATFORM_PAIR }}-${{ matrix.flavor.name }}
+          name: digests-${{ env.PLATFORM_PAIR }}-${{ matrix.flavor }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
