@@ -9,16 +9,16 @@ from app.litellm_logic import (
 
 
 @pytest.mark.parametrize(
-    "module_name, expected_type",
+    "module_name, expected_len",
     [
-        ("examples.tools", list),
-        (None, type(None)),
+        ("examples.tools", 1),
+        (None, 0),
     ],
 )
-def test_load_tools_from_module_type(module_name, expected_type):
+def test_load_tools_from_module_type(module_name, expected_len):
     result = load_tools_from_module(module_name)
 
-    assert isinstance(result, expected_type)
+    assert len(result) == expected_len
 
 
 @pytest.mark.parametrize(

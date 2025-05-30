@@ -49,6 +49,10 @@ if LITELLM_CALLBACK_MODULE_NAME is not None:
     callback_module = import_module(LITELLM_CALLBACK_MODULE_NAME)
     litellm.callbacks = [callback_module.CallbackHandler()]
 
+CLASSIC_TOOLS = []
+if LITELLM_TOOLS_MODULE_NAME is not None:
+    CLASSIC_TOOLS = load_tools_from_module(LITELLM_TOOLS_MODULE_NAME)
+
 
 def reply_to_slack_with_litellm(
     *,
@@ -151,14 +155,13 @@ def start_litellm_stream(
     Returns:
         CustomStreamWrapper: The stream wrapper for the response.
     """
-    tools = load_tools_from_module(LITELLM_TOOLS_MODULE_NAME)
     response = call_litellm_completion(
         messages=messages,
         max_tokens=LITELLM_MAX_TOKENS,
         temperature=temperature,
         user=user,
         stream=True,
-        tools=tools,
+        tools=CLASSIC_TOOLS,
     )
     if not isinstance(response, CustomStreamWrapper):
         raise TypeError("Expected CustomStreamWrapper when streaming is enabled")
