@@ -1,24 +1,7 @@
 import pytest
 from litellm.types.utils import Delta, ModelResponse, StreamingChoices
 
-from app.litellm_logic import (
-    extract_delta_content,
-    is_final_chunk,
-    load_tools_from_module,
-)
-
-
-@pytest.mark.parametrize(
-    "module_name, expected_len",
-    [
-        ("examples.tools", 1),
-        (None, 0),
-    ],
-)
-def test_load_tools_from_module_type(module_name, expected_len):
-    result = load_tools_from_module(module_name)
-
-    assert len(result) == expected_len
+from app.litellm_logic import extract_delta_content, is_final_chunk
 
 
 @pytest.mark.parametrize(

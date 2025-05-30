@@ -2,23 +2,9 @@
 This module contains logic related to LiteLLM.
 """
 
-from importlib import import_module
 from typing import Optional
 
 from litellm.types.utils import ModelResponse
-
-
-def load_tools_from_module(module_name: Optional[str]) -> list:
-    """
-    Load tools from a module.
-
-    Args:
-        module_name (Optional[str]): The name of the module to load tools from.
-
-    Returns:
-        list: A list of tools loaded from the module, or an empty list if no module is specified.
-    """
-    return import_module(module_name).tools if module_name is not None else []
 
 
 def extract_delta_content(chunk: ModelResponse) -> Optional[str]:
