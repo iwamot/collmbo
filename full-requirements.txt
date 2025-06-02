@@ -4,4 +4,4 @@ litellm==1.71.2
 pillow==11.2.1
 requests==2.32.3
 
-boto3==1.38.27
+boto3==1.38.28
