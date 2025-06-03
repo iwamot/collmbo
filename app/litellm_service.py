@@ -2,23 +2,15 @@
 This module provides functions to interact with the LiteLLM API.
 """
 
-import json
-import logging
 import os
 import threading
 import time
 from importlib import import_module
-from types import ModuleType
 from typing import Optional, Union
 
 import litellm
 from litellm.litellm_core_utils.streaming_handler import CustomStreamWrapper
-from litellm.types.utils import (
-    ChatCompletionMessageToolCall,
-    Choices,
-    Message,
-    ModelResponse,
-)
+from litellm.types.utils import Choices, Message, ModelResponse
 from slack_sdk.web import SlackResponse, WebClient
 
 from app.env import (
@@ -31,23 +23,23 @@ from app.env import (
     SLACK_UPDATE_TEXT_BUFFER_SIZE,
     TRANSLATE_MARKDOWN,
 )
-from app.litellm_logic import (
-    extract_delta_content,
-    is_final_chunk,
-    load_tools_from_module,
-)
+from app.litellm_logic import extract_delta_content, is_final_chunk
 from app.message_logic import (
     build_assistant_message,
-    build_tool_message,
     convert_markdown_to_mrkdwn,
     format_assistant_reply_for_slack,
 )
+from app.tools_logic import load_classic_tools
+from app.tools_service import load_mcp_tools, process_tool_calls
 
 litellm.drop_params = True
 
 if LITELLM_CALLBACK_MODULE_NAME is not None:
     callback_module = import_module(LITELLM_CALLBACK_MODULE_NAME)
     litellm.callbacks = [callback_module.CallbackHandler()]
+
+CLASSIC_TOOLS = load_classic_tools(LITELLM_TOOLS_MODULE_NAME)
+MCP_TOOLS = load_mcp_tools()
 
 
 def reply_to_slack_with_litellm(
@@ -151,14 +143,13 @@ def start_litellm_stream(
     Returns:
         CustomStreamWrapper: The stream wrapper for the response.
     """
-    tools = load_tools_from_module(LITELLM_TOOLS_MODULE_NAME)
     response = call_litellm_completion(
         messages=messages,
         max_tokens=LITELLM_MAX_TOKENS,
         temperature=temperature,
         user=user,
         stream=True,
-        tools=tools,
+        tools=(CLASSIC_TOOLS + MCP_TOOLS),
     )
     if not isinstance(response, CustomStreamWrapper):
         raise TypeError("Expected CustomStreamWrapper when streaming is enabled")
@@ -215,11 +206,7 @@ def stream_litellm_reply_to_slack(
             text=SLACK_LOADING_CHARACTER,
         )
 
-    if (
-        response_message is None
-        or response_message.tool_calls is None
-        or LITELLM_TOOLS_MODULE_NAME is None
-    ):
+    if response_message is None or response_message.tool_calls is None:
         return
 
     # If the message has already been updated, post a new one
@@ -231,8 +218,9 @@ def stream_litellm_reply_to_slack(
         )
 
     process_tool_calls(
+        classic_tools=CLASSIC_TOOLS,
+        mcp_tools=MCP_TOOLS,
         response_message=response_message,
-        tools_module_name=LITELLM_TOOLS_MODULE_NAME,
         assistant_message=assistant_message,
         messages=messages,
         logger=client.logger,
@@ -415,74 +403,3 @@ def extract_message_from_chunks(chunks: list) -> Optional[Message]:
     if isinstance(response.choices[0], Choices):
         return response.choices[0].message
     return None
-
-
-def process_tool_calls(
-    *,
-    response_message: Message,
-    tools_module_name: str,
-    assistant_message: dict,
-    messages: list[dict],
-    logger: logging.Logger,
-) -> None:
-    """
-    Processes the tool calls in the response message.
-
-    Args:
-        response_message (Message): The response message containing tool calls.
-        tools_module_name (str): The name of the module containing the tools.
-        assistant_message (dict): The assistant message to update.
-        messages (list[dict]): The list of messages to include in the reply.
-        logger (logging.Logger): The logger instance.
-
-    Returns:
-        None
-    """
-    if response_message.tool_calls is None:
-        return
-    assistant_message["tool_calls"] = response_message.model_dump()["tool_calls"]
-    tools_module = import_module(tools_module_name)
-    for tool_call in response_message.tool_calls:
-        process_tool_call(
-            tool_call=tool_call,
-            tools_module=tools_module,
-            messages=messages,
-            logger=logger,
-        )
-
-
-def process_tool_call(
-    *,
-    tool_call: ChatCompletionMessageToolCall,
-    tools_module: ModuleType,
-    messages: list[dict],
-    logger: logging.Logger,
-) -> None:
-    """
-    Processes a single tool call and updates the messages list.
-
-    Args:
-        tool_call (ChatCompletionMessageToolCall): The tool call to process.
-        tools_module (ModuleType): The module containing the tools.
-        messages (list[dict]): The list of messages to include in the reply.
-        logger (logging.Logger): The logger instance.
-
-    Returns:
-        None
-    """
-    function_name = tool_call.function.name
-    if function_name is None:
-        logger.warning(
-            "Skipped a tool call due to missing function name. Tool call details: %s",
-            tool_call,
-        )
-        return
-    function_to_call = getattr(tools_module, function_name)
-    function_args = json.loads(tool_call.function.arguments)
-    function_response = function_to_call(**function_args)
-    tool_message = build_tool_message(
-        tool_call_id=tool_call.id,
-        name=function_name,
-        content=function_response,
-    )
-    messages.append(tool_message)
