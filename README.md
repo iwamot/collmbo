@@ -125,6 +125,7 @@ Collmbo does not serve endpoints and can run in any environment with internet ac
 
 ## Features
 
+- **[MCP Tools](https://github.com/iwamot/collmbo/wiki/MCP-Tools)** - Extends functionality with MCP server.
 - **[Tools (Function Calling)](https://github.com/iwamot/collmbo/wiki/Tools-(Function-Calling))** - Extends functionality with function calling.
 - **[Custom callbacks](https://github.com/iwamot/collmbo/wiki/Custom-callbacks)** - Hooks into requests and responses for custom processing.
 - **[Redaction](https://github.com/iwamot/collmbo/wiki/Redaction)** - Masks sensitive information before sending requests.
