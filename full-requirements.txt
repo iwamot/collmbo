@@ -7,4 +7,4 @@ mcp==1.9.2
 strands-agents==0.1.5
 strands-agents-tools==0.1.4
 
-boto3==1.38.29
+boto3==1.38.30
