@@ -83,42 +83,80 @@ def test_filter_replies_after_last_marker(replies, bot_user_id, marker_text, exp
 
 
 @pytest.mark.parametrize(
-    "template, bot_user_id, translate_markdown, expected",
+    "template, bot_user_id, translate_markdown, prompt_caching_enabled, expected",
     [
         (
             "Hello, {bot_user_id}",
             "U12345",
             False,
-            {"role": "system", "content": "Hello, U12345"},
+            False,
+            {"role": "system", "content": [{"type": "text", "text": "Hello, U12345"}]},
         ),
         (
             "*Hello*, {bot_user_id}!",
             "U12345",
             True,
-            {"role": "system", "content": "**Hello**, U12345!"},
+            False,
+            {
+                "role": "system",
+                "content": [{"type": "text", "text": "**Hello**, U12345!"}],
+            },
         ),
         (
             "_Welcome_ <@{bot_user_id}> to the channel.",
             "U67890",
             True,
-            {"role": "system", "content": "*Welcome* <@U67890> to the channel."},
+            True,
+            {
+                "role": "system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "*Welcome* <@U67890> to the channel.",
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ],
+            },
         ),
         (
             "Your ID is {bot_user_id}",
             None,
             False,
-            {"role": "system", "content": "Your ID is None"},
+            True,
+            {
+                "role": "system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "Your ID is None",
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ],
+            },
         ),
         (
             "~~bye~~ {bot_user_id}",
             "U00000",
             True,
-            {"role": "system", "content": "~~~bye~~~ U00000"},
+            False,
+            {
+                "role": "system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "~~~bye~~~ U00000",
+                    }
+                ],
+            },
         ),
     ],
 )
-def test_build_system_message(template, bot_user_id, translate_markdown, expected):
-    result = build_system_message(template, bot_user_id, translate_markdown)
+def test_build_system_message(
+    template, bot_user_id, translate_markdown, prompt_caching_enabled, expected
+):
+    result = build_system_message(
+        template, bot_user_id, translate_markdown, prompt_caching_enabled
+    )
 
     assert result == expected
 
@@ -433,7 +471,7 @@ def test_build_slack_user_prefixed_text(reply, text, expected):
 
 
 @pytest.mark.parametrize(
-    "prompt_cache_enabled, input_messages, expected_messages",
+    "prompt_caching_enabled, input_messages, expected_messages",
     [
         (
             False,
@@ -584,9 +622,9 @@ def test_build_slack_user_prefixed_text(reply, text, expected):
     ],
 )
 def test_maybe_set_cache_points(
-    prompt_cache_enabled, input_messages, expected_messages
+    prompt_caching_enabled, input_messages, expected_messages
 ):
-    maybe_set_cache_points(input_messages, prompt_cache_enabled)
+    maybe_set_cache_points(input_messages, prompt_caching_enabled)
 
     assert input_messages == expected_messages
 

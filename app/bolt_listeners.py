@@ -256,6 +256,7 @@ def build_messages(
         system_text_template=SYSTEM_TEXT,
         bot_user_id=context.bot_user_id,
         translate_markdown=TRANSLATE_MARKDOWN,
+        prompt_caching_enabled=PROMPT_CACHING_ENABLED,
     )
     replies = get_replies(
         client=client,
@@ -273,7 +274,7 @@ def build_messages(
     )
     maybe_set_cache_points(
         messages=messages,
-        prompt_cache_enabled=PROMPT_CACHING_ENABLED,
+        prompt_caching_enabled=PROMPT_CACHING_ENABLED,
     )
     return messages
 

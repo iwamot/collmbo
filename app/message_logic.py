@@ -59,6 +59,7 @@ def build_system_message(
     system_text_template: str,
     bot_user_id: Optional[str],
     translate_markdown: bool,
+    prompt_caching_enabled: bool,
 ) -> dict:
     """
     Build the system message for the bot.
@@ -67,13 +68,25 @@ def build_system_message(
         - system_text_template (str): The template for the system message.
         - bot_user_id (Optional[str]): The bot's user ID.
         - translate_markdown (bool): Flag indicating whether to convert Slack mrkdwn to Markdown.
+        - prompt_caching_enabled (bool): Flag indicating if prompt caching is enabled.
 
     Returns:
         - dict: The system message as a dictionary with "role" and "content" keys.
     """
     system_text = system_text_template.format(bot_user_id=bot_user_id)
     system_text = maybe_slack_to_markdown(system_text, translate_markdown)
-    return {"role": "system", "content": system_text}
+    content: list[dict[str, str | dict]] = [
+        {
+            "type": "text",
+            "text": system_text,
+        }
+    ]
+    if prompt_caching_enabled:
+        content[0]["cache_control"] = {"type": "ephemeral"}
+    return {
+        "role": "system",
+        "content": content,
+    }
 
 
 def build_assistant_message(text: str = "") -> dict:
@@ -266,7 +279,7 @@ def build_slack_user_prefixed_text(reply: dict, text: str) -> str:
 
 def maybe_set_cache_points(
     messages: list[dict],
-    prompt_cache_enabled: bool,
+    prompt_caching_enabled: bool,
 ) -> None:
     """
     Set cache points in user messages if certain conditions are met.
@@ -274,13 +287,13 @@ def maybe_set_cache_points(
     Args:
         messages (list[dict]): The list of messages.
         total_tokens (int): The total number of tokens.
-        prompt_cache_enabled (bool): Flag indicating if prompt caching is enabled.
+        prompt_caching_enabled (bool): Flag indicating if prompt caching is enabled.
 
     Returns:
         None
     """
     if not (
-        prompt_cache_enabled
+        prompt_caching_enabled
         and len([m for m in messages if m.get("role") == "user"]) >= 2
     ):
         return
