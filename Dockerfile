@@ -1,11 +1,11 @@
-FROM python:3.13.3-slim-bookworm AS builder
+FROM python:3.13.4-slim-bookworm AS builder
 ARG FLAVOR=slim
 WORKDIR /build/
 COPY ${FLAVOR}-requirements.txt /build/requirements.txt
 RUN pip install --no-cache-dir -U pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-FROM python:3.13.3-slim-bookworm AS app
+FROM python:3.13.4-slim-bookworm AS app
 WORKDIR /app/
 COPY *.py /app/
 COPY app/*.py /app/app/
