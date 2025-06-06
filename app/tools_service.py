@@ -15,19 +15,41 @@ from strands.tools.mcp.mcp_client import MCPClient
 
 from app.env import LITELLM_TOOLS_MODULE_NAME, MCP_SERVER_URL
 from app.message_logic import build_tool_message
-from app.tools_logic import find_tool_by_name, transform_mcp_spec_to_classic_tool
+from app.tools_logic import (
+    is_mcp_tool_name,
+    load_classic_tools,
+    parse_mcp_tool_name,
+    split_mcp_server_url,
+    transform_mcp_spec_to_classic_tool,
+)
 
 
-def create_streamable_http_transport() -> Any:
+def create_streamable_http_transport(url: str) -> Any:
     """
     Creates a streamable HTTP transport for the MCP client.
+
+    Args:
+        url (str): The URL of the MCP server.
 
     Returns:
         Any: The streamable HTTP client for the MCP server.
     """
-    if MCP_SERVER_URL is None:
-        raise ValueError("MCP_SERVER_URL cannot be None")
-    return streamablehttp_client(MCP_SERVER_URL)
+    return streamablehttp_client(url)
+
+
+def fetch_tools_from_mcp_server(url: str) -> list[MCPAgentTool]:
+    """
+    Fetches tools from the MCP server at the specified URL.
+
+    Args:
+        url (str): The URL of the MCP server.
+
+    Returns:
+        list[MCPAgentTool]: A list of MCPAgentTool instances representing the tools.
+    """
+    client = MCPClient(lambda: create_streamable_http_transport(url))
+    with client:
+        return client.list_tools_sync()
 
 
 def load_mcp_tools() -> list[dict]:
@@ -37,32 +59,32 @@ def load_mcp_tools() -> list[dict]:
     Returns:
         list[dict]: A list of MCP tools transformed to classic tool format.
     """
-    if MCP_SERVER_URL is None:
-        return []
-    mcp_client = MCPClient(create_streamable_http_transport)
-    with mcp_client:
-        return transform_mcp_tools_to_classic_tools(mcp_client.list_tools_sync())
+    result: list[dict] = []
+    mcp_servers = split_mcp_server_url(MCP_SERVER_URL)
+    for idx, url in enumerate(mcp_servers):
+        try:
+            tools = fetch_tools_from_mcp_server(url)
+            result.extend(
+                transform_mcp_spec_to_classic_tool(tool.tool_spec, idx)
+                for tool in tools
+            )
+        except Exception as exc:
+            logging.warning("Failed to load MCP tools from %s: %s", url, exc)
+    return result
 
 
-def transform_mcp_tools_to_classic_tools(mcp_tools: list[MCPAgentTool]) -> list[dict]:
+def get_all_tools() -> list[dict]:
     """
-    Transform MCP tools to classic tool format.
-
-    Args:
-        mcp_tools (list[MCPAgentTool]): A list of MCPAgentTool instances.
+    Retrieves all tools, including classic and MCP tools.
 
     Returns:
-        list[dict]: A list of dictionaries representing the tools in classic format.
+        list[dict]: A list of all tools.
     """
-    return [
-        transform_mcp_spec_to_classic_tool(mcp_tool.tool_spec) for mcp_tool in mcp_tools
-    ]
+    return CLASSIC_TOOLS + MCP_TOOLS
 
 
 def process_tool_calls(
     *,
-    classic_tools: list[dict],
-    mcp_tools: list[dict],
     response_message: Message,
     assistant_message: dict,
     messages: list[dict],
@@ -83,22 +105,21 @@ def process_tool_calls(
     if response_message.tool_calls is None:
         return
     assistant_message["tool_calls"] = response_message.model_dump()["tool_calls"]
+    mcp_servers = split_mcp_server_url(MCP_SERVER_URL)
     for tool_call in response_message.tool_calls:
         process_tool_call(
-            classic_tools=classic_tools,
-            mcp_tools=mcp_tools,
             tool_call=tool_call,
             messages=messages,
+            mcp_servers=mcp_servers,
             logger=logger,
         )
 
 
 def process_tool_call(
     *,
-    classic_tools: list[dict],
-    mcp_tools: list[dict],
     tool_call: ChatCompletionMessageToolCall,
     messages: list[dict],
+    mcp_servers: list[str],
     logger: logging.Logger,
 ) -> None:
     """
@@ -107,21 +128,18 @@ def process_tool_call(
     Args:
         tool_call (ChatCompletionMessageToolCall): The tool call to process.
         messages (list[dict]): The list of messages to include in the reply.
+        mcp_servers (list[str]): The list of MCP server URLs.
         logger (logging.Logger): The logger instance.
 
     Returns:
         None
     """
     tool_name = tool_call.function.name
-    if tool_name is None:
-        logger.warning(
-            "Skipped a tool call due to missing tool name. Tool call details: %s",
-            tool_call,
-        )
+    if not tool_name:
+        logger.warning("Skipped tool call with empty name: %s", tool_call)
         return
 
-    classic_tool = find_tool_by_name(classic_tools, tool_name)
-    if classic_tool is not None and LITELLM_TOOLS_MODULE_NAME is not None:
+    if not is_mcp_tool_name(tool_name) and LITELLM_TOOLS_MODULE_NAME is not None:
         tools_module = import_module(LITELLM_TOOLS_MODULE_NAME)
         tool_response = process_classic_tool_call(
             tools_module=tools_module,
@@ -136,22 +154,23 @@ def process_tool_call(
         messages.append(tool_message)
         return
 
-    mcp_tool = find_tool_by_name(mcp_tools, tool_name)
-    if mcp_tool is not None:
-        mcp_client = MCPClient(create_streamable_http_transport)
-        with mcp_client:
-            tool_response = process_mcp_tool_call(
-                mcp_client=mcp_client,
-                tool_call_id=tool_call.id,
-                tool_name=tool_name,
-                arguments=json.loads(tool_call.function.arguments),
-            )
-        tool_message = build_tool_message(
+    spec_name, server_index = parse_mcp_tool_name(tool_name)
+    mcp_client = MCPClient(
+        lambda: create_streamable_http_transport(mcp_servers[server_index])
+    )
+    with mcp_client:
+        tool_response = process_mcp_tool_call(
+            mcp_client=mcp_client,
             tool_call_id=tool_call.id,
-            name=tool_name,
-            content=tool_response,
+            tool_name=spec_name,
+            arguments=json.loads(tool_call.function.arguments),
         )
-        messages.append(tool_message)
+    tool_message = build_tool_message(
+        tool_call_id=tool_call.id,
+        name=tool_name,
+        content=tool_response,
+    )
+    messages.append(tool_message)
 
 
 def process_classic_tool_call(
@@ -200,3 +219,7 @@ def process_mcp_tool_call(
         arguments=arguments,
     )
     return result["content"][0]["text"]
+
+
+CLASSIC_TOOLS = load_classic_tools(LITELLM_TOOLS_MODULE_NAME)
+MCP_TOOLS = load_mcp_tools()
