@@ -18,7 +18,6 @@ from app.env import (
     LITELLM_MAX_TOKENS,
     LITELLM_MODEL,
     LITELLM_TEMPERATURE,
-    LITELLM_TOOLS_MODULE_NAME,
     SLACK_LOADING_CHARACTER,
     SLACK_UPDATE_TEXT_BUFFER_SIZE,
     TRANSLATE_MARKDOWN,
@@ -29,17 +28,13 @@ from app.message_logic import (
     convert_markdown_to_mrkdwn,
     format_assistant_reply_for_slack,
 )
-from app.tools_logic import load_classic_tools
-from app.tools_service import load_mcp_tools, process_tool_calls
+from app.tools_service import get_all_tools, process_tool_calls
 
 litellm.drop_params = True
 
 if LITELLM_CALLBACK_MODULE_NAME is not None:
     callback_module = import_module(LITELLM_CALLBACK_MODULE_NAME)
     litellm.callbacks = [callback_module.CallbackHandler()]
-
-CLASSIC_TOOLS = load_classic_tools(LITELLM_TOOLS_MODULE_NAME)
-MCP_TOOLS = load_mcp_tools()
 
 
 def reply_to_slack_with_litellm(
@@ -149,7 +144,7 @@ def start_litellm_stream(
         temperature=temperature,
         user=user,
         stream=True,
-        tools=(CLASSIC_TOOLS + MCP_TOOLS),
+        tools=get_all_tools(),
     )
     if not isinstance(response, CustomStreamWrapper):
         raise TypeError("Expected CustomStreamWrapper when streaming is enabled")
@@ -218,8 +213,6 @@ def stream_litellm_reply_to_slack(
         )
 
     process_tool_calls(
-        classic_tools=CLASSIC_TOOLS,
-        mcp_tools=MCP_TOOLS,
         response_message=response_message,
         assistant_message=assistant_message,
         messages=messages,

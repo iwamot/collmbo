@@ -2,8 +2,11 @@ import pytest
 from strands.types.tools import ToolSpec
 
 from app.tools_logic import (
-    find_tool_by_name,
+    build_mcp_tool_name,
+    is_mcp_tool_name,
     load_classic_tools,
+    parse_mcp_tool_name,
+    split_mcp_server_url,
     transform_mcp_spec_to_classic_tool,
 )
 
@@ -22,7 +25,50 @@ def test_load_classic_tools(module_name, expected_len):
 
 
 @pytest.mark.parametrize(
-    "mcp_spec, expected",
+    "env_value, expected",
+    [
+        ("http://a|http://b", ["http://a", "http://b"]),
+        ("single_url", ["single_url"]),
+        ("", []),
+        (None, []),
+    ],
+)
+def test_split_mcp_server_url(env_value, expected):
+    result = split_mcp_server_url(env_value)
+
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "spec_name, server_index, expected",
+    [
+        ("add", 0, "add-0"),
+        ("echo", 1, "echo-1"),
+        ("complex_name", 42, "complex_name-42"),
+    ],
+)
+def test_build_mcp_tool_name(spec_name: str, server_index: int, expected: str):
+    result = build_mcp_tool_name(spec_name, server_index)
+
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "tool_name, expected",
+    [
+        ("add-0", ("add", 0)),
+        ("echo-12", ("echo", 12)),
+        ("complex_name-42", ("complex_name", 42)),
+    ],
+)
+def test_parse_mcp_tool_name(tool_name: str, expected: tuple[str, int]):
+    result = parse_mcp_tool_name(tool_name)
+
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "mcp_spec, server_index, expected",
     [
         (
             {
@@ -38,10 +84,11 @@ def test_load_classic_tools(module_name, expected_len):
                     }
                 },
             },
+            0,
             {
                 "type": "function",
                 "function": {
-                    "name": "add",
+                    "name": "add-0",
                     "description": "Add two numbers",
                     "parameters": {
                         "type": "object",
@@ -64,10 +111,11 @@ def test_load_classic_tools(module_name, expected_len):
                     }
                 },
             },
+            1,
             {
                 "type": "function",
                 "function": {
-                    "name": "echo",
+                    "name": "echo-1",
                     "description": "Echoes the input",
                     "parameters": {
                         "type": "object",
@@ -78,58 +126,26 @@ def test_load_classic_tools(module_name, expected_len):
         ),
     ],
 )
-def test_transform_mcp_spec_to_classic_tool(mcp_spec: ToolSpec, expected: dict):
-    result = transform_mcp_spec_to_classic_tool(mcp_spec)
+def test_transform_mcp_spec_to_classic_tool(
+    mcp_spec: ToolSpec,
+    server_index: int,
+    expected: dict,
+):
+    result = transform_mcp_spec_to_classic_tool(mcp_spec, server_index)
 
     assert result == expected
 
 
 @pytest.mark.parametrize(
-    "tools, tool_name, expected",
+    "tool_name, expected",
     [
-        (
-            [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "foo",
-                        "description": "desc",
-                        "parameters": {},
-                    },
-                }
-            ],
-            "foo",
-            {
-                "type": "function",
-                "function": {
-                    "name": "foo",
-                    "description": "desc",
-                    "parameters": {},
-                },
-            },
-        ),
-        (
-            [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": "foo",
-                        "description": "desc",
-                        "parameters": {},
-                    },
-                }
-            ],
-            "bar",
-            None,
-        ),
-        (
-            [],
-            "baz",
-            None,
-        ),
+        ("add-0", True),
+        ("echo-12", True),
+        ("classic", False),
+        ("send_email", False),
     ],
 )
-def test_find_tool_by_name(tools, tool_name, expected):
-    result = find_tool_by_name(tools, tool_name)
+def test_is_mcp_tool_name(tool_name: str, expected: bool):
+    result = is_mcp_tool_name(tool_name)
 
     assert result == expected
