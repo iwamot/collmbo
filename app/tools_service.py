@@ -13,7 +13,7 @@ from mcp.client.streamable_http import streamablehttp_client
 from strands.tools.mcp import MCPAgentTool
 from strands.tools.mcp.mcp_client import MCPClient
 
-from app.env import LITELLM_TOOLS_MODULE_NAME, MCP_SERVER_URL
+from app.env import LITELLM_MODEL_TYPE, LITELLM_TOOLS_MODULE_NAME, MCP_SERVER_URL
 from app.message_logic import build_tool_message
 from app.tools_logic import (
     is_mcp_tool_name,
@@ -65,7 +65,11 @@ def load_mcp_tools() -> list[dict]:
         try:
             tools = fetch_tools_from_mcp_server(url)
             result.extend(
-                transform_mcp_spec_to_classic_tool(tool.tool_spec, idx)
+                transform_mcp_spec_to_classic_tool(
+                    mcp_spec=tool.tool_spec,
+                    server_index=idx,
+                    model=LITELLM_MODEL_TYPE,
+                )
                 for tool in tools
             )
         except Exception as exc:

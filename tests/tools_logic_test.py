@@ -1,5 +1,4 @@
 import pytest
-from strands.types.tools import ToolSpec
 
 from app.tools_logic import (
     build_mcp_tool_name,
@@ -68,7 +67,7 @@ def test_parse_mcp_tool_name(tool_name: str, expected: tuple[str, int]):
 
 
 @pytest.mark.parametrize(
-    "mcp_spec, server_index, expected",
+    "mcp_spec, server_index, model, expected",
     [
         (
             {
@@ -85,6 +84,7 @@ def test_parse_mcp_tool_name(tool_name: str, expected: tuple[str, int]):
                 },
             },
             0,
+            "gpt-4",
             {
                 "type": "function",
                 "function": {
@@ -107,11 +107,14 @@ def test_parse_mcp_tool_name(tool_name: str, expected: tuple[str, int]):
                 "inputSchema": {
                     "json": {
                         "type": "object",
-                        "properties": {"message": {"type": "string"}},
+                        "properties": {
+                            "message": {"type": "string"},
+                        },
                     }
                 },
             },
             1,
+            "gpt-4",
             {
                 "type": "function",
                 "function": {
@@ -119,7 +122,119 @@ def test_parse_mcp_tool_name(tool_name: str, expected: tuple[str, int]):
                     "description": "Echoes the input",
                     "parameters": {
                         "type": "object",
-                        "properties": {"message": {"type": "string"}},
+                        "properties": {
+                            "message": {"type": "string"},
+                        },
+                    },
+                },
+            },
+        ),
+        (
+            {
+                "name": "fetch_url",
+                "description": "Fetch URL content",
+                "inputSchema": {
+                    "json": {
+                        "type": "object",
+                        "properties": {
+                            "url": {
+                                "type": "string",
+                                "format": "uri",
+                                "description": "URL to fetch",
+                            },
+                            "max_length": {"type": "integer"},
+                        },
+                    }
+                },
+            },
+            0,
+            "gemini/1.5-pro",
+            {
+                "type": "function",
+                "function": {
+                    "name": "fetch_url-0",
+                    "description": "Fetch URL content",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "url": {
+                                "type": "string",
+                                "description": "URL to fetch",
+                            },
+                            "max_length": {"type": "integer"},
+                        },
+                    },
+                },
+            },
+        ),
+        (
+            {
+                "name": "timestamped",
+                "description": "Takes a timestamp",
+                "inputSchema": {
+                    "json": {
+                        "type": "object",
+                        "properties": {
+                            "created_at": {
+                                "type": "string",
+                                "format": "date-time",
+                            }
+                        },
+                    }
+                },
+            },
+            2,
+            "gemini/1.5-flash",
+            {
+                "type": "function",
+                "function": {
+                    "name": "timestamped-2",
+                    "description": "Takes a timestamp",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "created_at": {
+                                "type": "string",
+                                "format": "date-time",
+                            }
+                        },
+                    },
+                },
+            },
+        ),
+        (
+            {
+                "name": "choice_input",
+                "description": "Choose one of the options",
+                "inputSchema": {
+                    "json": {
+                        "type": "object",
+                        "properties": {
+                            "option": {
+                                "type": "string",
+                                "format": "enum",
+                                "enum": ["A", "B", "C"],
+                            }
+                        },
+                    }
+                },
+            },
+            3,
+            "gemini/1.5-pro",
+            {
+                "type": "function",
+                "function": {
+                    "name": "choice_input-3",
+                    "description": "Choose one of the options",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "option": {
+                                "type": "string",
+                                "format": "enum",
+                                "enum": ["A", "B", "C"],
+                            }
+                        },
                     },
                 },
             },
@@ -127,11 +242,16 @@ def test_parse_mcp_tool_name(tool_name: str, expected: tuple[str, int]):
     ],
 )
 def test_transform_mcp_spec_to_classic_tool(
-    mcp_spec: ToolSpec,
-    server_index: int,
-    expected: dict,
+    mcp_spec,
+    server_index,
+    model,
+    expected,
 ):
-    result = transform_mcp_spec_to_classic_tool(mcp_spec, server_index)
+    result = transform_mcp_spec_to_classic_tool(
+        mcp_spec=mcp_spec,
+        server_index=server_index,
+        model=model,
+    )
 
     assert result == expected
 

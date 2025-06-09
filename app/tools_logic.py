@@ -2,6 +2,7 @@
 This module provides logical functions for tools.
 """
 
+from copy import deepcopy
 from importlib import import_module
 from typing import Optional
 
@@ -77,22 +78,36 @@ def is_mcp_tool_name(name: str) -> bool:
     return MCP_TOOL_NAME_SEPARATOR in name
 
 
-def transform_mcp_spec_to_classic_tool(mcp_spec: ToolSpec, server_index: int) -> dict:
+def transform_mcp_spec_to_classic_tool(
+    *,
+    mcp_spec: ToolSpec,
+    server_index: int,
+    model: str,
+) -> dict:
     """
     Transform an MCP tool specification to a classic tool format.
 
     Args:
         mcp_spec (dict): The MCP tool specification.
         server_index (int): The index of the MCP server.
+        model (str): The model name, used to determine if specific properties should be removed.
 
     Returns:
         dict: The transformed tool in classic format.
     """
+    parameters = deepcopy(mcp_spec["inputSchema"]["json"])
+
+    # Remove invalid "format" property for Gemini models
+    if model.startswith("gemini/"):
+        for prop in parameters.get("properties", {}).values():
+            if "format" in prop and prop["format"] not in ("date-time", "enum"):
+                prop.pop("format")
+
     return {
         "type": "function",
         "function": {
             "name": build_mcp_tool_name(mcp_spec["name"], server_index),
             "description": mcp_spec["description"],
-            "parameters": mcp_spec["inputSchema"]["json"],
+            "parameters": parameters,
         },
     }
