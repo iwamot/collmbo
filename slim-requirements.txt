@@ -3,6 +3,6 @@ slack-sdk==3.35.0
 litellm==1.72.2
 pillow==11.2.1
 requests==2.32.4
-mcp==1.9.2
-strands-agents==0.1.5
-strands-agents-tools==0.1.4
+mcp==1.9.3
+strands-agents==0.1.7
+strands-agents-tools==0.1.5
