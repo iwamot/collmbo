@@ -1,8 +1,6 @@
 # Collmbo
 
-[![flake8](https://github.com/iwamot/collmbo/actions/workflows/flake8.yml/badge.svg)](https://github.com/iwamot/collmbo/actions/workflows/flake8.yml)
-[![mypy](https://github.com/iwamot/collmbo/actions/workflows/mypy.yml/badge.svg)](https://github.com/iwamot/collmbo/actions/workflows/mypy.yml)
-[![pytest](https://github.com/iwamot/collmbo/actions/workflows/tests.yml/badge.svg)](https://github.com/iwamot/collmbo/actions/workflows/tests.yml)
+[![CI](https://github.com/iwamot/collmbo/actions/workflows/ci.yml/badge.svg)](https://github.com/iwamot/collmbo/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/iwamot/collmbo/branch/main/graph/badge.svg)](https://app.codecov.io/gh/iwamot/collmbo)
 
 ![Collmbo icon](https://github.com/user-attachments/assets/b13da1c7-5d2f-4ad3-8c5b-9ef4e500deb8)
