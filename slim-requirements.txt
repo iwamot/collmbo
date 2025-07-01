@@ -1,7 +1,7 @@
 slack-bolt==1.23.0
 slack-sdk==3.35.0
 litellm==1.73.2
-pillow==11.2.1
+pillow==11.3.0
 requests==2.32.4
 mcp==1.10.1
 strands-agents==0.1.9
