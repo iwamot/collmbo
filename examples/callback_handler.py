@@ -7,6 +7,9 @@ from litellm.integrations.custom_logger import CustomLogger
 
 class CallbackHandler(CustomLogger):
     def log_pre_api_call(self, model, messages, kwargs):
+        if kwargs.get("user") == "system":
+            return
+
         if not messages or messages[-1].get("role") != "user":
             return
 
