@@ -430,8 +430,10 @@ def convert_replies_to_messages(
             )
 
             # Count and add PDFs
+            # Note: Prepend PDFs to avoid Bedrock Converse API error
+            # (cache control cannot immediately follow document type)
             used_pdf_slots += len(pdf_file_items)
-            content += pdf_file_items
+            content = pdf_file_items + content
 
         messages.append(build_user_message(content))
 
