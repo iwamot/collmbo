@@ -5,4 +5,4 @@ pillow==11.3.0
 requests==2.32.4
 mcp==1.12.2
 strands-agents==1.1.0
-strands-agents-tools==0.2.2
+strands-agents-tools==0.2.3
