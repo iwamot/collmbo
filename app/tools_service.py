@@ -4,6 +4,8 @@ This module provides service functions for tools.
 
 import json
 import logging
+import threading
+import time
 from importlib import import_module
 from types import ModuleType
 from typing import Any
@@ -22,6 +24,9 @@ from app.tools_logic import (
     split_mcp_server_url,
     transform_mcp_spec_to_classic_tool,
 )
+
+# Tool refresh interval in seconds (1 hour)
+TOOL_REFRESH_INTERVAL_SECONDS = 3600
 
 
 def create_streamable_http_transport(url: str) -> Any:
@@ -227,3 +232,17 @@ def process_mcp_tool_call(
 
 CLASSIC_TOOLS = load_classic_tools(LITELLM_TOOLS_MODULE_NAME)
 MCP_TOOLS = load_mcp_tools()
+
+
+def _refresh_tools_loop():
+    """Refresh MCP tool lists periodically in the background."""
+    while True:
+        # Wait before refresh (first iteration waits before initial refresh)
+        time.sleep(TOOL_REFRESH_INTERVAL_SECONDS)
+
+        global MCP_TOOLS
+        MCP_TOOLS = load_mcp_tools()
+        logging.info(f"MCP tools refreshed: {len(MCP_TOOLS)} tools")
+
+
+threading.Thread(target=_refresh_tools_loop, daemon=True, name="tools-refresh").start()
