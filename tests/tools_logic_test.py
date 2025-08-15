@@ -2,10 +2,11 @@ import pytest
 
 from app.tools_logic import (
     build_mcp_tool_name,
+    get_mcp_server_info,
     is_mcp_tool_name,
     load_classic_tools,
     parse_mcp_tool_name,
-    split_mcp_server_url,
+    parse_no_auth_mcp_servers,
     transform_mcp_spec_to_classic_tool,
 )
 
@@ -26,14 +27,48 @@ def test_load_classic_tools(module_name, expected_len):
 @pytest.mark.parametrize(
     "env_value, expected",
     [
-        ("http://a|http://b", ["http://a", "http://b"]),
-        ("single_url", ["single_url"]),
+        ("server1:http://a|server2:http://b", ["http://a", "http://b"]),
+        ("single:single_url", ["single_url"]),
         ("", []),
         (None, []),
     ],
 )
-def test_split_mcp_server_url(env_value, expected):
-    result = split_mcp_server_url(env_value)
+def test_parse_no_auth_mcp_servers(env_value, expected):
+    result = parse_no_auth_mcp_servers(env_value)
+
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "env_value, expected",
+    [
+        (
+            "server1:http://a|server2:http://b",
+            [
+                {"name": "server1", "url": "http://a"},
+                {"name": "server2", "url": "http://b"},
+            ],
+        ),
+        ("single:single_url", [{"name": "single", "url": "single_url"}]),
+        ("", []),
+        (None, []),
+        (
+            "Fetch:http://localhost:8000/fetch/mcp/|Terraform:http://localhost:8001/terraform/mcp/",
+            [
+                {
+                    "name": "Fetch",
+                    "url": "http://localhost:8000/fetch/mcp/",
+                },
+                {
+                    "name": "Terraform",
+                    "url": "http://localhost:8001/terraform/mcp/",
+                },
+            ],
+        ),
+    ],
+)
+def test_get_mcp_server_info(env_value, expected):
+    result = get_mcp_server_info(env_value)
 
     assert result == expected
 

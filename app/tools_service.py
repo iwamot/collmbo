@@ -15,13 +15,13 @@ from mcp.client.streamable_http import streamablehttp_client
 from strands.tools.mcp import MCPAgentTool
 from strands.tools.mcp.mcp_client import MCPClient
 
-from app.env import LITELLM_MODEL_TYPE, LITELLM_TOOLS_MODULE_NAME, MCP_SERVER_URL
+from app.env import LITELLM_MODEL_TYPE, LITELLM_TOOLS_MODULE_NAME, MCP_NO_AUTH_SERVERS
 from app.message_logic import build_tool_message
 from app.tools_logic import (
     is_mcp_tool_name,
     load_classic_tools,
     parse_mcp_tool_name,
-    split_mcp_server_url,
+    parse_no_auth_mcp_servers,
     transform_mcp_spec_to_classic_tool,
 )
 
@@ -65,7 +65,7 @@ def load_mcp_tools() -> list[dict]:
         list[dict]: A list of MCP tools transformed to classic tool format.
     """
     result: list[dict] = []
-    mcp_servers = split_mcp_server_url(MCP_SERVER_URL)
+    mcp_servers = parse_no_auth_mcp_servers(MCP_NO_AUTH_SERVERS)
     for idx, url in enumerate(mcp_servers):
         try:
             tools = fetch_tools_from_mcp_server(url)
@@ -114,7 +114,7 @@ def process_tool_calls(
     if response_message.tool_calls is None:
         return
     assistant_message["tool_calls"] = response_message.model_dump()["tool_calls"]
-    mcp_servers = split_mcp_server_url(MCP_SERVER_URL)
+    mcp_servers = parse_no_auth_mcp_servers(MCP_NO_AUTH_SERVERS)
     for tool_call in response_message.tool_calls:
         process_tool_call(
             tool_call=tool_call,
