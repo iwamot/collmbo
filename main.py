@@ -15,7 +15,7 @@ from typing import Optional
 from slack_bolt import Ack, App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 
-from app.bolt_listeners import respond_to_new_post
+from app.bolt_listeners import respond_to_new_post, handle_app_home_opened
 from app.bolt_logic import append_rate_limit_retry_handler
 from app.bolt_middlewares import before_authorize, set_locale
 from app.env import SLACK_APP_LOG_LEVEL, USE_SLACK_LANGUAGE
@@ -56,6 +56,7 @@ def create_bolt_app(slack_bot_token: str, use_slack_language: bool) -> App:
         process_before_response=True,
     )
     app.event("message")(ack=just_ack, lazy=[respond_to_new_post])
+    app.event("app_home_opened")(ack=just_ack, lazy=[handle_app_home_opened])
     if use_slack_language:
         app.middleware(set_locale)
     return app

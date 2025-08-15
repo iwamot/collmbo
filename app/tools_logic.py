@@ -24,17 +24,46 @@ def load_classic_tools(module_name: Optional[str]) -> list[dict]:
     return import_module(module_name).tools if module_name is not None else []
 
 
-def split_mcp_server_url(mcp_server_url: Optional[str]) -> list[str]:
+def parse_no_auth_mcp_servers(mcp_server_config: Optional[str]) -> list[str]:
     """
-    Split the MCP server URL into a list of URLs.
+    Parse no-auth MCP server configuration and return list of URLs (for existing index-based access).
 
     Args:
-        mcp_server_url (Optional[str]): Pipe-separated MCP server URLs.
+        mcp_server_config (Optional[str]): Pipe-separated server configs in format "name:url|name:url".
 
     Returns:
-        list[str]: A list of MCP server URLs.
+        list[str]: A list of MCP server URLs in order.
     """
-    return mcp_server_url.split("|") if mcp_server_url else []
+    if not mcp_server_config:
+        return []
+
+    urls = []
+    for entry in mcp_server_config.split("|"):
+        name, url = entry.split(":", 1)  # Split on first colon only
+        urls.append(url)
+
+    return urls
+
+
+def get_mcp_server_info(mcp_server_config: Optional[str]) -> list[dict[str, str]]:
+    """
+    Parse no-auth MCP server configuration and return server info for UI display.
+
+    Args:
+        mcp_server_config (Optional[str]): Pipe-separated server configs in format "name:url|name:url".
+
+    Returns:
+        list[dict[str, str]]: A list of server info dictionaries with 'name' and 'url' keys.
+    """
+    if not mcp_server_config:
+        return []
+
+    servers = []
+    for entry in mcp_server_config.split("|"):
+        name, url = entry.split(":", 1)  # Split on first colon only
+        servers.append({"name": name, "url": url})
+
+    return servers
 
 
 def build_mcp_tool_name(spec_name: str, server_index: int) -> str:
