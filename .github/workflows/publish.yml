@@ -20,9 +20,6 @@ jobs:
         platform:
           - linux/amd64
           - linux/arm64
-        flavor:
-          - slim
-          - full
         include:
           - platform: linux/amd64
             runner: ubuntu-24.04
@@ -58,12 +55,10 @@ jobs:
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
         with:
           platforms: ${{ matrix.platform }}
-          build-args: |
-            FLAVOR=${{ matrix.flavor }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=registry,ref=${{ env.REGISTRY_IMAGE }}:cache-${{ env.PLATFORM_PAIR }}-${{ matrix.flavor }}
-          cache-to: type=registry,ref=${{ env.REGISTRY_IMAGE }}:cache-${{ env.PLATFORM_PAIR }}-${{ matrix.flavor }},mode=max
+          cache-from: type=registry,ref=${{ env.REGISTRY_IMAGE }}:cache-${{ env.PLATFORM_PAIR }}
+          cache-to: type=registry,ref=${{ env.REGISTRY_IMAGE }}:cache-${{ env.PLATFORM_PAIR }},mode=max
 
       - name: Export digest
         run: |
@@ -74,7 +69,7 @@ jobs:
       - name: Upload digest
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: digests-${{ env.PLATFORM_PAIR }}-${{ matrix.flavor }}
+          name: digests-${{ env.PLATFORM_PAIR }}
           path: /tmp/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -86,18 +81,12 @@ jobs:
       packages: write
     needs:
       - build
-    strategy:
-      fail-fast: false
-      matrix:
-        flavor:
-          - slim
-          - full
     steps:
       - name: Download digests
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           path: /tmp/digests
-          pattern: digests-*-${{ matrix.flavor }}
+          pattern: digests-*
           merge-multiple: true
 
       - name: Set up Docker Buildx
@@ -121,11 +110,10 @@ jobs:
       - name: Create manifest list and push
         working-directory: /tmp/digests
         run: |
-          flavor=${{ matrix.flavor }}
-          tags=$(jq -cr --arg flavor "$flavor" '.tags | map("-t " + . + "-" + $flavor) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          tags=$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
           docker buildx imagetools create $tags \
             $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
 
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.meta.outputs.version }}-${{ matrix.flavor }}
+          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.meta.outputs.version }}
