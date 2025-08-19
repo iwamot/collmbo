@@ -16,3 +16,6 @@ fastapi==0.116.1
 fastapi-sso==0.18.0
 orjson==3.11.2
 websockets==15.0.1
+
+# workaround for https://github.com/BerriAI/litellm/issues/13710
+openai==1.99.9
