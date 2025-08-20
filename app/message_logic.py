@@ -4,6 +4,7 @@ This module contains functions to handle message logic.
 
 import base64
 import re
+import unicodedata
 from typing import Optional
 
 
@@ -371,8 +372,34 @@ def convert_markdown_to_mrkdwn(content: str) -> str:
 
     # Apply the bold, italic, and strikethrough formatting to text not within code
     result = ""
-    for part in parts:
-        if not part.startswith("```") and not part.startswith("`"):
+    for idx, part in enumerate(parts):
+        if part.startswith("```") or part.startswith("`"):
+            # Insert ASCII spaces around code spans/blocks when adjacent to
+            # East Asian wide/fullwidth characters to improve readability.
+            left_space = False
+            right_space = False
+            if result:
+                prev = result[-1]
+                if (not prev.isspace()) and unicodedata.east_asian_width(prev) in (
+                    "W",
+                    "F",
+                ):
+                    left_space = True
+            if idx + 1 < len(parts):
+                nxt_part = parts[idx + 1]
+                if nxt_part:
+                    nxt = nxt_part[0]
+                    if (not nxt.isspace()) and unicodedata.east_asian_width(nxt) in (
+                        "W",
+                        "F",
+                    ):
+                        right_space = True
+            if left_space:
+                result += " "
+            result += part
+            if right_space:
+                result += " "
+        else:
             for o, n in [
                 (
                     r"\*\*\*(?!\s)([^\*\n]+?)(?<!\s)\*\*\*",
@@ -387,5 +414,42 @@ def convert_markdown_to_mrkdwn(content: str) -> str:
                 (r"~~(?!\s)([^~\n]+?)(?<!\s)~~", r"~\1~"),  # ~~strike~~ to ~strike~
             ]:
                 part = re.sub(o, n, part)
-        result += part
+            # Insert ASCII spaces around Slack formatting when adjacent to
+            # East Asian wide/fullwidth characters (e.g., CJK, Hiragana,
+            # Katakana, Hangul, Bopomofo, and fullwidth punctuation).
+            # This improves mrkdwn rendering when tokens touch wide chars.
+
+            def _is_eaw_wide(ch: str) -> bool:
+                # East Asian Width: W (wide) and F (fullwidth)
+                return unicodedata.east_asian_width(ch) in ("W", "F")
+
+            def _add_space_around_matches(text: str, pattern: re.Pattern) -> str:
+                out = []
+                last = 0
+                for m in pattern.finditer(text):
+                    start, end = m.start(), m.end()
+                    out.append(text[last:start])
+                    if start > 0:
+                        prev = text[start - 1]
+                        if not prev.isspace() and _is_eaw_wide(prev):
+                            out.append(" ")
+                    out.append(m.group(0))
+                    if end < len(text):
+                        nxt = text[end]
+                        if not nxt.isspace() and _is_eaw_wide(nxt):
+                            out.append(" ")
+                    last = end
+                out.append(text[last:])
+                return "".join(out)
+
+            patterns = [
+                re.compile(r"_\*(?!\s)(.+?)(?<!\s)\*_"),  # *_bold italic_*
+                re.compile(r"\*(?!\s)([^\*\n]+?)(?<!\s)\*"),  # *bold*
+                re.compile(r"_(?!\s)([^_\n]+?)(?<!\s)_"),  # _italic_
+                re.compile(r"~(?!\s)([^~\n]+?)(?<!\s)~"),  # ~strike~
+            ]
+
+            for ptn in patterns:
+                part = _add_space_around_matches(part, ptn)
+            result += part
     return result
