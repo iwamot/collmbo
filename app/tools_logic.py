@@ -26,7 +26,7 @@ def load_classic_tools(module_name: Optional[str]) -> list[dict]:
 
 def parse_no_auth_mcp_servers(mcp_server_config: Optional[str]) -> list[str]:
     """
-    Parse no-auth MCP server configuration and return list of URLs (for existing index-based access).
+    Parse no-auth MCP server configuration and return list of URLs.
 
     Args:
         mcp_server_config (Optional[str]): Pipe-separated server configs in format "name:url|name:url".
