@@ -1,6 +1,6 @@
 slack-bolt==1.23.0
 slack-sdk==3.36.0
-litellm==1.75.9
+litellm==1.76.0
 pillow==11.3.0
 requests==2.32.5
 mcp==1.13.1
