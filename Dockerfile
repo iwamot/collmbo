@@ -1,8 +1,5 @@
 FROM python:3.13.7-slim-bookworm AS builder
 WORKDIR /build/
-RUN apt-get update \
- && apt-get install -y --no-install-recommends cargo rustc \
- && rm -rf /var/lib/apt/lists/*
 COPY uv-requirements.txt /build/
 RUN pip install --no-cache-dir -r uv-requirements.txt
 COPY requirements.txt /build/
