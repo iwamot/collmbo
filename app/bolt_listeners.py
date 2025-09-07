@@ -22,7 +22,6 @@ from app.bolt_logic import (
 from app.env import (
     IMAGE_FILE_ACCESS_ENABLED,
     LITELLM_TIMEOUT_SECONDS,
-    MCP_NO_AUTH_SERVERS,
     PDF_FILE_ACCESS_ENABLED,
     PROMPT_CACHING_ENABLED,
     REDACT_CREDIT_CARD_PATTERN,
@@ -50,7 +49,7 @@ from app.message_logic import (
 )
 from app.slack_image_service import build_image_url_items_from_slack_files
 from app.slack_pdf_service import build_pdf_file_items_from_slack_files
-from app.tools_logic import get_mcp_server_info
+from app.mcp_service import get_server_info
 from app.translation_service import translate
 
 LOADING_TEXT = ":hourglass_flowing_sand: Wait a second, please ..."
@@ -556,7 +555,7 @@ def handle_app_home_opened(client: WebClient, event: dict) -> None:
         None
     """
     user_id = event["user"]
-    mcp_servers = get_mcp_server_info(MCP_NO_AUTH_SERVERS)
+    mcp_servers = get_server_info()
     blocks = build_home_tab_blocks(mcp_servers)
     view = View(type="home", blocks=blocks)
     client.views_publish(user_id=user_id, view=view)
