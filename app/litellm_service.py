@@ -6,7 +6,7 @@ import os
 import threading
 import time
 from importlib import import_module
-from typing import Optional, Union
+from typing import Optional, Union, cast
 
 import litellm
 from litellm.litellm_core_utils.streaming_handler import CustomStreamWrapper
@@ -68,6 +68,7 @@ def reply_to_slack_with_litellm(
         temperature=LITELLM_TEMPERATURE,
         messages=messages,
         user=user_id,
+        channel=channel,
     )
     stream_litellm_reply_to_slack(
         client=client,
@@ -105,20 +106,25 @@ def call_litellm_completion(
     Returns:
         Union[ModelResponse, CustomStreamWrapper]: The response from the API.
     """
-    return litellm.completion(
-        model=LITELLM_MODEL,
-        messages=messages,
-        top_p=1,
-        n=1,
-        max_tokens=max_tokens,
-        temperature=temperature,
-        presence_penalty=0,
-        frequency_penalty=0,
-        user=user,
-        stream=stream,
-        tools=tools,
-        aws_region_name=os.environ.get("AWS_REGION_NAME"),
-    )
+    kwargs = {
+        "model": LITELLM_MODEL,
+        "messages": messages,
+        "top_p": 1,
+        "n": 1,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "presence_penalty": 0,
+        "frequency_penalty": 0,
+        "user": user,
+        "stream": stream,
+        "aws_region_name": os.environ.get("AWS_REGION_NAME"),
+    }
+
+    if tools is not None:
+        kwargs["tools"] = tools
+        kwargs["parallel_tool_calls"] = False
+
+    return litellm.completion(**kwargs)
 
 
 def start_litellm_stream(
@@ -126,6 +132,7 @@ def start_litellm_stream(
     temperature: float,
     messages: list[dict],
     user: str,
+    channel: Optional[str] = None,
 ) -> CustomStreamWrapper:
     """
     Starts a LiteLLM stream for generating completions.
@@ -134,6 +141,7 @@ def start_litellm_stream(
         temperature (float): The temperature for sampling.
         messages (list[dict]): The list of messages to send to the API.
         user (str): The user ID of the person making the request.
+        channel (Optional[str]): Slack channel ID for context-aware tool selection.
 
     Returns:
         CustomStreamWrapper: The stream wrapper for the response.
@@ -144,7 +152,7 @@ def start_litellm_stream(
         temperature=temperature,
         user=user,
         stream=True,
-        tools=get_all_tools(),
+        tools=get_all_tools(channel=channel, user_id=user),
     )
     if not isinstance(response, CustomStreamWrapper):
         raise TypeError("Expected CustomStreamWrapper when streaming is enabled")
@@ -205,7 +213,7 @@ def stream_litellm_reply_to_slack(
         return
 
     # If the message has already been updated, post a new one
-    if wip_reply["message"]["text"] != loading_text:
+    if (wip_message := wip_reply["message"]) and wip_message["text"] != loading_text:
         wip_reply = client.chat_postMessage(
             channel=channel,
             thread_ts=thread_ts,
@@ -216,7 +224,7 @@ def stream_litellm_reply_to_slack(
         response_message=response_message,
         assistant_message=assistant_message,
         messages=messages,
-        logger=client.logger,
+        user_id=user_id,
     )
     reply_to_slack_with_litellm(
         client=client,
@@ -264,12 +272,12 @@ def handle_litellm_stream(
             if (time.time() - start_time) > timeout_seconds:
                 raise TimeoutError()
             response_chunks.append(chunk)
-            delta_content = extract_delta_content(chunk)
+            delta_content = extract_delta_content(cast(ModelResponse, chunk))
             if delta_content is None:
                 continue
             buffered_text += delta_content
             assistant_message["content"] += delta_content
-            final_chunk = is_final_chunk(chunk)
+            final_chunk = is_final_chunk(cast(ModelResponse, chunk))
             if len(buffered_text) >= SLACK_UPDATE_TEXT_BUFFER_SIZE:
                 spawn_update_reply_text(
                     client=client,
@@ -281,7 +289,8 @@ def handle_litellm_stream(
                 buffered_text = ""
                 if (
                     not final_chunk
-                    and len(wip_reply["message"]["text"].encode("utf-8")) > 3500
+                    and (wip_message := wip_reply["message"])
+                    and len(wip_message["text"].encode("utf-8")) > 3500
                 ):
                     is_response_too_long = True
                     break
@@ -363,18 +372,17 @@ def update_reply_text(
     Returns:
         None
     """
+    wip_message = wip_reply["message"]
+    if not wip_message:
+        return
     assistant_reply_text = format_assistant_reply_for_slack(assistant_content)
     if TRANSLATE_MARKDOWN:
         assistant_reply_text = convert_markdown_to_mrkdwn(assistant_reply_text)
-    wip_reply["message"]["text"] = assistant_reply_text
+    wip_message["text"] = assistant_reply_text
     text = assistant_reply_text
     if with_loading_character:
         text += SLACK_LOADING_CHARACTER
-    client.chat_update(
-        channel=channel,
-        ts=wip_reply["message"]["ts"],
-        text=text,
-    )
+    client.chat_update(channel=channel, ts=wip_message["ts"], text=text)
 
 
 def extract_message_from_chunks(chunks: list) -> Optional[Message]:

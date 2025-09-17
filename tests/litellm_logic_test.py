@@ -28,6 +28,13 @@ from app.litellm_logic import extract_delta_content, is_final_chunk
             ),
             None,
         ),
+        (
+            ModelResponse(
+                choices=[],
+                object="chat.completion.chunk",
+            ),
+            None,
+        ),
     ],
 )
 def test_extract_delta_content(chunk, expected):

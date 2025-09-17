@@ -7,9 +7,10 @@ RUN uv pip install --system --no-cache -r requirements.txt
 
 FROM python:3.13.7-slim-bookworm AS app
 WORKDIR /app/
-COPY *.py /app/
-COPY app/*.py /app/app/
-COPY config/ /app/config/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 COPY --from=builder /usr/local/lib/ /usr/local/lib/
+COPY config/ /app/config/
+COPY main.py /app/
+COPY app/*.py /app/app/
+COPY app/mcp/*.py /app/app/mcp/
 ENTRYPOINT [ "python", "main.py" ]
