@@ -19,7 +19,6 @@ def build_image_url_items_from_slack_files(
     *,
     bot_token: str,
     files: Optional[list[dict]],
-    logger: logging.Logger,
 ) -> list[dict]:
     """
     Build image URL items from Slack files.
@@ -27,7 +26,6 @@ def build_image_url_items_from_slack_files(
     Args:
         - bot_token (str): The bot token for Slack API.
         - files (Optional[list[dict]]): The list of files from Slack.
-        - logger (logging.Logger): The logger instance.
 
     Returns:
         - list[dict]: A list of dictionaries containing image content.
@@ -42,7 +40,7 @@ def build_image_url_items_from_slack_files(
             continue
         file_url = file.get("url_private")
         if file_url is None:
-            logger.warning("Skipped an image file due to missing 'url_private'")
+            logging.warning("Skipped an image file due to missing 'url_private'")
             continue
 
         image_bytes = get_slack_file_content(
@@ -55,10 +53,10 @@ def build_image_url_items_from_slack_files(
         except Exception as e:
             raise RuntimeError(f"Failed to open an image data: {e}") from e
         if image.format is None:
-            logger.warning(f"Skipped image with unknown format (url: {file_url})")
+            logging.warning(f"Skipped image with unknown format (url: {file_url})")
             continue
         if image.format.lower() not in SUPPORTED_IMAGE_FORMATS:
-            logger.info(
+            logging.info(
                 f"Skipped unsupported image (url: {file_url}, format: {image.format})"
             )
             continue

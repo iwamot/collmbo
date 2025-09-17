@@ -6,9 +6,8 @@ import logging
 import time
 from typing import Optional
 
-from litellm import ContextWindowExceededError, Timeout
+from litellm.exceptions import ContextWindowExceededError, Timeout
 from slack_bolt import BoltContext
-from slack_sdk.models.views import View
 from slack_sdk.web import SlackResponse, WebClient
 
 from app.bolt_logic import (
@@ -33,8 +32,18 @@ from app.env import (
     SYSTEM_TEXT,
     TRANSLATE_MARKDOWN,
 )
-from app.home_tab_logic import build_home_tab_blocks
+from app.home_tab_logic import (
+    extract_cancel_server_index,
+    extract_disable_server_index,
+    extract_enable_server_index,
+)
+from app.home_tab_service import update_home_tab
 from app.litellm_service import reply_to_slack_with_litellm
+from app.mcp.oauth_control_service import (
+    cancel_user_oauth_polling,
+    disable_user_oauth_session,
+    enable_user_oauth_session,
+)
 from app.message_logic import (
     build_assistant_message,
     build_slack_user_prefixed_text,
@@ -49,7 +58,6 @@ from app.message_logic import (
 )
 from app.slack_image_service import build_image_url_items_from_slack_files
 from app.slack_pdf_service import build_pdf_file_items_from_slack_files
-from app.mcp_service import get_server_info
 from app.translation_service import translate
 
 LOADING_TEXT = ":hourglass_flowing_sand: Wait a second, please ..."
@@ -272,9 +280,7 @@ def build_messages(
         bot_user_id=context.bot_user_id,
         marker_text=CONTEXT_WINDOW_EXCEEDED_ERROR_MESSAGE,
     )
-    messages = [system_message] + convert_replies_to_messages(
-        filtered_replies, context, client.logger
-    )
+    messages = [system_message] + convert_replies_to_messages(filtered_replies, context)
     maybe_set_cache_points(
         messages=messages,
         prompt_caching_enabled=PROMPT_CACHING_ENABLED,
@@ -344,6 +350,7 @@ def get_thread_replies(
 def get_dm_replies(client: WebClient, channel_id: str) -> list[dict]:
     """
     Retrieves recent replies in a direct message (DM) conversation.
+    Returns up to 100 messages from the last 24 hours.
 
     Args:
         client (WebClient): The Slack WebClient instance.
@@ -352,19 +359,24 @@ def get_dm_replies(client: WebClient, channel_id: str) -> list[dict]:
     Returns:
         list[dict]: A list of replies in the DM conversation.
     """
+    cutoff_time = time.time() - 86400  # 24 hours ago
     replies: list[dict] = client.conversations_history(
         channel=channel_id,
         limit=100,
-        oldest=f"{time.time() - 86400:.6f}",  # 24 hours ago
         inclusive=True,
     ).get("messages", [])
-    return list(reversed(replies))
+
+    # Filter messages to only include those from the last 24 hours
+    recent_replies = [
+        message for message in replies if float(message.get("ts", "0")) >= cutoff_time
+    ]
+
+    return list(reversed(recent_replies))
 
 
 def convert_replies_to_messages(
     replies: list[dict],
     context: BoltContext,
-    logger: logging.Logger,
 ) -> list[dict]:
     """
     Converts Slack replies to a list of messages for the language model.
@@ -372,7 +384,6 @@ def convert_replies_to_messages(
     Args:
         replies (list[dict]): The list of replies to convert.
         context (BoltContext): The Bolt context object.
-        logger (logging.Logger): The logger instance.
 
     Returns:
         list[dict]: A list of messages representing the conversation history.
@@ -412,7 +423,6 @@ def convert_replies_to_messages(
             content += build_image_url_items_from_slack_files(
                 bot_token=context.bot_token,
                 files=reply.get("files"),
-                logger=logger,
             )
 
         # Only process PDFs if we haven't reached the limit
@@ -427,7 +437,6 @@ def convert_replies_to_messages(
             pdf_file_items = build_pdf_file_items_from_slack_files(
                 bot_token=context.bot_token,
                 files=reply.get("files"),
-                logger=logger,
                 pdf_slots=MAX_PDF_SLOTS,
                 used_pdf_slots=used_pdf_slots,
             )
@@ -472,7 +481,7 @@ def handle_timeout_error(
     )
     client.chat_update(
         channel=channel_id,
-        ts=wip_reply["message"]["ts"],
+        ts=message_dict.get("ts", ""),
         text=text,
     )
 
@@ -508,7 +517,7 @@ def handle_context_window_exceeded_error(
     )
     client.chat_update(
         channel=channel_id,
-        ts=wip_reply["message"]["ts"],
+        ts=message_dict.get("ts", ""),
         text=text,
     )
 
@@ -538,7 +547,7 @@ def handle_exception(
     if wip_reply:
         client.chat_update(
             channel=channel_id,
-            ts=wip_reply["message"]["ts"],
+            ts=message_dict.get("ts", ""),
             text=text,
         )
 
@@ -555,7 +564,102 @@ def handle_app_home_opened(client: WebClient, event: dict) -> None:
         None
     """
     user_id = event["user"]
-    mcp_servers = get_server_info()
-    blocks = build_home_tab_blocks(mcp_servers)
-    view = View(type="home", blocks=blocks)
-    client.views_publish(user_id=user_id, view=view)
+    try:
+        update_home_tab(client=client, user_id=user_id)
+    except Exception as e:
+        logging.error(f"Failed to update home tab: {e}")
+        update_home_tab(
+            client=client,
+            user_id=user_id,
+            error_message="A system error occurred. Please contact your administrator.",
+        )
+
+
+def handle_enable_mcp_oauth_action(body: dict, client: WebClient) -> None:
+    """
+    Handle enable MCP OAuth action from Slack button.
+
+    Args:
+        body (dict): Slack event body.
+        client: Slack WebClient instance.
+
+    Returns:
+        None
+    """
+    try:
+        server_index = extract_enable_server_index(body["actions"][0]["action_id"])
+        enable_user_oauth_session(
+            client=client,
+            user_id=body["user"]["id"],
+            server_index=server_index,
+            on_update=update_home_tab,
+        )
+    except Exception as e:
+        logging.error(f"Failed to handle enable auth action: {e}")
+        update_home_tab(
+            client=client,
+            user_id=body["user"]["id"],
+            error_message="A system error occurred. Please contact your administrator.",
+        )
+
+
+def handle_disable_mcp_oauth_action(
+    body: dict,
+    client: WebClient,
+) -> None:
+    """
+    Handle disable authentication action from home tab.
+
+    Args:
+        body (dict): Action payload from Slack.
+        client (WebClient): Slack WebClient instance.
+
+    Returns:
+        None
+    """
+    try:
+        server_index = extract_disable_server_index(body["actions"][0]["action_id"])
+        disable_user_oauth_session(
+            client=client,
+            user_id=body["user"]["id"],
+            server_index=server_index,
+            on_update=update_home_tab,
+        )
+    except Exception as e:
+        logging.error(f"Failed to handle disable auth action: {e}")
+        update_home_tab(
+            client=client,
+            user_id=body["user"]["id"],
+            error_message="A system error occurred. Please contact your administrator.",
+        )
+
+
+def handle_cancel_mcp_oauth_action(
+    body: dict,
+    client: WebClient,
+) -> None:
+    """
+    Handle cancel OAuth polling action from home tab.
+
+    Args:
+        body (dict): Action payload from Slack.
+        client (WebClient): Slack WebClient instance.
+
+    Returns:
+        None
+    """
+    try:
+        server_index = extract_cancel_server_index(body["actions"][0]["action_id"])
+        cancel_user_oauth_polling(
+            client=client,
+            user_id=body["user"]["id"],
+            server_index=server_index,
+            on_update=update_home_tab,
+        )
+    except Exception as e:
+        logging.error(f"Failed to handle cancel auth action: {e}")
+        update_home_tab(
+            client=client,
+            user_id=body["user"]["id"],
+            error_message="A system error occurred. Please contact your administrator.",
+        )

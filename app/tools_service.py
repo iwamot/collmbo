@@ -4,93 +4,69 @@ This module provides service functions for tools.
 
 import json
 import logging
-import threading
-import time
 from importlib import import_module
 from types import ModuleType
-from typing import Any
+from typing import Optional
 
 from litellm.types.utils import ChatCompletionMessageToolCall, Message
-from mcp.client.streamable_http import streamablehttp_client
-from strands.tools.mcp import MCPAgentTool
-from strands.tools.mcp.mcp_client import MCPClient
 
-from app.env import LITELLM_MODEL_TYPE, LITELLM_TOOLS_MODULE_NAME
-from app.message_logic import build_tool_message
-from app.tools_logic import (
-    is_mcp_tool_name,
-    load_classic_tools,
-    parse_mcp_tool_name,
-    transform_mcp_spec_to_classic_tool,
+from app.env import LITELLM_TOOLS_MODULE_NAME
+from app.mcp.config_service import get_no_auth_servers
+from app.mcp.no_auth_tools_service import (
+    get_no_auth_mcp_tools,
+    process_no_auth_mcp_tool_call,
 )
+from app.mcp.oauth_tools_logic import parse_mcp_tool_name
+from app.mcp.oauth_tools_service import (
+    expire_old_oauth_sessions,
+    get_flattened_user_oauth_mcp_tools,
+    process_oauth_mcp_tool_call,
+)
+from app.message_logic import build_tool_message
+from app.tools_logic import is_mcp_tool_name, load_classic_tools
 
-# Tool refresh interval in seconds (1 hour)
-TOOL_REFRESH_INTERVAL_SECONDS = 3600
+classic_tools: Optional[list[dict]] = None
 
 
-def create_streamable_http_transport(url: str) -> Any:
+def get_classic_tools() -> list[dict]:
     """
-    Creates a streamable HTTP transport for the MCP client.
-
-    Args:
-        url (str): The URL of the MCP server.
+    Get classic tools with lazy loading and caching.
 
     Returns:
-        Any: The streamable HTTP client for the MCP server.
+        list[dict]: Cached classic tools.
     """
-    return streamablehttp_client(url)
+    global classic_tools
+    if classic_tools is None:
+        classic_tools = load_classic_tools(LITELLM_TOOLS_MODULE_NAME)
+    return classic_tools
 
 
-def fetch_tools_from_mcp_server(url: str) -> list[MCPAgentTool]:
-    """
-    Fetches tools from the MCP server at the specified URL.
-
-    Args:
-        url (str): The URL of the MCP server.
-
-    Returns:
-        list[MCPAgentTool]: A list of MCPAgentTool instances representing the tools.
-    """
-    client = MCPClient(lambda: create_streamable_http_transport(url))
-    with client:
-        return client.list_tools_sync()
-
-
-def load_mcp_tools() -> list[dict]:
-    """
-    Loads MCP tools from the MCP server.
-
-    Returns:
-        list[dict]: A list of MCP tools transformed to classic tool format.
-    """
-    from app.mcp_service import get_no_auth_servers
-
-    result: list[dict] = []
-    mcp_servers = get_no_auth_servers()
-    for idx, url in enumerate(mcp_servers):
-        try:
-            tools = fetch_tools_from_mcp_server(url)
-            result.extend(
-                transform_mcp_spec_to_classic_tool(
-                    mcp_spec=tool.tool_spec,
-                    server_index=idx,
-                    model=LITELLM_MODEL_TYPE,
-                )
-                for tool in tools
-            )
-        except Exception as exc:
-            logging.warning("Failed to load MCP tools from %s: %s", url, exc)
-    return result
-
-
-def get_all_tools() -> list[dict]:
+def get_all_tools(
+    channel: Optional[str] = None,
+    user_id: Optional[str] = None,
+) -> list[dict]:
     """
     Retrieves all tools, including classic and MCP tools.
+    For DM conversations, also includes authenticated MCP tools.
+
+    Args:
+        channel (Optional[str]): Slack channel ID.
+        user_id (Optional[str]): User ID for authenticated tools.
 
     Returns:
         list[dict]: A list of all tools.
     """
-    return CLASSIC_TOOLS + MCP_TOOLS
+    tools = get_classic_tools() + get_no_auth_mcp_tools()
+
+    # Add authenticated MCP tools only for DM conversations
+    # DM channels start with 'D' (direct message)
+    if channel and channel.startswith("D") and user_id:
+        # Remove expired sessions before getting OAuth tools
+        expire_old_oauth_sessions(user_id)
+        oauth_mcp_tools = get_flattened_user_oauth_mcp_tools(user_id)
+        tools.extend(oauth_mcp_tools)
+
+    return tools
 
 
 def process_tool_calls(
@@ -98,7 +74,7 @@ def process_tool_calls(
     response_message: Message,
     assistant_message: dict,
     messages: list[dict],
-    logger: logging.Logger,
+    user_id: Optional[str] = None,
 ) -> None:
     """
     Processes the tool calls in the response message.
@@ -107,23 +83,25 @@ def process_tool_calls(
         response_message (Message): The response message containing tool calls.
         assistant_message (dict): The assistant message to update.
         messages (list[dict]): The list of messages to include in the reply.
-        logger (logging.Logger): The logger instance.
+        user_id (Optional[str]): User ID for authenticated tool access.
 
     Returns:
         None
     """
     if response_message.tool_calls is None:
         return
-    from app.mcp_service import get_no_auth_servers
 
     assistant_message["tool_calls"] = response_message.model_dump()["tool_calls"]
-    mcp_servers = get_no_auth_servers()
+
+    no_auth_servers = get_no_auth_servers()
+    no_auth_server_urls = [server["url"] for server in no_auth_servers]
+
     for tool_call in response_message.tool_calls:
         process_tool_call(
             tool_call=tool_call,
             messages=messages,
-            mcp_servers=mcp_servers,
-            logger=logger,
+            no_auth_server_urls=no_auth_server_urls,
+            user_id=user_id,
         )
 
 
@@ -131,8 +109,8 @@ def process_tool_call(
     *,
     tool_call: ChatCompletionMessageToolCall,
     messages: list[dict],
-    mcp_servers: list[str],
-    logger: logging.Logger,
+    no_auth_server_urls: list[str],
+    user_id: Optional[str] = None,
 ) -> None:
     """
     Processes a single tool call and updates the messages list.
@@ -140,15 +118,15 @@ def process_tool_call(
     Args:
         tool_call (ChatCompletionMessageToolCall): The tool call to process.
         messages (list[dict]): The list of messages to include in the reply.
-        mcp_servers (list[str]): The list of MCP server URLs.
-        logger (logging.Logger): The logger instance.
+        no_auth_server_urls (list[str]): The list of no-auth MCP server URLs.
+        user_id (Optional[str]): User ID for authenticated tool access.
 
     Returns:
         None
     """
     tool_name = tool_call.function.name
     if not tool_name:
-        logger.warning("Skipped tool call with empty name: %s", tool_call)
+        logging.warning("Skipped tool call with empty name: %s", tool_call)
         return
 
     if not is_mcp_tool_name(tool_name) and LITELLM_TOOLS_MODULE_NAME is not None:
@@ -166,17 +144,30 @@ def process_tool_call(
         messages.append(tool_message)
         return
 
-    spec_name, server_index = parse_mcp_tool_name(tool_name)
-    mcp_client = MCPClient(
-        lambda: create_streamable_http_transport(mcp_servers[server_index])
-    )
-    with mcp_client:
-        tool_response = process_mcp_tool_call(
-            mcp_client=mcp_client,
+    spec_name, auth_type, server_index = parse_mcp_tool_name(tool_name)
+
+    if auth_type != "none" and user_id:
+        tool_response = process_oauth_mcp_tool_call(
             tool_call_id=tool_call.id,
             tool_name=spec_name,
             arguments=json.loads(tool_call.function.arguments),
+            user_id=user_id,
+            server_index=server_index,
         )
+        tool_message = build_tool_message(
+            tool_call_id=tool_call.id,
+            name=tool_name,
+            content=tool_response,
+        )
+        messages.append(tool_message)
+        return
+
+    tool_response = process_no_auth_mcp_tool_call(
+        server_url=no_auth_server_urls[server_index],
+        tool_call_id=tool_call.id,
+        tool_name=spec_name,
+        arguments=json.loads(tool_call.function.arguments),
+    )
     tool_message = build_tool_message(
         tool_call_id=tool_call.id,
         name=tool_name,
@@ -204,48 +195,3 @@ def process_classic_tool_call(
     """
     tool_to_call = getattr(tools_module, tool_name)
     return tool_to_call(**arguments)
-
-
-def process_mcp_tool_call(
-    *,
-    mcp_client: MCPClient,
-    tool_call_id: str,
-    tool_name: str,
-    arguments: dict,
-) -> str:
-    """
-    Processes a tool call using the MCP client.
-
-    Args:
-        mcp_client (MCPClient): The MCP client instance.
-        tool_call_id (str): The ID of the tool call.
-        tool_name (str): The name of the tool to call.
-        arguments (dict): The arguments to pass to the function.
-
-    Returns:
-        str: The response from the tool call.
-    """
-    result = mcp_client.call_tool_sync(
-        tool_use_id=tool_call_id,
-        name=tool_name,
-        arguments=arguments,
-    )
-    return result["content"][0]["text"]
-
-
-CLASSIC_TOOLS = load_classic_tools(LITELLM_TOOLS_MODULE_NAME)
-MCP_TOOLS = load_mcp_tools()
-
-
-def _refresh_tools_loop():
-    """Refresh MCP tool lists periodically in the background."""
-    while True:
-        # Wait before refresh (first iteration waits before initial refresh)
-        time.sleep(TOOL_REFRESH_INTERVAL_SECONDS)
-
-        global MCP_TOOLS
-        MCP_TOOLS = load_mcp_tools()
-        logging.info(f"MCP tools refreshed: {len(MCP_TOOLS)} tools")
-
-
-threading.Thread(target=_refresh_tools_loop, daemon=True, name="tools-refresh").start()

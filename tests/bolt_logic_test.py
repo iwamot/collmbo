@@ -20,9 +20,12 @@ def test_append_rate_limit_retry_handler():
 
     append_rate_limit_retry_handler(handlers, 3)
 
-    assert len(handlers) == 1
+    expected_handler = RateLimitErrorRetryHandler(max_retry_count=3)
+    expected_handlers = [expected_handler]
+
+    assert len(handlers) == len(expected_handlers)
     assert isinstance(handlers[0], RateLimitErrorRetryHandler)
-    assert handlers[0].max_retry_count == 3
+    assert handlers[0].max_retry_count == expected_handlers[0].max_retry_count
 
 
 @pytest.mark.parametrize(

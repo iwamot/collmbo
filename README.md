@@ -15,7 +15,7 @@ Collmbo supports multiple LLMs, but let's begin with OpenAI's gpt-4o model for a
 
 ### 1. Create a Slack App
 
-[Create a Slack app](https://github.com/iwamot/collmbo/wiki/Creating-a-Slack-App) and obtain the required tokens:
+[Create a Slack app](docs/setup/creating-a-slack-app.md) and obtain the required tokens:
 
 - App-level token (`xapp-1-...`)
 - Bot token (`xoxb-...`)
@@ -106,18 +106,18 @@ Collmbo does not serve endpoints and can run in any environment with internet ac
 
 ## Features
 
-- **[MCP Tools](https://github.com/iwamot/collmbo/wiki/MCP-Tools)** - Extends functionality with MCP server.
-- **[Tools (Function Calling)](https://github.com/iwamot/collmbo/wiki/Tools-(Function-Calling))** - Extends functionality with function calling.
-- **[Custom callbacks](https://github.com/iwamot/collmbo/wiki/Custom-callbacks)** - Hooks into requests and responses for custom processing.
-- **[Redaction](https://github.com/iwamot/collmbo/wiki/Redaction)** - Masks sensitive information before sending requests.
-- **[Slack-friendly formatting](https://github.com/iwamot/collmbo/wiki/Slack%E2%80%90friendly-formatting)** - Formats messages for better readability in Slack.
-- **[Image input](https://github.com/iwamot/collmbo/wiki/Image-input)** - Enables AI models to analyze uploaded images.
-- **[PDF input](https://github.com/iwamot/collmbo/wiki/PDF-input)** - Enables AI models to analyze uploaded PDFs.
-- **[Prompt caching](https://github.com/iwamot/collmbo/wiki/Prompt-caching)** - May help reduce costs by reusing context (Anthropic Claude, Amazon Bedrock).
+- **[MCP Tools](docs/features/mcp-tools.md)** - Extends functionality with MCP server.
+- **[Tools (Function Calling)](docs/features/tools-function-calling.md)** - Extends functionality with function calling.
+- **[Custom Callbacks](docs/features/custom-callbacks.md)** - Hooks into requests and responses for custom processing.
+- **[Redaction](docs/features/redaction.md)** - Masks sensitive information before sending requests.
+- **[Slack-friendly Formatting](docs/features/slack-friendly-formatting.md)** - Formats messages for better readability in Slack.
+- **[Image Input](docs/features/image-input.md)** - Enables AI models to analyze uploaded images.
+- **[PDF Input](docs/features/pdf-input.md)** - Enables AI models to analyze uploaded PDFs.
+- **[Prompt Caching](docs/features/prompt-caching.md)** - May help reduce costs by reusing context (Anthropic Claude, Amazon Bedrock).
 
 ## Configuration
 
-Collmbo runs with default settings, but you can customize its behavior by [setting optional environment variables](https://github.com/iwamot/collmbo/wiki/Optional-Settings).
+Collmbo runs with default settings, but you can customize its behavior by [setting optional environment variables](docs/configuration/optional-settings.md).
 
 ## Contributing
 

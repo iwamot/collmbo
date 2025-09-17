@@ -14,7 +14,6 @@ from app.bolt_logic import extract_user_id_from_context, should_skip_event
 def before_authorize(
     body: dict,
     payload: dict,
-    logger: logging.Logger,
     next_: Callable[[], None],
 ) -> Optional[BoltResponse]:
     """
@@ -26,14 +25,13 @@ def before_authorize(
     Args:
         body (dict): The request body.
         payload (dict): The request payload.
-        logger (logging.Logger): The logger instance.
         next_ (Callable[[], None]): The next middleware function to call.
 
     Returns:
         Optional[BoltResponse]: A BoltResponse object if the event is skipped, None otherwise.
     """
     if should_skip_event(body, payload):
-        logger.debug(
+        logging.debug(
             "Skipped the following middleware and listeners "
             f"for this message event (subtype: {payload.get('subtype')})"
         )

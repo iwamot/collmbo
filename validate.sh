@@ -4,13 +4,13 @@ set -e
 pip install -r dev-requirements.txt
 
 if [[ "$1" == "ci" ]]; then
-  black --check ./*.py ./app/*.py ./tests/*.py
+  black --check ./*.py ./app/*.py ./app/mcp/*.py ./tests/*.py ./tests/mcp/*.py
 else
-  black ./*.py ./app/*.py ./tests/*.py
+  black ./*.py ./app/*.py ./app/mcp/*.py ./tests/*.py ./tests/mcp/*.py
 fi
 
-flake8 ./*.py ./app/*.py ./tests/*.py
-mypy ./*.py ./app/*.py ./tests/*.py
+flake8 ./*.py ./app/*.py ./app/mcp/*.py ./tests/*.py ./tests/mcp/*.py
+mypy ./*.py ./app/*.py ./app/mcp/*.py ./tests/*.py ./tests/mcp/*.py
 
 if [[ "$1" == "ci" ]]; then
   pytest --cov=main --cov=app --cov-branch --cov-report=term --cov-report=xml

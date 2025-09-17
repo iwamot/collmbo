@@ -1,4 +1,0 @@
-servers:
-  - name: AWS Knowledge
-    url: https://knowledge-mcp.global.api.aws
-    auth_type: none

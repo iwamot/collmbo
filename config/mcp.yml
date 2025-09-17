@@ -1,0 +1,18 @@
+workload_name: Collmbo
+auth_session_duration_minutes: 30
+servers:
+  - name: AWS Knowledge
+    url: https://knowledge-mcp.global.api.aws
+    auth_type: none
+
+# Example OAuth configuration (requires Amazon Bedrock AgentCore Identity setup)
+# - name: GitHub
+#   url: https://api.githubcopilot.com/mcp/
+#   auth_type: user_federation
+#   scopes:
+#     - repo
+#     - read:packages
+#     - read:org
+#   agentcore_identity:
+#     region: us-west-2
+#     provider_name: github

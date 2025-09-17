@@ -17,6 +17,8 @@ def extract_delta_content(chunk: ModelResponse) -> Optional[str]:
     Returns:
         Optional[str]: The delta content, or None if not found.
     """
+    if not chunk.choices:
+        return None
     delta = chunk.choices[0].get("delta")
     return None if delta is None else delta.get("content")
 
