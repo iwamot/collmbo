@@ -316,10 +316,7 @@ def test_build_home_tab_blocks(mcp_servers, expected_blocks):
                         "name": "GitHubServer",
                         "url": "http://test",
                         "auth_type": "user_federation",
-                        "agentcore_identity": {
-                            "region": "us-east-1",
-                            "provider": "github",
-                        },
+                        "agentcore_provider": "github",
                     }
                 ]
             },
@@ -353,10 +350,7 @@ def test_build_home_tab_blocks(mcp_servers, expected_blocks):
                         "name": "GitHubServer",
                         "url": "http://test",
                         "auth_type": "user_federation",
-                        "agentcore_identity": {
-                            "region": "us-east-1",
-                            "provider": "github",
-                        },
+                        "agentcore_provider": "github",
                     }
                 ]
             },

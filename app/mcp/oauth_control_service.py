@@ -9,13 +9,13 @@ from typing import Callable
 
 from slack_sdk import WebClient
 
-from app.mcp.agentcore_logic import normalize_agentcore_config
 from app.mcp.agentcore_service import (
     cancel_oauth_polling,
     get_oauth_polling_status,
     initiate_oauth_flow_with_callback,
 )
 from app.mcp.config_service import (
+    get_agentcore_region,
     get_auth_session_duration_minutes,
     get_oauth_server,
     get_workload_name,
@@ -197,18 +197,18 @@ def enable_user_oauth_session(
         on_update=on_update,
     )
 
-    agentcore_config = normalize_agentcore_config(server)
-    if not agentcore_config:
-        raise ValueError(f"Invalid AgentCore configuration for server: {server_name}")
+    provider_name = server.get("agentcore_provider")
+    if not provider_name:
+        raise ValueError(f"Invalid AgentCore provider for server: {server_name}")
 
     async def run_oauth_flow():
         await initiate_oauth_flow_with_callback(
-            region=agentcore_config["region"],
+            region=get_agentcore_region(),
             workload_name=get_workload_name(),
             user_id=user_id,
             server_name=server_name,
-            provider_name=agentcore_config["provider_name"],
-            scopes=agentcore_config.get("scopes", []),
+            provider_name=provider_name,
+            scopes=server.get("scopes", []),
             on_auth_url_callback=on_auth_url_callback,
             on_token_callback=on_token_callback,
             on_timeout_callback=on_timeout_callback,

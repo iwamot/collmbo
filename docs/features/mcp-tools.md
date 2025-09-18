@@ -39,6 +39,7 @@ AWS_SECRET_ACCESS_KEY=...
 $ cat config/mcp.yml
 workload_name: Collmbo
 auth_session_duration_minutes: 30
+agentcore_region: us-west-2
 servers:
   - name: AWS Knowledge
     url: https://knowledge-mcp.global.api.aws
@@ -50,9 +51,7 @@ servers:
       - repo
       - read:packages
       - read:org
-    agentcore_identity:
-      region: us-west-2
-      provider_name: github
+    agentcore_provider: github
 
 $ cat env
 SLACK_APP_TOKEN=xapp-1-...
