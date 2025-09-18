@@ -2,7 +2,6 @@ import pytest
 
 from app.mcp.agentcore_logic import (
     create_agentcore_user_id,
-    normalize_agentcore_config,
 )
 
 
@@ -35,39 +34,5 @@ from app.mcp.agentcore_logic import (
 )
 def test_create_agentcore_user_id(slack_user_id, session_id, expected):
     result = create_agentcore_user_id(slack_user_id, session_id)
-
-    assert result == expected
-
-
-@pytest.mark.parametrize(
-    "server, expected",
-    [
-        (
-            {
-                "agentcore_identity": {
-                    "region": "us-east-1",
-                    "provider_name": "github",
-                },
-                "scopes": ["read", "write"],
-            },
-            {
-                "region": "us-east-1",
-                "provider_name": "github",
-                "scopes": ["read", "write"],
-            },
-        ),
-        (
-            {"agentcore_identity": {"region": "us-west-2", "provider_name": "google"}},
-            {"region": "us-west-2", "provider_name": "google", "scopes": []},
-        ),
-        ({}, None),
-        ({"agentcore_identity": {}}, None),
-        ({"agentcore_identity": {"region": "us-east-1"}}, None),
-        ({"agentcore_identity": {"provider_name": "github"}}, None),
-        ({"other_config": "value"}, None),
-    ],
-)
-def test_normalize_agentcore_config(server, expected):
-    result = normalize_agentcore_config(server)
 
     assert result == expected

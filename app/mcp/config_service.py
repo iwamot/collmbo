@@ -110,6 +110,17 @@ def get_workload_name() -> str:
     return config.get("workload_name", DEFAULT_WORKLOAD_NAME)
 
 
+def get_agentcore_region() -> str:
+    """
+    Get AgentCore region from global configuration.
+
+    Returns:
+        str: AgentCore region for OAuth MCP servers.
+    """
+    config = get_mcp_config()
+    return config.get("agentcore_region", "us-west-2")
+
+
 def get_auth_session_duration_minutes() -> int:
     """
     Get auth session duration in minutes from configuration.

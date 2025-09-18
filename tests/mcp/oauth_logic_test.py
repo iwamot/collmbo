@@ -25,10 +25,7 @@ from app.mcp.oauth_tools_logic import is_session_not_expired
                         "name": "Server 2",
                         "url": "https://server2.example.com",
                         "auth_type": "user_federation",
-                        "agentcore_identity": {
-                            "region": "us-east-1",
-                            "provider": "aws",
-                        },
+                        "agentcore_provider": "aws",
                     },
                 ]
             },
@@ -37,7 +34,7 @@ from app.mcp.oauth_tools_logic import is_session_not_expired
                     "name": "Server 2",
                     "url": "https://server2.example.com",
                     "auth_type": "user_federation",
-                    "agentcore_identity": {"region": "us-east-1", "provider": "aws"},
+                    "agentcore_provider": "aws",
                 }
             ],
         ),
