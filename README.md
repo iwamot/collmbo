@@ -1,3 +1,23 @@
+
+> [!WARNING]
+> **MAINTENANCE MODE**
+>
+> Active development has moved to [enechange/collmbo](https://github.com/enechange/collmbo)
+>
+> For v8.0.0 and later versions:
+>
+> ```sh
+> docker pull ghcr.io/enechange/collmbo:latest
+> ```
+>
+> Previous versions (v7.0.0 and earlier) remain available at:
+>
+> ```sh
+> docker pull ghcr.io/iwamot/collmbo:v7.0.0
+> ```
+
+---
+
 # Collmbo
 
 [![CI](https://github.com/iwamot/collmbo/actions/workflows/ci.yml/badge.svg)](https://github.com/iwamot/collmbo/actions/workflows/ci.yml)
