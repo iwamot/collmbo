@@ -126,12 +126,13 @@ def call_litellm_completion(
         kwargs["tools"] = tools
         kwargs["parallel_tool_calls"] = False
 
+    additional_kwargs: dict[str, list[str]] = {}
     if LITELLM_DROP_PARAMS is not None:
-        kwargs["additional_drop_params"] = [
+        additional_kwargs["additional_drop_params"] = [
             param.strip() for param in LITELLM_DROP_PARAMS.split(",")
         ]
 
-    return litellm.completion(**kwargs)
+    return litellm.completion(**kwargs, **additional_kwargs)
 
 
 def start_litellm_stream(
