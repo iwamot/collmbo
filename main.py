@@ -10,6 +10,7 @@ import os
 import re
 import signal
 import sys
+import warnings
 from types import FrameType
 
 from slack_bolt import Ack, App
@@ -41,6 +42,10 @@ def main() -> None:
         None
     """
     logging.basicConfig(level=SLACK_APP_LOG_LEVEL)
+
+    # Suppress litellm's PydanticSerializationUnexpectedValue warnings
+    # https://github.com/BerriAI/litellm/issues/17631
+    warnings.filterwarnings("ignore", message="Pydantic serializer warnings")
 
     app = create_bolt_app(os.environ["SLACK_BOT_TOKEN"], USE_SLACK_LOCALE)
     append_rate_limit_retry_handler(app.client.retry_handlers, 2)
