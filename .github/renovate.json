@@ -33,7 +33,7 @@
     }
   ],
   "constraints": {
-    "uv": "0.10.8"
+    "uv": "0.10.9"
   },
   "labels": [
     "dependencies"
