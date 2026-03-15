@@ -1,5 +1,5 @@
 import pytest
-from litellm.types.utils import Delta, ModelResponse, StreamingChoices
+from litellm.types.utils import Choices, Delta, Message, ModelResponse, StreamingChoices
 
 from app.litellm_logic import extract_delta_content, is_final_chunk
 
@@ -48,22 +48,25 @@ def test_extract_delta_content(chunk, expected):
     [
         (
             ModelResponse(
-                choices=[StreamingChoices(delta=Delta(content="Hello"))],
-                stream=True,
-            ),
-            False,
-        ),
-        (
-            ModelResponse(
-                choices=[StreamingChoices(delta=Delta(), finish_reason="stop")],
-                stream=True,
+                choices=[
+                    Choices(
+                        finish_reason="stop",
+                        index=0,
+                        message=Message(content="Hello"),
+                    )
+                ],
             ),
             True,
         ),
         (
             ModelResponse(
-                choices=[StreamingChoices(delta=None, finish_reason="length")],
-                stream=True,
+                choices=[
+                    Choices(
+                        finish_reason="length",
+                        index=0,
+                        message=Message(role="assistant"),
+                    )
+                ],
             ),
             True,
         ),
