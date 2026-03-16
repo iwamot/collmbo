@@ -4,7 +4,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.10.10@sha256:cbe0a44ba994e327b8fe7ed72beef1aa
 COPY pyproject.toml uv.lock /build/
 RUN uv sync --frozen --no-dev
 
-FROM dhi.io/python:3.14.3-debian13@sha256:16dae03aec93689d7f37de81286d56d77e9d836ac1944b690fbb4796c416e975 AS app
+FROM dhi.io/python:3.14.3-debian13@sha256:9f0a28aace9221c9ecb02d8d3885ad7e8ac71ba71657b523f1a04b556daa3424 AS app
 WORKDIR /app/
 COPY --from=builder /build/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
