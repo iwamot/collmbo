@@ -316,7 +316,7 @@ requires-dist = [
     { name = "slack-bolt", specifier = "==1.27.0" },
     { name = "slack-sdk", specifier = "==3.41.0" },
     { name = "strands-agents", specifier = "==1.31.0" },
-    { name = "strands-agents-tools", specifier = "==0.2.22" },
+    { name = "strands-agents-tools", specifier = "==0.2.23" },
 ]
 provides-extras = ["dev"]
 
@@ -1540,7 +1540,7 @@ wheels = [
 
 [[package]]
 name = "strands-agents-tools"
-version = "0.2.22"
+version = "0.2.23"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -1561,9 +1561,9 @@ dependencies = [
     { name = "tzdata", marker = "sys_platform == 'win32'" },
     { name = "watchdog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c1/4e/c8c355cd7ca6d28f98231fd66fe5d4627c9ecd9ea79db21980ec429247e9/strands_agents_tools-0.2.22.tar.gz", hash = "sha256:99d202b329f12df8568f104d5301452526640fd0e4db164c0be23e0b22e3d350", size = 474105, upload-time = "2026-03-04T21:19:38.858Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a8/0b/95529cd0bbb0f3186adcae0476f506d3f098b95b552621195f190dcda14b/strands_agents_tools-0.2.23.tar.gz", hash = "sha256:40d0c30859f0cf00c62f5efacdb917ae541c7fe9affceee5adb63ba49657f887", size = 474100, upload-time = "2026-03-19T14:29:29.917Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a4/45/900277b3e0180017eaf1490eef3ed1c459c833a0d86746d777d67fb919ab/strands_agents_tools-0.2.22-py3-none-any.whl", hash = "sha256:4d0743b90bed9acd840d2dee943ea2de8a644d4e139686912b6239a0bd410963", size = 312781, upload-time = "2026-03-04T21:19:37.348Z" },
+    { url = "https://files.pythonhosted.org/packages/ab/3c/b5d8586448878e755590bfc59824abc2b137b21b8a8183008e13c8316b13/strands_agents_tools-0.2.23-py3-none-any.whl", hash = "sha256:d98b602002eb978850a32d597f94262dd3a95c6871ab2007fbb0ad165799d8df", size = 312782, upload-time = "2026-03-19T14:29:27.768Z" },
 ]
 
 [[package]]
