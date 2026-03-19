@@ -124,7 +124,6 @@ def call_litellm_completion(
 
     if tools is not None:
         kwargs["tools"] = tools
-        kwargs["parallel_tool_calls"] = False
 
     additional_kwargs: dict[str, list[str]] = {}
     if LITELLM_DROP_PARAMS is not None:
