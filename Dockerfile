@@ -1,10 +1,10 @@
-FROM dhi.io/python:3.14.3-debian13-dev@sha256:99c6d3c8839035ebf2b8f342af2a0053dd31f3126ccd720204f79e24aa1d2813 AS builder
+FROM dhi.io/python:3.14.3-debian13-dev@sha256:1ac10ee926e3e57c6cdf564e0afccd19388d8afb1166087e8d7837a11c29b162 AS builder
 WORKDIR /build/
 COPY --from=ghcr.io/astral-sh/uv:0.10.12@sha256:72ab0aeb448090480ccabb99fb5f52b0dc3c71923bffb5e2e26517a1c27b7fec /uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock /build/
 RUN uv sync --frozen --no-dev
 
-FROM dhi.io/python:3.14.3-debian13@sha256:516bc88f3c649a5e66c58f7a5e53ad915623f153a02118ae409e9565f3f928a2 AS app
+FROM dhi.io/python:3.14.3-debian13@sha256:129b2dd5cd4b93e5b47beedcf9363b0700be1f5228c40879283e920c52441980 AS app
 WORKDIR /app/
 COPY --from=builder /build/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
