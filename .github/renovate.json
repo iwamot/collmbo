@@ -41,12 +41,7 @@
   "rebaseWhen": "conflicted",
   "prHourlyLimit": 0,
   "prConcurrentLimit": 0,
-  "lockFileMaintenance": {
-    "enabled": true,
-    "schedule": [
-      "after 11pm"
-    ]
-  },
+  "minimumReleaseAge": "3 days",
   "packageRules": [
     {
       "description": "Group GitHub Actions updates",
@@ -108,12 +103,11 @@
       "groupName": "uv"
     },
     {
-      "description": "Automerge minor, patch, digest, and lockFileMaintenance updates",
+      "description": "Automerge minor, patch, and digest updates",
       "matchUpdateTypes": [
         "minor",
         "patch",
-        "digest",
-        "lockFileMaintenance"
+        "digest"
       ],
       "automerge": true
     }
