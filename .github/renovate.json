@@ -111,6 +111,13 @@
         "digest"
       ],
       "automerge": true
+    },
+    {
+      "description": "Temporarily disable trivy-action due to supply chain attack aftermath",
+      "matchPackageNames": [
+        "aquasecurity/trivy-action"
+      ],
+      "enabled": false
     }
   ]
 }
