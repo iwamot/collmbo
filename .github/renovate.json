@@ -59,7 +59,8 @@
       "matchPackageNames": [
         "dhi.io/python"
       ],
-      "groupName": "python"
+      "groupName": "python",
+      "minimumReleaseAge": "0 days"
     },
     {
       "description": "Group Python dependencies",
