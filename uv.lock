@@ -140,7 +140,7 @@ wheels = [
 
 [[package]]
 name = "bedrock-agentcore"
-version = "1.4.7"
+version = "1.4.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
@@ -152,9 +152,9 @@ dependencies = [
     { name = "uvicorn" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d3/5c/2ad1747ff2bc4b6bb8828fdc8e769f6c34daa0c4ca4d853cff603ea04aeb/bedrock_agentcore-1.4.7.tar.gz", hash = "sha256:422805482e47593010128a86495dff644507624b00c6e09950613c7241ae5375", size = 483923, upload-time = "2026-03-18T22:46:37.944Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/56/99/b08e9e6b849599316100b898f5ba27057f5141aaea36bcaf0ed3f695fdd5/bedrock_agentcore-1.4.8.tar.gz", hash = "sha256:ebabf85307b3590ef58c5ea25234cc3824560b5a7579f725bb00a8df7df6c4d4", size = 487391, upload-time = "2026-03-26T22:33:31.873Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c5/e7/df6cbe814292353460c0988504eee4e90cc08dde03bf5e1da85176b5f0b4/bedrock_agentcore-1.4.7-py3-none-any.whl", hash = "sha256:7515ddf779a4f32fd4a5c8dcf29c9399babe0ea14ea9004d2c69bcad40754622", size = 148250, upload-time = "2026-03-18T22:46:36.662Z" },
+    { url = "https://files.pythonhosted.org/packages/ec/6d/677b74eaa3c1f6601ff28b4c652c4c2cf313b7fb84cf36949d8ca0869029/bedrock_agentcore-1.4.8-py3-none-any.whl", hash = "sha256:9f0fb653d0f3cadca082132b49e73852483527824d93728eb4cefc0ce60545b4", size = 149662, upload-time = "2026-03-26T22:33:30.016Z" },
 ]
 
 [[package]]
@@ -305,7 +305,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bedrock-agentcore", specifier = "==1.4.7" },
+    { name = "bedrock-agentcore", specifier = "==1.4.8" },
     { name = "httpx", specifier = "==0.28.1" },
     { name = "litellm", specifier = "==1.82.6" },
     { name = "mcp", specifier = "==1.26.0" },
@@ -316,7 +316,7 @@ requires-dist = [
     { name = "slack-bolt", specifier = "==1.27.0" },
     { name = "slack-sdk", specifier = "==3.41.0" },
     { name = "strands-agents", specifier = "==1.33.0" },
-    { name = "strands-agents-tools", specifier = "==0.2.23" },
+    { name = "strands-agents-tools", specifier = "==0.3.0" },
 ]
 provides-extras = ["dev"]
 
@@ -1540,7 +1540,7 @@ wheels = [
 
 [[package]]
 name = "strands-agents-tools"
-version = "0.2.23"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -1561,9 +1561,9 @@ dependencies = [
     { name = "tzdata", marker = "sys_platform == 'win32'" },
     { name = "watchdog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a8/0b/95529cd0bbb0f3186adcae0476f506d3f098b95b552621195f190dcda14b/strands_agents_tools-0.2.23.tar.gz", hash = "sha256:40d0c30859f0cf00c62f5efacdb917ae541c7fe9affceee5adb63ba49657f887", size = 474100, upload-time = "2026-03-19T14:29:29.917Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fb/ab/078ea5ccab4f97aaa80500de844e1c744e4e77e6f2a4c67f62f10040c6a3/strands_agents_tools-0.3.0.tar.gz", hash = "sha256:10913ca85acb6da36ae05f2507e4f0c88d6b8b8034d1b4db6e93f3f6b7264fd0", size = 476838, upload-time = "2026-03-26T19:25:45.97Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ab/3c/b5d8586448878e755590bfc59824abc2b137b21b8a8183008e13c8316b13/strands_agents_tools-0.2.23-py3-none-any.whl", hash = "sha256:d98b602002eb978850a32d597f94262dd3a95c6871ab2007fbb0ad165799d8df", size = 312782, upload-time = "2026-03-19T14:29:27.768Z" },
+    { url = "https://files.pythonhosted.org/packages/49/42/61dd37e0ad3c8b22cce83ef4c7ee21e8f6f3fc071f5096106090cb8ded60/strands_agents_tools-0.3.0-py3-none-any.whl", hash = "sha256:0d55aae56abfe1e336cdb718027d8780938881135b61b15f1dfbb1fa6e2d7cba", size = 313555, upload-time = "2026-03-26T19:25:44.147Z" },
 ]
 
 [[package]]
