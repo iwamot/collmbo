@@ -5,13 +5,12 @@ This module contains functions to handle message logic.
 import base64
 import re
 import unicodedata
-from typing import Optional
 
 
 def is_last_marker_reply(
     *,
     reply: dict,
-    bot_user_id: Optional[str],
+    bot_user_id: str | None,
     marker_text: str,
 ) -> bool:
     """
@@ -31,7 +30,7 @@ def is_last_marker_reply(
 def filter_replies_after_last_marker(
     *,
     replies: list[dict],
-    bot_user_id: Optional[str],
+    bot_user_id: str | None,
     marker_text: str,
 ) -> list[dict]:
     """
@@ -57,25 +56,27 @@ def filter_replies_after_last_marker(
 
 
 def build_system_message(
-    system_text_template: str,
-    bot_user_id: Optional[str],
-    translate_markdown: bool,
+    system_prompt_template: str,
+    bot_user_id: str | None,
+    slack_formatting_enabled: bool,
     prompt_caching_enabled: bool,
+    prompt_caching_ttl: str | None = None,
 ) -> dict:
     """
     Build the system message for the bot.
 
     Args:
-        - system_text_template (str): The template for the system message.
+        - system_prompt_template (str): The template for the system prompt.
         - bot_user_id (Optional[str]): The bot's user ID.
-        - translate_markdown (bool): Flag indicating whether to convert Slack mrkdwn to Markdown.
+        - slack_formatting_enabled (bool): Flag indicating whether to convert Slack mrkdwn to Markdown.
         - prompt_caching_enabled (bool): Flag indicating if prompt caching is enabled.
+        - prompt_caching_ttl (Optional[str]): TTL for prompt caching (e.g., "5m", "1h").
 
     Returns:
         - dict: The system message as a dictionary with "role" and "content" keys.
     """
-    system_text = system_text_template.format(bot_user_id=bot_user_id)
-    system_text = maybe_slack_to_markdown(system_text, translate_markdown)
+    system_text = system_prompt_template.format(bot_user_id=bot_user_id)
+    system_text = maybe_slack_to_markdown(system_text, slack_formatting_enabled)
     content: list[dict[str, str | dict]] = [
         {
             "type": "text",
@@ -83,7 +84,10 @@ def build_system_message(
         }
     ]
     if prompt_caching_enabled:
-        content[0]["cache_control"] = {"type": "ephemeral"}
+        cache_control: dict[str, str] = {"type": "ephemeral"}
+        if prompt_caching_ttl:
+            cache_control["ttl"] = prompt_caching_ttl
+        content[0]["cache_control"] = cache_control
     return {
         "role": "system",
         "content": content,
@@ -154,7 +158,7 @@ def build_image_url_item(mime_type: str, image_bytes: bytes) -> dict:
     }
 
 
-def build_pdf_file_item(filename: Optional[str], pdf_bytes: bytes) -> dict:
+def build_pdf_file_item(filename: str | None, pdf_bytes: bytes) -> dict:
     """
     Build a PDF file item for the bot.
 
@@ -175,7 +179,7 @@ def build_pdf_file_item(filename: Optional[str], pdf_bytes: bytes) -> dict:
     }
 
 
-def remove_bot_mention(text: str, bot_user_id: Optional[str]) -> str:
+def remove_bot_mention(text: str, bot_user_id: str | None) -> str:
     """
     Remove the bot mention from the text.
 
@@ -230,7 +234,7 @@ def unescape_slack_formatting(content: str) -> str:
     return content.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
 
 
-def maybe_slack_to_markdown(content: str, translate_markdown: bool) -> str:
+def maybe_slack_to_markdown(content: str, slack_formatting_enabled: bool) -> str:
     """
     Convert Slack mrkdwn to Markdown format.
 
@@ -238,12 +242,12 @@ def maybe_slack_to_markdown(content: str, translate_markdown: bool) -> str:
 
     Args:
         content (str): The input string in Slack mrkdwn format.
-        translate_markdown (bool): Flag indicating whether to perform the conversion.
+        slack_formatting_enabled (bool): Flag indicating whether to perform the conversion.
 
     Returns:
         str: The converted string in Markdown format.
     """
-    if not translate_markdown:
+    if not slack_formatting_enabled:
         return content
 
     # Split the input string into parts based on code blocks and inline code
@@ -281,14 +285,15 @@ def build_slack_user_prefixed_text(reply: dict, text: str) -> str:
 def maybe_set_cache_points(
     messages: list[dict],
     prompt_caching_enabled: bool,
+    prompt_caching_ttl: str | None = None,
 ) -> None:
     """
     Set cache points in user messages if certain conditions are met.
 
     Args:
         messages (list[dict]): The list of messages.
-        total_tokens (int): The total number of tokens.
         prompt_caching_enabled (bool): Flag indicating if prompt caching is enabled.
+        prompt_caching_ttl (Optional[str]): TTL for prompt caching (e.g., "5m", "1h").
 
     Returns:
         None
@@ -298,11 +303,14 @@ def maybe_set_cache_points(
         and len([m for m in messages if m.get("role") == "user"]) >= 2
     ):
         return
+    cache_control: dict[str, str] = {"type": "ephemeral"}
+    if prompt_caching_ttl:
+        cache_control["ttl"] = prompt_caching_ttl
     user_messages_found = 0
     for message in reversed(messages):  # pragma: no branch
         if message.get("role") != "user":
             continue
-        message["content"][-1]["cache_control"] = {"type": "ephemeral"}
+        message["content"][-1]["cache_control"] = cache_control
         user_messages_found += 1
         if user_messages_found >= 2:
             break

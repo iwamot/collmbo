@@ -11,7 +11,7 @@ $ cat env
 SLACK_APP_TOKEN=xapp-1-...
 SLACK_BOT_TOKEN=xoxb-...
 OPENAI_API_KEY=sk-...
-LITELLM_MODEL=gpt-4o
+LLM_MODEL=gpt-5.2
 REDACTION_ENABLED=true
 
 # Overwrite the redaction pattern for custom sensitive data
@@ -20,7 +20,7 @@ REDACT_USER_DEFINED_PATTERN=\bsensitive string\b
 # Here, logging is enabled to check the effect of redaction
 LITELLM_CALLBACK_MODULE_NAME=examples.callback_handler
 
-$ docker run -it --env-file ./env -v ./examples:/app/examples ghcr.io/iwamot/collmbo:latest
+$ docker run -it --env-file ./env -v ./examples:/app/examples ghcr.io/enechange/collmbo:latest
 ```
 
 Sensitive strings in the message will be masked before being sent to the model.

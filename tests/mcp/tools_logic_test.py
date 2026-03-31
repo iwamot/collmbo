@@ -4,8 +4,8 @@ Tests for MCP tools logic module.
 
 import pytest
 
-from app.mcp.tools_logic import build_mcp_tool_name, transform_mcp_spec_to_classic_tool
 from app.mcp.oauth_tools_logic import parse_mcp_tool_name
+from app.mcp.tools_logic import build_mcp_tool_name, transform_mcp_spec_to_classic_tool
 from app.tools_logic import is_mcp_tool_name
 
 
@@ -163,6 +163,45 @@ def test_is_mcp_tool_name(name, expected):
                             "param": {"type": "string", "format": "date-time"}
                         },
                     },
+                },
+            },
+        ),
+        (
+            {
+                "name": "test_tool",
+                "description": "Test tool without type",
+                "inputSchema": {"json": {"properties": {"param": {"type": "string"}}}},
+            },
+            "none",
+            0,
+            "gpt-4",
+            {
+                "type": "function",
+                "function": {
+                    "name": "n-0-test_tool",
+                    "description": "Test tool without type",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {"param": {"type": "string"}},
+                    },
+                },
+            },
+        ),
+        (
+            {
+                "name": "test_tool",
+                "description": "Test tool without properties",
+                "inputSchema": {"json": {"type": "object"}},
+            },
+            "none",
+            0,
+            "gpt-4",
+            {
+                "type": "function",
+                "function": {
+                    "name": "n-0-test_tool",
+                    "description": "Test tool without properties",
+                    "parameters": {"type": "object", "properties": {}},
                 },
             },
         ),

@@ -2,11 +2,12 @@
 This module provides functions to interact with the LiteLLM API.
 """
 
+import logging
 import os
 import threading
 import time
 from importlib import import_module
-from typing import Optional, Union, cast
+from typing import cast
 
 import litellm
 from litellm.litellm_core_utils.streaming_handler import CustomStreamWrapper
@@ -15,12 +16,13 @@ from slack_sdk.web import SlackResponse, WebClient
 
 from app.env import (
     LITELLM_CALLBACK_MODULE_NAME,
-    LITELLM_MAX_TOKENS,
-    LITELLM_MODEL,
-    LITELLM_TEMPERATURE,
+    LITELLM_DROP_PARAMS,
+    LLM_MAX_TOKENS,
+    LLM_MODEL,
+    LLM_TEMPERATURE,
+    SLACK_FORMATTING_ENABLED,
     SLACK_LOADING_CHARACTER,
     SLACK_UPDATE_TEXT_BUFFER_SIZE,
-    TRANSLATE_MARKDOWN,
 )
 from app.litellm_logic import extract_delta_content, is_final_chunk
 from app.message_logic import (
@@ -42,10 +44,10 @@ def reply_to_slack_with_litellm(
     client: WebClient,
     channel: str,
     user_id: str,
-    thread_ts: Optional[str],
+    thread_ts: str | None,
     messages: list[dict],
     loading_text: str,
-    wip_reply: Union[dict, SlackResponse],
+    wip_reply: dict | SlackResponse,
     timeout_seconds: int,
 ) -> None:
     """
@@ -65,7 +67,7 @@ def reply_to_slack_with_litellm(
         None
     """
     stream = start_litellm_stream(
-        temperature=LITELLM_TEMPERATURE,
+        temperature=LLM_TEMPERATURE,
         messages=messages,
         user=user_id,
         channel=channel,
@@ -90,8 +92,8 @@ def call_litellm_completion(
     max_tokens: int = 1024,
     temperature: float = 0,
     stream: bool = False,
-    tools: Optional[list] = None,
-) -> Union[ModelResponse, CustomStreamWrapper]:
+    tools: list | None = None,
+) -> ModelResponse | CustomStreamWrapper:
     """
     Calls the LiteLLM completion API.
 
@@ -107,7 +109,7 @@ def call_litellm_completion(
         Union[ModelResponse, CustomStreamWrapper]: The response from the API.
     """
     kwargs = {
-        "model": LITELLM_MODEL,
+        "model": LLM_MODEL,
         "messages": messages,
         "top_p": 1,
         "n": 1,
@@ -122,9 +124,14 @@ def call_litellm_completion(
 
     if tools is not None:
         kwargs["tools"] = tools
-        kwargs["parallel_tool_calls"] = False
 
-    return litellm.completion(**kwargs)
+    additional_kwargs: dict[str, list[str]] = {}
+    if LITELLM_DROP_PARAMS is not None:
+        additional_kwargs["additional_drop_params"] = [
+            param.strip() for param in LITELLM_DROP_PARAMS.split(",")
+        ]
+
+    return litellm.completion(**kwargs, **additional_kwargs)
 
 
 def start_litellm_stream(
@@ -132,7 +139,7 @@ def start_litellm_stream(
     temperature: float,
     messages: list[dict],
     user: str,
-    channel: Optional[str] = None,
+    channel: str | None = None,
 ) -> CustomStreamWrapper:
     """
     Starts a LiteLLM stream for generating completions.
@@ -148,7 +155,7 @@ def start_litellm_stream(
     """
     response = call_litellm_completion(
         messages=messages,
-        max_tokens=LITELLM_MAX_TOKENS,
+        max_tokens=LLM_MAX_TOKENS,
         temperature=temperature,
         user=user,
         stream=True,
@@ -162,12 +169,12 @@ def start_litellm_stream(
 def stream_litellm_reply_to_slack(
     *,
     client: WebClient,
-    wip_reply: Union[dict, SlackResponse],
+    wip_reply: dict | SlackResponse,
     channel: str,
     user_id: str,
     messages: list[dict],
     stream: CustomStreamWrapper,
-    thread_ts: Optional[str],
+    thread_ts: str | None,
     loading_text: str,
     timeout_seconds: int,
 ):
@@ -242,12 +249,12 @@ def handle_litellm_stream(
     *,
     stream: CustomStreamWrapper,
     assistant_message: dict,
-    wip_reply: Union[dict, SlackResponse],
+    wip_reply: dict | SlackResponse,
     client: WebClient,
     channel: str,
     timeout_seconds: int,
     start_time: float,
-) -> tuple[Optional[Message], bool]:
+) -> tuple[Message | None, bool]:
     """
     Handles the streaming response from LiteLLM and updates the Slack message.
 
@@ -272,12 +279,12 @@ def handle_litellm_stream(
             if (time.time() - start_time) > timeout_seconds:
                 raise TimeoutError()
             response_chunks.append(chunk)
-            delta_content = extract_delta_content(cast(ModelResponse, chunk))
+            delta_content = extract_delta_content(cast("ModelResponse", chunk))
             if delta_content is None:
                 continue
             buffered_text += delta_content
             assistant_message["content"] += delta_content
-            final_chunk = is_final_chunk(cast(ModelResponse, chunk))
+            final_chunk = is_final_chunk(cast("ModelResponse", chunk))
             if len(buffered_text) >= SLACK_UPDATE_TEXT_BUFFER_SIZE:
                 spawn_update_reply_text(
                     client=client,
@@ -301,7 +308,7 @@ def handle_litellm_stream(
             try:
                 t.join()
             except Exception:
-                pass
+                logging.debug("Failed to join thread")
 
     # Final update to remove the loading character after stream ends
     if len(assistant_message["content"]) > 0:
@@ -320,7 +327,7 @@ def spawn_update_reply_text(
     *,
     client: WebClient,
     channel: str,
-    wip_reply: Union[dict, SlackResponse],
+    wip_reply: dict | SlackResponse,
     assistant_content: str,
     threads: list[threading.Thread],
 ) -> None:
@@ -355,7 +362,7 @@ def update_reply_text(
     *,
     client: WebClient,
     channel: str,
-    wip_reply: Union[dict, SlackResponse],
+    wip_reply: dict | SlackResponse,
     assistant_content: str,
     with_loading_character: bool = True,
 ) -> None:
@@ -376,7 +383,7 @@ def update_reply_text(
     if not wip_message:
         return
     assistant_reply_text = format_assistant_reply_for_slack(assistant_content)
-    if TRANSLATE_MARKDOWN:
+    if SLACK_FORMATTING_ENABLED:
         assistant_reply_text = convert_markdown_to_mrkdwn(assistant_reply_text)
     wip_message["text"] = assistant_reply_text
     text = assistant_reply_text
@@ -385,7 +392,7 @@ def update_reply_text(
     client.chat_update(channel=channel, ts=wip_message["ts"], text=text)
 
 
-def extract_message_from_chunks(chunks: list) -> Optional[Message]:
+def extract_message_from_chunks(chunks: list) -> Message | None:
     """
     Extracts the message from the chunks of the model response.
 

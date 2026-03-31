@@ -5,11 +5,12 @@ Service functions for no-auth MCP tools integration.
 import logging
 import threading
 import time
+from functools import partial
 
 from mcp.client.streamable_http import streamablehttp_client
 from strands.tools.mcp.mcp_client import MCPClient
 
-from app.env import LITELLM_MODEL
+from app.env import LLM_MODEL
 from app.mcp.config_service import get_no_auth_servers
 from app.mcp.tools_logic import transform_mcp_spec_to_classic_tool
 
@@ -28,15 +29,15 @@ def load_no_auth_mcp_tools() -> None:
     for idx, server in enumerate(no_auth_servers):
         url = server["url"]
         try:
-            client = MCPClient(lambda: streamablehttp_client(url))
-            with client:
+            client = MCPClient(partial(streamablehttp_client, url))
+            with client:  # ty: ignore[invalid-context-manager]
                 tools = client.list_tools_sync()
             result.extend(
                 transform_mcp_spec_to_classic_tool(
                     mcp_spec=tool.tool_spec,
                     auth_type="none",
                     server_index=idx,
-                    model=LITELLM_MODEL,
+                    model=LLM_MODEL,
                 )
                 for tool in tools
             )
@@ -96,7 +97,7 @@ def process_no_auth_mcp_tool_call(
         str: The response from the tool call.
     """
     mcp_client = MCPClient(lambda: streamablehttp_client(server_url))
-    with mcp_client:
+    with mcp_client:  # ty: ignore[invalid-context-manager]
         result = mcp_client.call_tool_sync(
             tool_use_id=tool_call_id,
             name=tool_name,

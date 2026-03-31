@@ -2,10 +2,9 @@
 This module provides pure logic functions for MCP configuration.
 """
 
-from typing import Optional
-
 DEFAULT_AUTH_SESSION_DURATION_MINUTES = 30
 DEFAULT_WORKLOAD_NAME = "Collmbo"
+DEFAULT_AGENTCORE_REGION = "us-west-2"
 
 
 def get_oauth_servers_from_config(mcp_config: dict) -> list[dict]:
@@ -46,7 +45,7 @@ def get_oauth_server_from_config(mcp_config: dict, server_index: int) -> dict:
 def get_oauth_server_index_from_config(
     mcp_config: dict,
     server_name: str,
-) -> Optional[int]:
+) -> int | None:
     """
     Get OAuth server index by name from config.
 
@@ -81,7 +80,7 @@ def get_no_auth_servers_from_config(mcp_config: dict) -> list[dict[str, str]]:
     return servers
 
 
-def normalize_mcp_config(raw_mcp_config: Optional[dict]) -> dict:
+def normalize_mcp_config(raw_mcp_config: dict | None) -> dict:
     """
     Normalize MCP configuration data with default values.
 
@@ -99,4 +98,8 @@ def normalize_mcp_config(raw_mcp_config: Optional[dict]) -> dict:
             "auth_session_duration_minutes", DEFAULT_AUTH_SESSION_DURATION_MINUTES
         ),
         "workload_name": raw_mcp_config.get("workload_name", DEFAULT_WORKLOAD_NAME),
+        "agentcore_region": raw_mcp_config.get(
+            "agentcore_region", DEFAULT_AGENTCORE_REGION
+        ),
+        "oauth_callback_url": raw_mcp_config.get("oauth_callback_url", ""),
     }

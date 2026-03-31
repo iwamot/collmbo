@@ -9,15 +9,33 @@ $ cat env
 SLACK_APP_TOKEN=xapp-1-...
 SLACK_BOT_TOKEN=xoxb-...
 ANTHROPIC_API_KEY=sk-ant-...
-LITELLM_MODEL=claude-3-7-sonnet-20250219
+LLM_MODEL=claude-3-7-sonnet-20250219
 PROMPT_CACHING_ENABLED=true
 
-$ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest
+$ docker run -it --env-file ./env ghcr.io/enechange/collmbo:latest
 ```
 
 When enabled, cache breakpoints will automatically be added to **the two most recent user messages** when the total context size is 1,024 tokens or more. This may help reduce API costs.
 
 Currently, this feature is only supported by [models supported by LiteLLM for prompt caching](https://docs.litellm.ai/docs/completion/prompt_caching), such as **Anthropic Claude and Amazon Bedrock models** (e.g., Claude, Amazon Nova).
+
+## Cache TTL
+
+For models that support custom cache TTL, you can specify it via `PROMPT_CACHING_TTL`:
+
+```sh
+PROMPT_CACHING_ENABLED=true
+PROMPT_CACHING_TTL=1h
+```
+
+When set, the TTL value is added to `cache_control`:
+
+```json
+"cache_control": {
+    "type": "ephemeral",
+    "ttl": "1h"
+}
+```
 
 ## Checking cache usage
 

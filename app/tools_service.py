@@ -6,11 +6,10 @@ import json
 import logging
 from importlib import import_module
 from types import ModuleType
-from typing import Optional
 
 from litellm.types.utils import ChatCompletionMessageToolCall, Message
 
-from app.env import LITELLM_TOOLS_MODULE_NAME
+from app.env import TOOLS_MODULE_NAME
 from app.mcp.config_service import get_no_auth_servers
 from app.mcp.no_auth_tools_service import (
     get_no_auth_mcp_tools,
@@ -25,7 +24,7 @@ from app.mcp.oauth_tools_service import (
 from app.message_logic import build_tool_message
 from app.tools_logic import is_mcp_tool_name, load_classic_tools
 
-classic_tools: Optional[list[dict]] = None
+classic_tools: list[dict] | None = None
 
 
 def get_classic_tools() -> list[dict]:
@@ -37,13 +36,13 @@ def get_classic_tools() -> list[dict]:
     """
     global classic_tools
     if classic_tools is None:
-        classic_tools = load_classic_tools(LITELLM_TOOLS_MODULE_NAME)
+        classic_tools = load_classic_tools(TOOLS_MODULE_NAME)
     return classic_tools
 
 
 def get_all_tools(
-    channel: Optional[str] = None,
-    user_id: Optional[str] = None,
+    channel: str | None = None,
+    user_id: str | None = None,
 ) -> list[dict]:
     """
     Retrieves all tools, including classic and MCP tools.
@@ -74,7 +73,7 @@ def process_tool_calls(
     response_message: Message,
     assistant_message: dict,
     messages: list[dict],
-    user_id: Optional[str] = None,
+    user_id: str | None = None,
 ) -> None:
     """
     Processes the tool calls in the response message.
@@ -110,7 +109,7 @@ def process_tool_call(
     tool_call: ChatCompletionMessageToolCall,
     messages: list[dict],
     no_auth_server_urls: list[str],
-    user_id: Optional[str] = None,
+    user_id: str | None = None,
 ) -> None:
     """
     Processes a single tool call and updates the messages list.
@@ -129,8 +128,8 @@ def process_tool_call(
         logging.warning("Skipped tool call with empty name: %s", tool_call)
         return
 
-    if not is_mcp_tool_name(tool_name) and LITELLM_TOOLS_MODULE_NAME is not None:
-        tools_module = import_module(LITELLM_TOOLS_MODULE_NAME)
+    if not is_mcp_tool_name(tool_name) and TOOLS_MODULE_NAME is not None:
+        tools_module = import_module(TOOLS_MODULE_NAME)
         tool_response = process_classic_tool_call(
             tools_module=tools_module,
             tool_name=tool_name,

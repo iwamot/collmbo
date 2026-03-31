@@ -8,7 +8,7 @@ from mcp.client.streamable_http import streamablehttp_client
 from strands.tools.mcp.mcp_client import MCPClient
 from strands.types.exceptions import MCPClientInitializationError
 
-from app.env import LITELLM_MODEL
+from app.env import LLM_MODEL
 from app.mcp.config_service import get_oauth_server, get_oauth_server_index
 from app.mcp.oauth_tools_logic import create_bearer_auth_headers, is_session_not_expired
 from app.mcp.tools_logic import transform_mcp_spec_to_classic_tool
@@ -21,7 +21,7 @@ def set_user_oauth_session(
     server_name: str,
     token: str,
     expires_at: int,
-    tools: list[dict] = [],
+    tools: list[dict] | None = None,
 ) -> None:
     """
     Set OAuth session for a specific user and server.
@@ -31,8 +31,10 @@ def set_user_oauth_session(
         server_name (str): The MCP server name.
         token (str): The OAuth token.
         expires_at (int): Unix timestamp when the token expires.
-        tools (list[dict]): Tools list to store with session.
+        tools (list[dict] | None): Tools list to store with session.
     """
+    if tools is None:
+        tools = []
     if user_id not in user_oauth_sessions:
         user_oauth_sessions[user_id] = {}
     user_oauth_sessions[user_id][server_name] = {
@@ -205,7 +207,7 @@ async def fetch_mcp_oauth_tools(
     headers = create_bearer_auth_headers(token, additional_headers)
 
     client = MCPClient(lambda: streamablehttp_client(server_url, headers=headers))
-    with client:
+    with client:  # ty: ignore[invalid-context-manager]
         mcp_tools = client.list_tools_sync()
 
     for mcp_tool in mcp_tools:
@@ -214,7 +216,7 @@ async def fetch_mcp_oauth_tools(
             mcp_spec=tool_spec,
             auth_type="user_federation",
             server_index=server_index,
-            model=LITELLM_MODEL,
+            model=LLM_MODEL,
         )
         tools.append(classic_tool)
 
@@ -253,7 +255,7 @@ def process_oauth_mcp_tool_call(
     )
 
     try:
-        with mcp_client:
+        with mcp_client:  # ty: ignore[invalid-context-manager]
             result = mcp_client.call_tool_sync(
                 tool_use_id=tool_call_id,
                 name=tool_name,
@@ -261,11 +263,11 @@ def process_oauth_mcp_tool_call(
             )
         content = result["content"][0]
         return content.get("text", "")
-    except MCPClientInitializationError:
+    except MCPClientInitializationError as err:
         # MCP client failed to initialize, likely due to authentication error
         # Clear the invalid session and cached tools
         clear_user_oauth_session(user_id, server_config["name"])
         raise RuntimeError(
             f"Authentication error for {server_config['name']}. "
             "Please visit the Home tab to re-authorize."
-        )
+        ) from err

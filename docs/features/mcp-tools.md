@@ -19,6 +19,10 @@ AWS_SECRET_ACCESS_KEY=...
 # Use IAM roles (e.g., attached to EC2 instance, ECS task, etc.)
 ```
 
+### OAuth Callback App
+
+Deploy the [oauth-callback-app](../../oauth-callback-app/) to handle OAuth callbacks with user verification. See [oauth-callback-app/README.md](../../oauth-callback-app/README.md) for setup instructions.
+
 ### AgentCore Identity Configuration
 
 [Configure credential provider(s) in Amazon Bedrock AgentCore Identity](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/resource-providers.html).
@@ -40,6 +44,7 @@ $ cat config/mcp.yml
 workload_name: Collmbo
 auth_session_duration_minutes: 30
 agentcore_region: us-west-2
+oauth_callback_url: https://abc123.lambda-url.us-west-2.on.aws/callback
 servers:
   - name: AWS Knowledge
     url: https://knowledge-mcp.global.api.aws
@@ -57,13 +62,13 @@ $ cat env
 SLACK_APP_TOKEN=xapp-1-...
 SLACK_BOT_TOKEN=xoxb-...
 OPENAI_API_KEY=sk-...
-LITELLM_MODEL=gpt-4o
+LLM_MODEL=gpt-5.2
 
 # AWS credentials for OAuth MCP servers (GitHub example above)
 AWS_ACCESS_KEY_ID=...
 AWS_SECRET_ACCESS_KEY=...
 
-$ docker run -it --env-file ./env -v ./config:/app/config ghcr.io/iwamot/collmbo:latest
+$ docker run -it --env-file ./env -v ./config:/app/config ghcr.io/enechange/collmbo:latest
 ```
 
 `workload_name` will be used as a name for [AgentCore Identity workload](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/creating-agent-identities.html).

@@ -12,7 +12,6 @@ TEST_LOCALE_TO_LANG = {
     "ja-JP": "Japanese",
     "en-US": "English",
     "de-DE": "German",
-    "xx-XX": None,
 }
 
 
@@ -22,7 +21,7 @@ TEST_LOCALE_TO_LANG = {
         ("ja-JP", "Japanese"),
         ("en-US", "English"),
         ("de-DE", "German"),
-        ("xx-XX", None),
+        ("xx-XX", None),  # Key not in dict
         (None, None),
     ],
 )
@@ -101,11 +100,11 @@ def test_set_cached_translation(lang, original, translated, expected_cache):
                     "role": "system",
                     "content": (
                         "You're the AI model that primarily focuses on the quality of language translation. "
-                        "You always respond with the only the translated text in a format suitable for Slack "
+                        "You always respond with only the translated text in a format suitable for Slack "
                         "user interface. Slack's emoji (e.g., :hourglass_flowing_sand:) and mention parts must "
                         "be kept as-is. You don't change the meaning of sentences when translating them into a "
                         "different language. When the given text is a single verb/noun, its translated text "
-                        "must be a norm/verb form too. When the given text is in markdown format, the format "
+                        "must be a noun/verb form too. When the given text is in markdown format, the format "
                         "must be kept as much as possible."
                     ),
                 },
@@ -128,11 +127,11 @@ def test_set_cached_translation(lang, original, translated, expected_cache):
                     "role": "system",
                     "content": (
                         "You're the AI model that primarily focuses on the quality of language translation. "
-                        "You always respond with the only the translated text in a format suitable for Slack "
+                        "You always respond with only the translated text in a format suitable for Slack "
                         "user interface. Slack's emoji (e.g., :hourglass_flowing_sand:) and mention parts must "
                         "be kept as-is. You don't change the meaning of sentences when translating them into a "
                         "different language. When the given text is a single verb/noun, its translated text "
-                        "must be a norm/verb form too. When the given text is in markdown format, the format "
+                        "must be a noun/verb form too. When the given text is in markdown format, the format "
                         "must be kept as much as possible."
                     ),
                 },

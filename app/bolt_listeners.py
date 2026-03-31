@@ -4,7 +4,6 @@ This module contains the logic for responding to new Slack posts.
 
 import logging
 import time
-from typing import Optional
 
 from litellm.exceptions import ContextWindowExceededError, Timeout
 from slack_bolt import BoltContext
@@ -19,18 +18,19 @@ from app.bolt_logic import (
     is_post_mentioned,
 )
 from app.env import (
-    IMAGE_FILE_ACCESS_ENABLED,
-    LITELLM_TIMEOUT_SECONDS,
-    PDF_FILE_ACCESS_ENABLED,
+    IMAGE_INPUT_ENABLED,
+    LLM_TIMEOUT_SECONDS,
+    PDF_INPUT_ENABLED,
     PROMPT_CACHING_ENABLED,
+    PROMPT_CACHING_TTL,
     REDACT_CREDIT_CARD_PATTERN,
     REDACT_EMAIL_PATTERN,
     REDACT_PHONE_PATTERN,
     REDACT_SSN_PATTERN,
     REDACT_USER_DEFINED_PATTERN,
     REDACTION_ENABLED,
-    SYSTEM_TEXT,
-    TRANSLATE_MARKDOWN,
+    SLACK_FORMATTING_ENABLED,
+    SYSTEM_PROMPT_TEMPLATE,
 )
 from app.home_tab_logic import (
     extract_cancel_server_index,
@@ -44,6 +44,7 @@ from app.mcp.oauth_control_service import (
     disable_user_oauth_session,
     enable_user_oauth_session,
 )
+from app.mcp.oauth_tools_service import expire_old_oauth_sessions
 from app.message_logic import (
     build_assistant_message,
     build_slack_user_prefixed_text,
@@ -63,7 +64,7 @@ from app.translation_service import translate
 LOADING_TEXT = ":hourglass_flowing_sand: Wait a second, please ..."
 TIMEOUT_ERROR_MESSAGE = (
     f":warning: Apologies! It seems that the AI didn't respond within the "
-    f"{LITELLM_TIMEOUT_SECONDS}-second timeframe. Please try your request again later. "
+    f"{LLM_TIMEOUT_SECONDS}-second timeframe. Please try your request again later. "
     "If you wish to extend the timeout limit, you may consider deploying this app with "
     "customized settings on your infrastructure. :bow:"
 )
@@ -111,6 +112,7 @@ def respond_to_new_post(
         return
 
     wip_reply = None
+    reply_thread_ts = None
     try:
         if not (
             is_post_mentioned(context.bot_user_id, payload)
@@ -140,28 +142,28 @@ def respond_to_new_post(
             messages=messages,
             loading_text=loading_text,
             wip_reply=wip_reply,
-            timeout_seconds=LITELLM_TIMEOUT_SECONDS,
+            timeout_seconds=LLM_TIMEOUT_SECONDS,
         )
-    except (Timeout, TimeoutError):
+    except Timeout, TimeoutError:
         handle_timeout_error(
             client=client,
             channel_id=context.channel_id,
             locale=context.get("locale"),
-            wip_reply=wip_reply,
+            thread_ts=reply_thread_ts,
         )
     except ContextWindowExceededError as e:
         handle_context_window_exceeded_error(
             client=client,
             channel_id=context.channel_id,
             e=e,
-            wip_reply=wip_reply,
+            thread_ts=reply_thread_ts,
         )
     except Exception as e:
         handle_exception(
             client=client,
             channel_id=context.channel_id,
             e=e,
-            wip_reply=wip_reply,
+            thread_ts=reply_thread_ts,
         )
 
 
@@ -190,8 +192,8 @@ def has_parent_post_mentioned(
 
 
 def find_parent_post(
-    client: WebClient, channel_id: Optional[str], thread_ts: Optional[str]
-) -> Optional[dict]:
+    client: WebClient, channel_id: str | None, thread_ts: str | None
+) -> dict | None:
     """
     Finds the parent post of a thread in Slack.
 
@@ -220,7 +222,7 @@ def post_loading_reply(
     channel_id: str,
     payload: dict,
     loading_text: str,
-) -> tuple[Optional[str], SlackResponse]:
+) -> tuple[str | None, SlackResponse]:
     """
     Posts a loading reply to a Slack post in a channel or thread.
 
@@ -264,10 +266,11 @@ def build_messages(
         list[dict]: A list of messages representing the conversation history.
     """
     system_message = build_system_message(
-        system_text_template=SYSTEM_TEXT,
+        system_prompt_template=SYSTEM_PROMPT_TEMPLATE,
         bot_user_id=context.bot_user_id,
-        translate_markdown=TRANSLATE_MARKDOWN,
+        slack_formatting_enabled=SLACK_FORMATTING_ENABLED,
         prompt_caching_enabled=PROMPT_CACHING_ENABLED,
+        prompt_caching_ttl=PROMPT_CACHING_TTL,
     )
     replies = get_replies(
         client=client,
@@ -284,6 +287,7 @@ def build_messages(
     maybe_set_cache_points(
         messages=messages,
         prompt_caching_enabled=PROMPT_CACHING_ENABLED,
+        prompt_caching_ttl=PROMPT_CACHING_TTL,
     )
     return messages
 
@@ -405,7 +409,7 @@ def convert_replies_to_messages(
             redaction_enabled=REDACTION_ENABLED,
         )
         text = unescape_slack_formatting(text)
-        text = maybe_slack_to_markdown(text, TRANSLATE_MARKDOWN)
+        text = maybe_slack_to_markdown(text, SLACK_FORMATTING_ENABLED)
         text = build_slack_user_prefixed_text(reply, text)
 
         if reply["user"] == context.bot_user_id:
@@ -415,7 +419,7 @@ def convert_replies_to_messages(
         content = [{"type": "text", "text": text}]
         if (
             reply.get("bot_id") is None
-            and IMAGE_FILE_ACCESS_ENABLED
+            and IMAGE_INPUT_ENABLED
             and has_read_files_scope(context.authorize_result)
         ):
             if context.bot_token is None:
@@ -429,7 +433,7 @@ def convert_replies_to_messages(
         if (
             used_pdf_slots < MAX_PDF_SLOTS
             and reply.get("bot_id") is None
-            and PDF_FILE_ACCESS_ENABLED
+            and PDF_INPUT_ENABLED
             and has_read_files_scope(context.authorize_result)
         ):
             if context.bot_token is None:
@@ -458,30 +462,25 @@ def handle_timeout_error(
     *,
     client: WebClient,
     channel_id: str,
-    locale: Optional[str],
-    wip_reply: Optional[SlackResponse],
+    locale: str | None,
+    thread_ts: str | None = None,
 ):
     """
-    Handles timeout errors by updating the loading reply with an error message.
+    Handles timeout errors by posting an error message as a separate reply.
 
     Args:
         client (WebClient): The Slack WebClient instance.
         channel_id (str): The ID of the channel where the post was made.
         locale (Optional[str]): The locale for translation.
-        wip_reply (Optional[SlackResponse]): The loading reply to update.
+        thread_ts (Optional[str]): The thread timestamp to reply to.
 
     Returns:
         None
     """
-    if wip_reply is None:
-        return
-    message_dict: dict = wip_reply.get("message", {})
-    text = (
-        message_dict.get("text", "") + "\n\n" + translate(locale, TIMEOUT_ERROR_MESSAGE)
-    )
-    client.chat_update(
+    text = translate(locale, TIMEOUT_ERROR_MESSAGE)
+    client.chat_postMessage(
         channel=channel_id,
-        ts=message_dict.get("ts", ""),
+        thread_ts=thread_ts,
         text=text,
     )
 
@@ -491,33 +490,24 @@ def handle_context_window_exceeded_error(
     client: WebClient,
     channel_id: str,
     e: ContextWindowExceededError,
-    wip_reply: Optional[SlackResponse],
+    thread_ts: str | None = None,
 ):
     """
-    Handles context window exceeded errors by updating the loading reply with an error message.
+    Handles context window exceeded errors by posting an error message as a separate reply.
 
     Args:
         client (WebClient): The Slack WebClient instance.
         channel_id (str): The ID of the channel where the post was made.
         e (ContextWindowExceededError): The exception that occurred.
-        wip_reply (Optional[SlackResponse]): The loading reply to update.
+        thread_ts (Optional[str]): The thread timestamp to reply to.
 
     Returns:
         None
     """
-    if wip_reply is None:
-        return
-    message_dict: dict = wip_reply.get("message", {})
-    text = (
-        message_dict.get("text", "")
-        + "\n\n"
-        + CONTEXT_WINDOW_EXCEEDED_ERROR_MESSAGE
-        + "\n\n"
-        + f"Error: {e}"
-    )
-    client.chat_update(
+    text = CONTEXT_WINDOW_EXCEEDED_ERROR_MESSAGE + "\n\n" + f"Error: {e}"
+    client.chat_postMessage(
         channel=channel_id,
-        ts=message_dict.get("ts", ""),
+        thread_ts=thread_ts,
         text=text,
     )
 
@@ -527,34 +517,33 @@ def handle_exception(
     client: WebClient,
     channel_id: str,
     e: Exception,
-    wip_reply: Optional[SlackResponse],
+    thread_ts: str | None = None,
 ):
     """
-    Handles exceptions by updating the loading reply with an error message.
+    Handles exceptions by posting an error message as a separate reply.
 
     Args:
         client (WebClient): The Slack WebClient instance.
         channel_id (str): The ID of the channel where the post was made.
         e (Exception): The exception that occurred.
-        wip_reply (Optional[SlackResponse]): The loading reply to update.
+        thread_ts (Optional[str]): The thread timestamp to reply to.
 
     Returns:
         None
     """
-    message_dict: dict = wip_reply.get("message", {}) if wip_reply else {}
-    text = message_dict.get("text", "") + "\n\n" + f":warning: Failed to reply: {e}"
+    text = f":warning: Failed to reply: {e}"
     client.logger.exception(text)
-    if wip_reply:
-        client.chat_update(
-            channel=channel_id,
-            ts=message_dict.get("ts", ""),
-            text=text,
-        )
+    client.chat_postMessage(
+        channel=channel_id,
+        thread_ts=thread_ts,
+        text=text,
+    )
 
 
 def handle_app_home_opened(client: WebClient, event: dict) -> None:
     """
     Handle app_home_opened event to display MCP server information.
+    Also cleans up expired OAuth sessions.
 
     Args:
         client (WebClient): Slack WebClient instance.
@@ -564,6 +553,7 @@ def handle_app_home_opened(client: WebClient, event: dict) -> None:
         None
     """
     user_id = event["user"]
+    expire_old_oauth_sessions(user_id)
     try:
         update_home_tab(client=client, user_id=user_id)
     except Exception as e:

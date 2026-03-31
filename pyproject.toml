@@ -1,0 +1,68 @@
+# Dependency management with uv
+# This file does NOT define a Python package - it only manages dependencies
+
+[project]
+name = "collmbo-deps"
+version = "0.0.0"
+description = "Dependency management only"
+requires-python = ">=3.14"
+dependencies = [
+    "slack-bolt==1.27.0",
+    "slack-sdk==3.41.0",
+    "litellm==1.82.6",
+    "pillow==12.1.1",
+    "httpx==0.28.1",
+    "bedrock-agentcore==1.4.8",
+    "mcp==1.26.0",
+    "strands-agents==1.33.0",
+    "strands-agents-tools==0.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pip-licenses==5.5.1",
+    "pytest==9.0.2",
+    "pytest-cov==7.1.0",
+]
+
+[tool.ruff]
+include = ["*.py", "app/**/*.py", "tests/**/*.py"]
+
+[tool.ruff.lint]
+# Reference: https://pydevtools.com/handbook/how-to/how-to-configure-recommended-ruff-defaults/
+extend-select = [
+    "F",    # Pyflakes rules
+    "W",    # PyCodeStyle warnings
+    # "E",    # PyCodeStyle errors
+    "I",    # Sort imports properly
+    "UP",   # Warn if certain things can changed due to newer Python versions
+    "C4",   # Catch incorrect use of comprehensions, dict, list, etc
+    "FA",   # Enforce from __future__ import annotations
+    "ISC",  # Good use of string concatenation
+    "ICN",  # Use common import conventions
+    "RET",  # Good return practices
+    # "SIM",  # Common simplification rules
+    "TID",  # Some good import practices
+    # "TC",   # Enforce importing certain types in a TYPE_CHECKING block
+    "PTH",  # Use pathlib instead of os.path
+    "TD",   # Be diligent with TODO comments
+    # "NPY",  # Some numpy-specific things
+    # Not in the reference URL
+    "S",    # flake8-bandit (security)
+]
+ignore = [
+    "S101",  # Allow assert in tests (pytest standard practice)
+]
+
+[tool.ty.src]
+include = [".", "app", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["main", "app"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true

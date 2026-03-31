@@ -1,7 +1,123 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:best-practices"
   ],
-  "labels": ["dependencies"]
+  "ignoreDeps": [
+    "python"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.mise\\.toml$/"
+      ],
+      "matchStrings": [
+        "python\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "depNameTemplate": "dhi.io/python",
+      "datasourceTemplate": "docker",
+      "extractVersionTemplate": "^(?<version>\\d+\\.\\d+\\.\\d+)"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/renovate\\.json$/"
+      ],
+      "matchStrings": [
+        "\"constraints\":\\s*\\{[^}]*\"uv\":\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "depNameTemplate": "astral-sh/uv",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v?(?<version>.+)$"
+    }
+  ],
+  "constraints": {
+    "uv": "0.11.2"
+  },
+  "labels": [
+    "dependencies"
+  ],
+  "rebaseWhen": "conflicted",
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
+  "minimumReleaseAge": "3 days",
+  "packageRules": [
+    {
+      "description": "Group GitHub Actions updates",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github-actions"
+    },
+    {
+      "description": "Group Python runtime version updates",
+      "matchManagers": [
+        "dockerfile",
+        "custom.regex"
+      ],
+      "matchPackageNames": [
+        "dhi.io/python"
+      ],
+      "groupName": "python",
+      "minimumReleaseAge": "0 days"
+    },
+    {
+      "description": "Group Python dependencies",
+      "matchManagers": [
+        "pep621"
+      ],
+      "groupName": "python-dependencies"
+    },
+    {
+      "description": "Disable Docker digest pinning for .mise.toml Python version",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchPackageNames": [
+        "dhi.io/python"
+      ],
+      "pinDigests": false
+    },
+    {
+      "description": "Group mise tool updates (except uv)",
+      "matchManagers": [
+        "mise"
+      ],
+      "groupName": "mise-tools",
+      "matchPackageNames": [
+        "!uv"
+      ]
+    },
+    {
+      "description": "Group uv updates (Dockerfile, mise, and constraints)",
+      "matchManagers": [
+        "dockerfile",
+        "mise",
+        "custom.regex"
+      ],
+      "matchPackageNames": [
+        "ghcr.io/astral-sh/uv",
+        "uv",
+        "astral-sh/uv"
+      ],
+      "groupName": "uv"
+    },
+    {
+      "description": "Automerge minor, patch, and digest updates",
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest"
+      ],
+      "automerge": true
+    },
+    {
+      "description": "Temporarily disable trivy-action due to supply chain attack aftermath",
+      "matchPackageNames": [
+        "aquasecurity/trivy-action"
+      ],
+      "enabled": false
+    }
+  ]
 }

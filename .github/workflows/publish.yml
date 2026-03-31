@@ -12,6 +12,7 @@ jobs:
   build:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
+    environment: production
     permissions:
       packages: write
     strategy:
@@ -28,31 +29,40 @@ jobs:
     steps:
       - name: Prepare
         run: |
-          platform=${{ matrix.platform }}
-          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
+          platform="${{ matrix.platform }}"
+          echo "PLATFORM_PAIR=${platform//\//-}" >> "$GITHUB_ENV"
 
       - name: Checkout
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
         with:
           images: ${{ env.REGISTRY_IMAGE }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Login to Docker Hardened Images
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          registry: dhi.io
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Build and push by digest
         id: build
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -61,13 +71,15 @@ jobs:
           cache-to: type=registry,ref=${{ env.REGISTRY_IMAGE }}:cache-${{ env.PLATFORM_PAIR }},mode=max
 
       - name: Export digest
+        env:
+          STEPS_BUILD_OUTPUTS_DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           mkdir -p /tmp/digests
-          digest="${{ steps.build.outputs.digest }}"
+          digest="${STEPS_BUILD_OUTPUTS_DIGEST}"
           touch "/tmp/digests/${digest#sha256:}"
 
       - name: Upload digest
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: digests-${{ env.PLATFORM_PAIR }}
           path: /tmp/digests/*
@@ -81,27 +93,30 @@ jobs:
       packages: write
     needs:
       - build
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      digest: ${{ steps.digest.outputs.digest }}
     steps:
       - name: Download digests
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: /tmp/digests
           pattern: digests-*
           merge-multiple: true
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
         with:
           images: ${{ env.REGISTRY_IMAGE }}
           tags: |
             type=semver,pattern={{version}}
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -110,10 +125,57 @@ jobs:
       - name: Create manifest list and push
         working-directory: /tmp/digests
         run: |
-          tags=$(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON")
-          docker buildx imagetools create $tags \
-            $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
+          readarray -t tag_names < <(jq -r '.tags[]' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          tag_args=()
+          for tag in "${tag_names[@]}"; do
+            tag_args+=("-t" "$tag")
+          done
+          readarray -t digest_array < <(printf "${REGISTRY_IMAGE}@sha256:%s\n" *)
+          docker buildx imagetools create "${tag_args[@]}" "${digest_array[@]}"
 
-      - name: Inspect image
+      - name: Get image digest
+        id: digest
+        env:
+          STEPS_META_OUTPUTS_VERSION: ${{ steps.meta.outputs.version }}
         run: |
-          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.meta.outputs.version }}
+          digest=$(docker buildx imagetools inspect "${REGISTRY_IMAGE}:${STEPS_META_OUTPUTS_VERSION}" --format '{{json .Manifest.Digest}}' | tr -d '"')
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+
+  sign:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+      packages: write
+    needs:
+      - merge
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@cad07c2e89fa2edd6e2d7bab4c1aa38e53f76003 # v4.1.1
+
+      - name: Sign the image
+        env:
+          DIGEST: ${{ needs.merge.outputs.digest }}
+        run: |
+          cosign sign --yes "${REGISTRY_IMAGE}@${DIGEST}"
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: ${{ env.REGISTRY_IMAGE }}@${{ needs.merge.outputs.digest }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-release-assets: false
+
+      - name: Attest SBOM
+        env:
+          DIGEST: ${{ needs.merge.outputs.digest }}
+        run: |
+          cosign attest --yes --predicate sbom.spdx.json --type spdxjson "${REGISTRY_IMAGE}@${DIGEST}"

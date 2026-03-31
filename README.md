@@ -20,8 +20,8 @@
 
 # Collmbo
 
-[![CI](https://github.com/iwamot/collmbo/actions/workflows/ci.yml/badge.svg)](https://github.com/iwamot/collmbo/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/iwamot/collmbo/branch/main/graph/badge.svg)](https://app.codecov.io/gh/iwamot/collmbo)
+[![CI](https://github.com/enechange/collmbo/actions/workflows/ci.yml/badge.svg)](https://github.com/enechange/collmbo/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/enechange/collmbo/branch/main/graph/badge.svg)](https://app.codecov.io/gh/enechange/collmbo)
 
 ![Collmbo icon](https://github.com/user-attachments/assets/b13da1c7-5d2f-4ad3-8c5b-9ef4e500deb8)
 
@@ -31,7 +31,7 @@
 
 ## Quick Start
 
-Collmbo supports multiple LLMs, but let's begin with OpenAI's gpt-4o model for a quick setup.
+Collmbo supports multiple LLMs, but let's begin with OpenAI's gpt-5.2 model for a quick setup.
 
 ### 1. Create a Slack App
 
@@ -47,7 +47,7 @@ Save your credentials in a `.env` file:
 ```sh
 SLACK_APP_TOKEN=xapp-1-...
 SLACK_BOT_TOKEN=xoxb-...
-LITELLM_MODEL=gpt-4o
+LLM_MODEL=gpt-5.2
 OPENAI_API_KEY=sk-...
 ```
 
@@ -56,12 +56,12 @@ OPENAI_API_KEY=sk-...
 Start the bot using Docker:
 
 ```sh
-docker run -it --env-file .env ghcr.io/iwamot/collmbo:latest
+docker run -it --env-file .env ghcr.io/enechange/collmbo:latest
 ```
 
 > [!NOTE]
 >
-> For versioned releases, you can specify a tag like `x.x.x`. For more details, please check the [list of available tags](https://github.com/iwamot/collmbo/pkgs/container/collmbo/versions?filters%5Bversion_type%5D=tagged).
+> For versioned releases, you can specify a tag like `x.x.x`. For more details, please check the [list of available tags](https://github.com/enechange/collmbo/pkgs/container/collmbo/versions?filters%5Bversion_type%5D=tagged).
 
 ### 4. Say Hello!
 
@@ -81,36 +81,33 @@ To use it, update the relevant environment variables in your `.env` file and res
 
 Here are some examples:
 
-### Gemini - Google AI Studio (Gemini 2.0 Flash)
+### Gemini - Google AI Studio (Gemini 3 Pro)
 
 ```sh
 SLACK_APP_TOKEN=xapp-1-...
 SLACK_BOT_TOKEN=xoxb-...
-LITELLM_MODEL=gemini/gemini-2.0-flash-001
+LLM_MODEL=gemini/gemini-3-pro-preview
 GEMINI_API_KEY=...
 ```
 
-### Azure OpenAI (gpt-4o)
+### Azure OpenAI (gpt-5.2)
 
 ```sh
 SLACK_APP_TOKEN=xapp-1-...
 SLACK_BOT_TOKEN=xoxb-...
-LITELLM_MODEL=azure/<your_deployment_name>
-
-# Specify the model type to grab details like max input tokens
-LITELLM_MODEL_TYPE=azure/gpt-4o
+LLM_MODEL=azure/<your_deployment_name>
 
 AZURE_API_KEY=...
 AZURE_API_BASE=...
 AZURE_API_VERSION=...
 ```
 
-### Amazon Bedrock (Claude Sonnet 4)
+### Amazon Bedrock (Claude Opus 4.5)
 
 ```sh
 SLACK_APP_TOKEN=...
 SLACK_BOT_TOKEN=...
-LITELLM_MODEL=bedrock/us.anthropic.claude-sonnet-4-20250514-v1:0
+LLM_MODEL=bedrock/global.anthropic.claude-opus-4-5-20251101-v1:0
 
 # You can specify a Bedrock region if it's different from your default AWS region
 AWS_REGION_NAME=us-west-2
@@ -141,15 +138,9 @@ Collmbo runs with default settings, but you can customize its behavior by [setti
 
 ## Contributing
 
-Contributions are welcome! Feel free to open an issue or submit a pull request.
+Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-Before opening a PR, please run:
-
-```sh
-./validate.sh
-```
-
-This helps maintain code quality.
+All commits must be signed with DCO (`git commit -s`).
 
 ## Related Projects
 

@@ -3,11 +3,11 @@ This module provides service functions for MCP configuration.
 """
 
 from pathlib import Path
-from typing import Optional
 
 import yaml
 
 from app.mcp.config_logic import (
+    DEFAULT_AGENTCORE_REGION,
     DEFAULT_WORKLOAD_NAME,
     get_no_auth_servers_from_config,
     get_oauth_server_from_config,
@@ -18,7 +18,7 @@ from app.mcp.config_logic import (
 
 CONFIG_FILE_PATH = "config/mcp.yml"
 
-mcp_config: Optional[dict] = None
+mcp_config: dict | None = None
 
 
 def load_mcp_config() -> dict:
@@ -31,7 +31,7 @@ def load_mcp_config() -> dict:
     config_data = None
     path = Path(CONFIG_FILE_PATH)
     if path.exists():
-        with open(path, "r", encoding="utf-8") as f:
+        with path.open(encoding="utf-8") as f:
             config_data = yaml.safe_load(f)
     return normalize_mcp_config(config_data)
 
@@ -85,7 +85,7 @@ def get_oauth_server(server_index: int) -> dict:
     return get_oauth_server_from_config(config, server_index)
 
 
-def get_oauth_server_index(server_name: str) -> Optional[int]:
+def get_oauth_server_index(server_name: str) -> int | None:
     """
     Get OAuth server index by name.
 
@@ -118,7 +118,7 @@ def get_agentcore_region() -> str:
         str: AgentCore region for OAuth MCP servers.
     """
     config = get_mcp_config()
-    return config.get("agentcore_region", "us-west-2")
+    return config.get("agentcore_region", DEFAULT_AGENTCORE_REGION)
 
 
 def get_auth_session_duration_minutes() -> int:
@@ -130,3 +130,14 @@ def get_auth_session_duration_minutes() -> int:
     """
     config = get_mcp_config()
     return config["auth_session_duration_minutes"]
+
+
+def get_oauth_callback_url() -> str:
+    """
+    Get OAuth callback URL from configuration.
+
+    Returns:
+        str: OAuth callback URL for AgentCore Identity.
+    """
+    config = get_mcp_config()
+    return config.get("oauth_callback_url", "")

@@ -1,19 +1,31 @@
 #!/bin/bash
 set -e
 
-pip install -r dev-requirements.txt
+mise install
+uv sync --extra dev
 
-if [[ "$1" == "ci" ]]; then
-  black --check ./*.py ./app/*.py ./app/mcp/*.py ./tests/*.py ./tests/mcp/*.py
+if [[ -n "$CI" ]]; then
+  uv run pip-licenses --partial-match --allow-only="Apache;BSD;CNRI-Python;ISC;MIT;MPL;PSF;Python Software Foundation"
+  ruff check
+  ruff format --check
+  ty check
+  uv run pytest --cov --cov-report=term --cov-report=xml
 else
-  black ./*.py ./app/*.py ./app/mcp/*.py ./tests/*.py ./tests/mcp/*.py
+  uv run pip-licenses --summary
+  ruff check --fix
+  ruff format
+  ty check
+  uv run pytest --cov --cov-report=term
 fi
 
-flake8 ./*.py ./app/*.py ./app/mcp/*.py ./tests/*.py ./tests/mcp/*.py
-mypy ./*.py ./app/*.py ./app/mcp/*.py ./tests/*.py ./tests/mcp/*.py
+hadolint Dockerfile
 
-if [[ "$1" == "ci" ]]; then
-  pytest --cov=main --cov=app --cov-branch --cov-report=term --cov-report=xml
+actionlint
+ghalint run
+if [[ -n "$CI" ]]; then
+  zizmor .github/workflows/
+  pinact run --check
 else
-  pytest --cov=main --cov=app --cov-branch --cov-report=term
+  zizmor --fix .github/workflows/
+  pinact run
 fi

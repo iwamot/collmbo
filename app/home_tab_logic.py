@@ -2,10 +2,9 @@
 Logic functions for building home tab blocks.
 """
 
-from datetime import datetime
-from typing import List, Optional
+from datetime import UTC, datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-import pytz
 from slack_sdk.models.blocks import (
     ActionsBlock,
     Block,
@@ -98,21 +97,21 @@ def format_timestamp(timestamp: int, user_tz: str) -> str:
         str: Formatted time string.
     """
     try:
-        dt = datetime.fromtimestamp(timestamp, tz=pytz.UTC)
+        dt = datetime.fromtimestamp(timestamp, tz=UTC)
         try:
-            user_timezone = pytz.timezone(user_tz)
-            dt = dt.astimezone(user_timezone)
-        except (pytz.exceptions.UnknownTimeZoneError, AttributeError):
-            pass
+            user_timezone = ZoneInfo(user_tz)
+        except ZoneInfoNotFoundError, AttributeError:
+            user_timezone = UTC
+        dt = dt.astimezone(user_timezone)
         return dt.strftime("%H:%M:%S")
-    except (ValueError, TypeError, OSError):
+    except ValueError, TypeError, OSError:
         return ""
 
 
 def format_server_display(
     server_name: str,
     is_enabled: bool,
-    expires_at: Optional[int] = None,
+    expires_at: int | None = None,
     user_tz: str = "UTC",
 ) -> str:
     """
@@ -134,24 +133,25 @@ def format_server_display(
     if expires_at:
         expiry_time = format_timestamp(expires_at, user_tz)
         return f"*{server_name}* (expires at {expiry_time})"
-    else:
-        return f"*{server_name}*"
+    return f"*{server_name}*"
 
 
 def build_home_tab_blocks(
     mcp_config: dict,
     user_oauth_urls: dict[str, str],
+    user_oauth_verification_codes: dict[str, str],
     user_oauth_sessions: dict[str, dict],
     user_oauth_tools: dict[str, list[dict]],
     user_tz: str,
-    error_message: Optional[str] = None,
-) -> List[Block]:
+    error_message: str | None = None,
+) -> list[Block]:
     """
     Build home tab blocks from configuration and user data.
 
     Args:
         mcp_config (dict): MCP configuration.
         user_oauth_urls (dict): OAuth URLs indexed by server name for the user.
+        user_oauth_verification_codes (dict): OAuth verification codes indexed by server name for the user.
         user_oauth_sessions (dict): User OAuth sessions indexed by server name.
         user_oauth_tools (dict): User OAuth tools indexed by server name.
         user_tz (str): User's timezone string.
@@ -160,7 +160,7 @@ def build_home_tab_blocks(
     Returns:
         List[Block]: List of Block Kit blocks.
     """
-    blocks: List[Block] = []
+    blocks: list[Block] = []
 
     if error_message:
         blocks.append(
@@ -179,6 +179,7 @@ def build_home_tab_blocks(
     for index, server in enumerate(oauth_servers):
         server_name = server["name"]
         auth_url = user_oauth_urls.get(server_name)
+        oauth_verification_code = user_oauth_verification_codes.get(server_name)
         session_data = user_oauth_sessions.get(server_name)
         has_valid_session = server_name in user_oauth_sessions
         has_cached_tools = user_oauth_tools.get(server_name) is not None
@@ -188,6 +189,7 @@ def build_home_tab_blocks(
                 "index": index,
                 "server": server,
                 "auth_url": auth_url,
+                "oauth_verification_code": oauth_verification_code,
                 "session_data": session_data,
                 "has_valid_session": has_valid_session,
                 "has_cached_tools": has_cached_tools,
@@ -200,7 +202,7 @@ def build_home_tab_blocks(
     return blocks
 
 
-def build_no_auth_servers_section(mcp_servers: list[dict[str, str]]) -> List[Block]:
+def build_no_auth_servers_section(mcp_servers: list[dict[str, str]]) -> list[Block]:
     """
     Build section for servers without authentication.
 
@@ -210,7 +212,7 @@ def build_no_auth_servers_section(mcp_servers: list[dict[str, str]]) -> List[Blo
     Returns:
         List[Block]: Block Kit blocks for no-auth servers.
     """
-    blocks: List[Block] = []
+    blocks: list[Block] = []
 
     blocks.append(
         HeaderBlock(text=PlainTextObject(text="🌐 MCP Servers without Authentication"))
@@ -235,7 +237,7 @@ def build_no_auth_servers_section(mcp_servers: list[dict[str, str]]) -> List[Blo
     return blocks
 
 
-def build_oauth_servers_section(mcp_servers: List[dict], user_tz: str) -> List[Block]:
+def build_oauth_servers_section(mcp_servers: list[dict], user_tz: str) -> list[Block]:
     """
     Build section for servers requiring authentication.
 
@@ -246,7 +248,7 @@ def build_oauth_servers_section(mcp_servers: List[dict], user_tz: str) -> List[B
     Returns:
         List[Block]: Block Kit blocks for auth servers.
     """
-    blocks: List[Block] = []
+    blocks: list[Block] = []
 
     if not mcp_servers:
         return blocks
@@ -259,6 +261,7 @@ def build_oauth_servers_section(mcp_servers: List[dict], user_tz: str) -> List[B
         index = data["index"]
         server = data["server"]
         auth_url = data["auth_url"]
+        oauth_verification_code = data["oauth_verification_code"]
         session_data = data["session_data"]
         has_valid_session = data["has_valid_session"]
         has_cached_tools = data["has_cached_tools"]
@@ -294,7 +297,19 @@ def build_oauth_servers_section(mcp_servers: List[dict], user_tz: str) -> List[B
                 SectionBlock(text=MarkdownTextObject(text="⏳ Fetching tools..."))
             )
         elif auth_url and auth_url != OAUTH_URL_PROCESSING:
-            pass
+            oauth_verification_code_display = oauth_verification_code or ""
+            auth_text = f"🔗 <{auth_url}|Click to authorize> / Code: `{oauth_verification_code_display}`"
+            blocks.append(SectionBlock(text=MarkdownTextObject(text=auth_text)))
+            blocks.append(
+                ActionsBlock(
+                    elements=[
+                        ButtonElement(
+                            text=PlainTextObject(text="Cancel"),
+                            action_id=f"{CANCEL_MCP_OAUTH_ACTION_PREFIX}{index}",
+                        )
+                    ]
+                )
+            )
         elif auth_url == OAUTH_URL_PROCESSING:
             blocks.append(
                 SectionBlock(text=MarkdownTextObject(text="⏳ Please wait..."))
@@ -322,33 +337,17 @@ def build_oauth_servers_section(mcp_servers: List[dict], user_tz: str) -> List[B
                 )
             )
 
-        if auth_url and auth_url != OAUTH_URL_PROCESSING:
-            blocks.append(
-                SectionBlock(
-                    text=MarkdownTextObject(text=f"🔗 <{auth_url}|Click to authorize>")
-                )
-            )
-            blocks.append(
-                ActionsBlock(
-                    elements=[
-                        ButtonElement(
-                            text=PlainTextObject(text="Cancel"),
-                            action_id=f"{CANCEL_MCP_OAUTH_ACTION_PREFIX}{index}",
-                        )
-                    ]
-                )
-            )
-
     return blocks
 
 
 def build_home_tab_view(
     mcp_config: dict,
     user_oauth_urls: dict[str, str],
+    user_oauth_verification_codes: dict[str, str],
     user_oauth_sessions: dict[str, dict],
     user_oauth_tools: dict[str, list[dict]],
     user_tz: str,
-    error_message: Optional[str] = None,
+    error_message: str | None = None,
 ) -> View:
     """
     Build complete home tab view with all blocks.
@@ -356,6 +355,7 @@ def build_home_tab_view(
     Args:
         mcp_config (dict): MCP configuration.
         user_oauth_urls (dict): OAuth URLs indexed by server name for the user.
+        user_oauth_verification_codes (dict): OAuth verification codes indexed by server name for the user.
         user_oauth_sessions (dict): User OAuth sessions indexed by server name.
         user_oauth_tools (dict): User OAuth tools indexed by server name.
         user_tz (str): User's timezone string.
@@ -367,6 +367,7 @@ def build_home_tab_view(
     blocks = build_home_tab_blocks(
         mcp_config,
         user_oauth_urls,
+        user_oauth_verification_codes,
         user_oauth_sessions,
         user_oauth_tools,
         user_tz,
