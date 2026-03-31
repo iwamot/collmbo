@@ -20,8 +20,8 @@
 
 # Collmbo
 
-[![CI](https://github.com/enechange/collmbo/actions/workflows/ci.yml/badge.svg)](https://github.com/enechange/collmbo/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/enechange/collmbo/branch/main/graph/badge.svg)](https://app.codecov.io/gh/enechange/collmbo)
+[![CI](https://github.com/iwamot/collmbo/actions/workflows/ci.yml/badge.svg)](https://github.com/iwamot/collmbo/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/iwamot/collmbo/branch/main/graph/badge.svg)](https://app.codecov.io/gh/iwamot/collmbo)
 
 ![Collmbo icon](https://github.com/user-attachments/assets/b13da1c7-5d2f-4ad3-8c5b-9ef4e500deb8)
 

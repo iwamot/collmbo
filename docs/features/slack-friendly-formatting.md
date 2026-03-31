@@ -12,7 +12,7 @@ OPENAI_API_KEY=sk-...
 LLM_MODEL=gpt-5.2
 SLACK_FORMATTING_ENABLED=true
 
-$ docker run -it --env-file ./env ghcr.io/enechange/collmbo:latest
+$ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest
 ```
 
 > ![Slack formatting example](https://github.com/user-attachments/assets/6d73ed53-2849-4370-acb3-62694c05f86f)
