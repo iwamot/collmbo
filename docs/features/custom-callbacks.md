@@ -19,7 +19,7 @@ OPENAI_API_KEY=sk-...
 LLM_MODEL=gpt-5.2
 LITELLM_CALLBACK_MODULE_NAME=examples.callback_handler
 
-$ docker run -it --env-file ./env -v ./examples:/app/examples ghcr.io/enechange/collmbo:latest
+$ docker run -it --env-file ./env -v ./examples:/app/examples ghcr.io/iwamot/collmbo:latest
 ```
 
 > ![Custom callbacks example](https://github.com/user-attachments/assets/38a83ac9-1429-46ad-bd6c-95e1d6aac247)

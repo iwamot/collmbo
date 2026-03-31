@@ -19,7 +19,7 @@ OPENAI_API_KEY=sk-...
 LLM_MODEL=gpt-5.2
 TOOLS_MODULE_NAME=examples.tools
 
-$ docker run -it --env-file ./env -v ./examples:/app/examples ghcr.io/enechange/collmbo:latest
+$ docker run -it --env-file ./env -v ./examples:/app/examples ghcr.io/iwamot/collmbo:latest
 ```
 
 > ![Tools example](https://github.com/user-attachments/assets/d48a44fd-56fa-43c7-a0de-567ba03088b5)

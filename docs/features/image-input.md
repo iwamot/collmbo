@@ -15,7 +15,7 @@ OPENAI_API_KEY=sk-...
 LLM_MODEL=gpt-5.2
 IMAGE_INPUT_ENABLED=true
 
-$ docker run -it --env-file ./env ghcr.io/enechange/collmbo:latest
+$ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest
 ```
 
 > ![Image input example](https://github.com/user-attachments/assets/41e11441-230e-41db-8cae-efe5fd9dd426)
