@@ -22,6 +22,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Setup Takumi Guard
+        uses: flatt-security/setup-takumi-guard-pypi@7d825811bb293b9e0230477165442580a0074280 # v1.0.0
+
       - name: Setup mise
         uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4.0.1
 
