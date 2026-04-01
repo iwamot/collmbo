@@ -52,6 +52,7 @@ jobs:
           configurationFile: .github/renovate.json
           token: ${{ steps.app-token.outputs.token }}
         env:
+          PIP_INDEX_URL: https://pypi.flatt.tech/simple/
           LOG_LEVEL: ${{ inputs.log-level || 'info' }}
           RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_HOST_RULES: '[{"matchHost":"dhi.io","hostType":"docker","username":"${{ secrets.DOCKERHUB_USERNAME }}","password":"${{ secrets.DOCKERHUB_TOKEN }}"}]'
