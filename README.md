@@ -1,23 +1,3 @@
-
-> [!WARNING]
-> **MAINTENANCE MODE**
->
-> Active development has moved to [enechange/collmbo](https://github.com/enechange/collmbo)
->
-> For v8.0.0 and later versions:
->
-> ```sh
-> docker pull ghcr.io/enechange/collmbo:latest
-> ```
->
-> Previous versions (v7.0.0 and earlier) remain available at:
->
-> ```sh
-> docker pull ghcr.io/iwamot/collmbo:v7.0.0
-> ```
-
----
-
 # Collmbo
 
 [![CI](https://github.com/iwamot/collmbo/actions/workflows/ci.yml/badge.svg)](https://github.com/iwamot/collmbo/actions/workflows/ci.yml)
@@ -56,12 +36,12 @@ OPENAI_API_KEY=sk-...
 Start the bot using Docker:
 
 ```sh
-docker run -it --env-file .env ghcr.io/enechange/collmbo:latest
+docker run -it --env-file .env ghcr.io/iwamot/collmbo:latest
 ```
 
 > [!NOTE]
 >
-> For versioned releases, you can specify a tag like `x.x.x`. For more details, please check the [list of available tags](https://github.com/enechange/collmbo/pkgs/container/collmbo/versions?filters%5Bversion_type%5D=tagged).
+> For versioned releases, you can specify a tag like `x.x.x`. For more details, please check the [list of available tags](https://github.com/iwamot/collmbo/pkgs/container/collmbo/versions?filters%5Bversion_type%5D=tagged).
 
 ### 4. Say Hello!
 
