@@ -25,6 +25,10 @@ dev = [
     "pytest-cov==7.1.0",
 ]
 
+[[tool.uv.index]]
+url = "https://pypi.flatt.tech/simple/"
+default = true
+
 [tool.ruff]
 include = ["*.py", "app/**/*.py", "tests/**/*.py"]
 
