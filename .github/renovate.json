@@ -3,22 +3,17 @@
   "extends": [
     "config:best-practices"
   ],
-  "ignoreDeps": [
-    "python"
+  "labels": [
+    "dependencies"
   ],
+  "rebaseWhen": "conflicted",
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
+  "minimumReleaseAge": "3 days",
+  "constraints": {
+    "uv": "0.11.2"
+  },
   "customManagers": [
-    {
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/^\\.mise\\.toml$/"
-      ],
-      "matchStrings": [
-        "python\\s*=\\s*\"(?<currentValue>[^\"]+)\""
-      ],
-      "depNameTemplate": "dhi.io/python",
-      "datasourceTemplate": "docker",
-      "extractVersionTemplate": "^(?<version>\\d+\\.\\d+\\.\\d+)"
-    },
     {
       "customType": "regex",
       "managerFilePatterns": [
@@ -32,35 +27,13 @@
       "extractVersionTemplate": "^v?(?<version>.+)$"
     }
   ],
-  "constraints": {
-    "uv": "0.11.2"
-  },
-  "labels": [
-    "dependencies"
-  ],
-  "rebaseWhen": "conflicted",
-  "prHourlyLimit": 0,
-  "prConcurrentLimit": 0,
-  "minimumReleaseAge": "3 days",
   "packageRules": [
     {
-      "description": "Group GitHub Actions updates",
+      "description": "Group mise tools updates",
       "matchManagers": [
-        "github-actions"
+        "mise"
       ],
-      "groupName": "github-actions"
-    },
-    {
-      "description": "Group Python runtime version updates",
-      "matchManagers": [
-        "dockerfile",
-        "custom.regex"
-      ],
-      "matchPackageNames": [
-        "dhi.io/python"
-      ],
-      "groupName": "python",
-      "minimumReleaseAge": "0 days"
+      "groupName": "mise-tools"
     },
     {
       "description": "Group Python dependencies",
@@ -70,38 +43,18 @@
       "groupName": "python-dependencies"
     },
     {
-      "description": "Disable Docker digest pinning for .mise.toml Python version",
+      "description": "Group Dockerfile updates",
       "matchManagers": [
-        "custom.regex"
+        "dockerfile"
       ],
-      "matchPackageNames": [
-        "dhi.io/python"
-      ],
-      "pinDigests": false
+      "groupName": "dockerfile"
     },
     {
-      "description": "Group mise tool updates (except uv)",
+      "description": "Group GitHub Actions updates",
       "matchManagers": [
-        "mise"
+        "github-actions"
       ],
-      "groupName": "mise-tools",
-      "matchPackageNames": [
-        "!uv"
-      ]
-    },
-    {
-      "description": "Group uv updates (Dockerfile, mise, and constraints)",
-      "matchManagers": [
-        "dockerfile",
-        "mise",
-        "custom.regex"
-      ],
-      "matchPackageNames": [
-        "ghcr.io/astral-sh/uv",
-        "uv",
-        "astral-sh/uv"
-      ],
-      "groupName": "uv"
+      "groupName": "github-actions"
     },
     {
       "description": "Automerge minor, patch, and digest updates",
