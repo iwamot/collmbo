@@ -1,5 +1,5 @@
 [tools]
-actionlint = "1.7.11"
+actionlint = "1.7.12"
 "aqua:suzuki-shunsuke/ghalint" = "1.5.5"
 hadolint = "2.14.0"
 "aqua:suzuki-shunsuke/pinact" = "3.9.0"
