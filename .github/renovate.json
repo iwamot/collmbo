@@ -57,8 +57,9 @@
       "groupName": "github-actions"
     },
     {
-      "description": "Disable minimumReleaseAge for lockFileMaintenance",
+      "description": "Disable minimumReleaseAge for digest and lockFileMaintenance",
       "matchUpdateTypes": [
+        "digest",
         "lockFileMaintenance"
       ],
       "minimumReleaseAge": null
