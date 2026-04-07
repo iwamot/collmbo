@@ -64,11 +64,12 @@
       "minimumReleaseAge": null
     },
     {
-      "description": "Automerge minor, patch, and digest updates",
+      "description": "Automerge minor, patch, digest, and lockFileMaintenance updates",
       "matchUpdateTypes": [
         "minor",
         "patch",
-        "digest"
+        "digest",
+        "lockFileMaintenance"
       ],
       "automerge": true
     },
