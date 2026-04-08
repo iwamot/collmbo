@@ -16,3 +16,5 @@ node_modules/
 package.json
 package-lock.json
 unzip_requirements.py
+.coverage
+coverage.xml
