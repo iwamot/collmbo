@@ -57,18 +57,20 @@
       ]
     },
     {
-      "description": "Disable minimumReleaseAge for digest updates",
+      "description": "Disable minimumReleaseAge for digest and pinDigest updates",
       "matchUpdateTypes": [
-        "digest"
+        "digest",
+        "pinDigest"
       ],
       "minimumReleaseAge": null
     },
     {
-      "description": "Automerge minor, patch, and digest updates",
+      "description": "Automerge minor, patch, digest, and pinDigest updates",
       "matchUpdateTypes": [
         "minor",
         "patch",
-        "digest"
+        "digest",
+        "pinDigest"
       ],
       "automerge": true
     }
