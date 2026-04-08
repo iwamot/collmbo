@@ -48,11 +48,14 @@
   ],
   "packageRules": [
     {
-      "description": "Group mise tools updates",
-      "matchManagers": [
-        "mise"
-      ],
-      "groupName": "mise-tools"
+      "description": "Disable all grouping",
+      "matchPackageNames": ["*"],
+      "groupName": null
+    },
+    {
+      "description": "Add release date to PR title if available",
+      "matchPackageNames": ["*"],
+      "commitMessageExtra": "{{#if releaseTimestamp}}({{{replace 'T.*' '' releaseTimestamp}}}){{/if}}"
     },
     {
       "description": "Use PyPI for release timestamp metadata",
@@ -63,27 +66,6 @@
         "https://pypi.org/pypi/",
         "https://pypi.flatt.tech/simple/"
       ]
-    },
-    {
-      "description": "Group Python dependencies",
-      "matchManagers": [
-        "pep621"
-      ],
-      "groupName": "python-dependencies"
-    },
-    {
-      "description": "Group Dockerfile updates",
-      "matchManagers": [
-        "dockerfile"
-      ],
-      "groupName": "dockerfile"
-    },
-    {
-      "description": "Group GitHub Actions updates",
-      "matchManagers": [
-        "github-actions"
-      ],
-      "groupName": "github-actions"
     },
     {
       "description": "Disable minimumReleaseAge for digest updates",
