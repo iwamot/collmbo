@@ -10,10 +10,11 @@
   "prHourlyLimit": 0,
   "prConcurrentLimit": 0,
   "minimumReleaseAge": "3 days",
+  "automerge": true,
+  "minimumReleaseAgeBehaviour": "timestamp-optional",
   "vulnerabilityAlerts": {
     "enabled": true,
-    "minimumReleaseAge": null,
-    "automerge": true
+    "minimumReleaseAge": null
   },
   "lockFileMaintenance": {
     "enabled": false
@@ -57,22 +58,9 @@
       ]
     },
     {
-      "description": "Disable minimumReleaseAge for digest and pinDigest updates",
-      "matchUpdateTypes": [
-        "digest",
-        "pinDigest"
-      ],
-      "minimumReleaseAge": null
-    },
-    {
-      "description": "Automerge minor, patch, digest, and pinDigest updates",
-      "matchUpdateTypes": [
-        "minor",
-        "patch",
-        "digest",
-        "pinDigest"
-      ],
-      "automerge": true
+      "description": "Disable automerge for major updates",
+      "matchUpdateTypes": ["major"],
+      "automerge": false
     }
   ]
 }
