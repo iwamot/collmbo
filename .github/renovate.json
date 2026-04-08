@@ -25,6 +25,17 @@
       "depNameTemplate": "astral-sh/uv",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^v?(?<version>.+)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/Dockerfile$/"
+      ],
+      "matchStrings": [
+        "pip install uv==(?<currentValue>[^\\s]+)"
+      ],
+      "depNameTemplate": "uv",
+      "datasourceTemplate": "pypi"
     }
   ],
   "packageRules": [
@@ -34,6 +45,16 @@
         "mise"
       ],
       "groupName": "mise-tools"
+    },
+    {
+      "description": "Use PyPI for release timestamp metadata",
+      "matchDatasources": [
+        "pypi"
+      ],
+      "registryUrls": [
+        "https://pypi.org/pypi/",
+        "https://pypi.flatt.tech/simple/"
+      ]
     },
     {
       "description": "Group Python dependencies",

@@ -1,6 +1,6 @@
 FROM dhi.io/python:3.14.3-debian13-dev@sha256:5e79fe77bdf98210f443d4a79fc87ad2c4da3e7047432752ba0a38094ac3b6fa AS builder
 WORKDIR /build/
-COPY --from=ghcr.io/astral-sh/uv:0.11.2@sha256:c4f5de312ee66d46810635ffc5df34a1973ba753e7241ce3a08ef979ddd7bea5 /uv /usr/local/bin/uv
+RUN pip install --no-cache-dir uv==0.11.3
 COPY pyproject.toml uv.lock /build/
 RUN uv sync --frozen --no-dev
 
