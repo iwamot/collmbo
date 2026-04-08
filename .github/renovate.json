@@ -33,17 +33,6 @@
       "depNameTemplate": "astral-sh/uv",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^v?(?<version>.+)$"
-    },
-    {
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/Dockerfile$/"
-      ],
-      "matchStrings": [
-        "pip install uv==(?<currentValue>[^\\s]+)"
-      ],
-      "depNameTemplate": "uv",
-      "datasourceTemplate": "pypi"
     }
   ],
   "packageRules": [

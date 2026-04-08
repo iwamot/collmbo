@@ -1,6 +1,6 @@
 FROM dhi.io/python:3.14.3-debian13-dev@sha256:de13b64e07a18bf0116a245c1ffcb1a5ef5cd6413eaf5568b9ea23be08e710ff AS builder
 WORKDIR /build/
-RUN pip install --no-cache-dir uv==0.11.3
+COPY --from=dhi.io/uv:0.11.3-debian13-dev /uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock /build/
 RUN uv sync --frozen --no-dev
 
