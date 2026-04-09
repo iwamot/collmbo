@@ -48,16 +48,6 @@
       "commitMessageExtra": "{{#if releaseTimestamp}}({{{replace 'T.*' '' releaseTimestamp}}}){{/if}}"
     },
     {
-      "description": "Use PyPI for release timestamp metadata",
-      "matchDatasources": [
-        "pypi"
-      ],
-      "registryUrls": [
-        "https://pypi.org/pypi/",
-        "https://pypi.flatt.tech/simple/"
-      ]
-    },
-    {
       "description": "Disable automerge for major updates",
       "matchUpdateTypes": ["major"],
       "automerge": false
