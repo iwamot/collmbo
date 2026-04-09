@@ -7,7 +7,7 @@ version = "0.0.0"
 description = "Dependency management only"
 requires-python = ">=3.14"
 dependencies = [
-    "slack-bolt==1.27.0",
+    "slack-bolt==1.28.0",
     "slack-sdk==3.41.0",
     "litellm==1.83.3",
     "pillow==12.2.0",
