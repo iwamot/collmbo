@@ -6,7 +6,6 @@
   "labels": [
     "dependencies"
   ],
-  "rebaseWhen": "conflicted",
   "prHourlyLimit": 0,
   "prConcurrentLimit": 0,
   "minimumReleaseAge": "3 days",
@@ -51,16 +50,6 @@
     }
   ],
   "packageRules": [
-    {
-      "description": "Disable all grouping",
-      "matchPackageNames": ["*"],
-      "groupName": null
-    },
-    {
-      "description": "Add release date to PR title if available",
-      "matchPackageNames": ["*"],
-      "commitMessageExtra": "{{#if releaseTimestamp}}({{{replace 'T.*' '' releaseTimestamp}}}){{/if}}"
-    },
     {
       "description": "Disable automerge for major updates",
       "matchUpdateTypes": ["major"],
