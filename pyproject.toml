@@ -9,7 +9,7 @@ requires-python = ">=3.14"
 dependencies = [
     "slack-bolt==1.28.0",
     "slack-sdk==3.41.0",
-    "litellm==1.83.4",
+    "litellm==1.83.7",
     "pillow==12.2.0",
     "httpx==0.28.1",
     "bedrock-agentcore==1.6.2",
