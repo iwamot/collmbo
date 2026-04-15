@@ -19,7 +19,7 @@ jobs:
       id-token: write
     env:
       # renovate: datasource=github-releases depName=jdx/mise extractVersion=^v?(?<version>.+)$
-      MISE_VERSION: 2026.4.9
+      MISE_VERSION: 2026.4.11
 
     steps:
       - name: Checkout code
