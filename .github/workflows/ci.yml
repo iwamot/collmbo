@@ -17,6 +17,7 @@ jobs:
     environment: production
     permissions:
       contents: read
+      id-token: write
     env:
       # renovate: datasource=github-releases depName=jdx/mise extractVersion=^v?(?<version>.+)$
       MISE_VERSION: 2026.4.9
@@ -38,4 +39,4 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: true
