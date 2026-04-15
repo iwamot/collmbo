@@ -25,6 +25,9 @@ dev = [
     "pytest-cov==7.1.0",
 ]
 
+[tool.uv]
+exclude-newer = "1 day"
+
 [tool.ruff]
 include = ["*.py", "app/**/*.py", "tests/**/*.py"]
 
