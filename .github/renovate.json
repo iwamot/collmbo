@@ -7,7 +7,8 @@
     ":label(dependencies)",
     ":maintainLockFilesDisabled",
     ":prConcurrentLimitNone",
-    ":prHourlyLimitNone"
+    ":prHourlyLimitNone",
+    ":semanticCommits"
   ],
   "minimumReleaseAge": "1 day",
   "minimumReleaseAgeBehaviour": "timestamp-optional",
