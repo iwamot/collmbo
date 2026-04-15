@@ -15,23 +15,12 @@
     "enabled": true,
     "minimumReleaseAge": null
   },
-  "constraints": {
-    "uv": "0.11.6"
-  },
   "customManagers": [
     {
       "customType": "regex",
       "managerFilePatterns": ["/^\\.mise\\.toml$/"],
       "matchStrings": ["min_version\\s*=\\s*\"(?<currentValue>[^\"]+)\""],
       "depNameTemplate": "jdx/mise",
-      "datasourceTemplate": "github-releases",
-      "extractVersionTemplate": "^v?(?<version>.+)$"
-    },
-    {
-      "customType": "regex",
-      "managerFilePatterns": ["/^\\.github/renovate\\.json$/"],
-      "matchStrings": ["\"constraints\":\\s*\\{[^}]*\"uv\":\\s*\"(?<currentValue>[^\"]+)\""],
-      "depNameTemplate": "astral-sh/uv",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^v?(?<version>.+)$"
     }
