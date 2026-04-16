@@ -6,12 +6,21 @@ install_before = "1d"
 [tools]
 node = "24.15.0"
 python = "3.14.4"
-"aqua:astral-sh/ruff" = "0.15.10"
-"aqua:astral-sh/ty" = "0.0.30"
-"aqua:astral-sh/uv" = "0.11.6"
 "aqua:hadolint/hadolint" = "2.14.0"
 "aqua:rhysd/actionlint" = "1.7.12"
 "aqua:suzuki-shunsuke/ghalint" = "1.5.5"
 "aqua:suzuki-shunsuke/pinact" = "3.9.0"
 "aqua:zizmorcore/zizmor" = "1.24.1"
 "npm:renovate" = "43.122.0"
+
+[tools."aqua:astral-sh/ruff"]
+version = "0.15.10"
+install_before = "0d"
+
+[tools."aqua:astral-sh/ty"]
+version = "0.0.30"
+install_before = "0d"
+
+[tools."aqua:astral-sh/uv"]
+version = "0.11.6"
+install_before = "0d"
