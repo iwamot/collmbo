@@ -25,14 +25,14 @@ jobs:
     environment: production
     permissions:
       contents: read
-    env:
-      # renovate: datasource=github-releases depName=astral-sh/uv extractVersion=^v?(?<version>.+)$
-      UV_VERSION: 0.11.6
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+
+      - name: Get uv version from .mise.toml
+        run: echo "UV_VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('.mise.toml','rb'))['tools']['aqua:astral-sh/uv'])")" >> "$GITHUB_ENV"
 
       - name: Generate GitHub App token
         id: app-token
