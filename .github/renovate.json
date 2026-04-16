@@ -24,6 +24,12 @@
       "description": "Disable automerge for major updates",
       "matchUpdateTypes": ["major"],
       "automerge": false
+    },
+    {
+      "description": "No minimum release age for astral-sh packages",
+      "matchManagers": ["mise"],
+      "matchPackageNames": ["astral-sh/*"],
+      "minimumReleaseAge": null
     }
   ]
 }
