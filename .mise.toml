@@ -11,7 +11,7 @@ python = "3.14.4"
 "aqua:suzuki-shunsuke/ghalint" = "1.5.5"
 "aqua:suzuki-shunsuke/pinact" = "3.9.0"
 "aqua:zizmorcore/zizmor" = "1.24.1"
-"npm:renovate" = "43.123.0"
+"npm:renovate" = "43.123.1"
 
 [tools."aqua:astral-sh/ruff"]
 version = "0.15.10"
