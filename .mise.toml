@@ -4,7 +4,7 @@ min_version = "2026.4.8"
 install_before = "1d"
 
 [tools]
-node = "24.14.1"
+node = "24.15.0"
 python = "3.14.4"
 "aqua:astral-sh/ruff" = "0.15.10"
 "aqua:astral-sh/ty" = "0.0.30"
