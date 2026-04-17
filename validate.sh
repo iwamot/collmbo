@@ -28,8 +28,5 @@ zizmor --fix .github/workflows/
 actionlint
 ghalint run
 
-# Renovate
-renovate-config-validator --strict
-
 # Check for uncommitted changes
 git diff --exit-code

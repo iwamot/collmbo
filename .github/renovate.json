@@ -1,35 +1,4 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:best-practices",
-    "customManagers:githubActionsVersions",
-    ":automergeAll",
-    ":label(dependencies)",
-    ":prConcurrentLimitNone",
-    ":prHourlyLimitNone",
-    ":semanticCommits"
-  ],
-  "ignorePresets": [
-    "security:minimumReleaseAgeNpm",
-    ":maintainLockFilesWeekly"
-  ],
-  "minimumReleaseAge": "1 day",
-  "minimumReleaseAgeBehaviour": "timestamp-optional",
-  "vulnerabilityAlerts": {
-    "enabled": true,
-    "minimumReleaseAge": null
-  },
-  "packageRules": [
-    {
-      "description": "Disable automerge for major updates",
-      "matchUpdateTypes": ["major"],
-      "automerge": false
-    },
-    {
-      "description": "No minimum release age for astral-sh packages",
-      "matchManagers": ["mise"],
-      "matchPackageNames": ["astral-sh/*"],
-      "minimumReleaseAge": null
-    }
-  ]
+  "extends": ["github>iwamot/renovate-config#v0.9.0"]
 }

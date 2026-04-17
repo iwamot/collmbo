@@ -31,8 +31,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Get uv version from .mise.toml
-        run: echo "UV_VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('.mise.toml','rb'))['tools']['aqua:astral-sh/uv'])")" >> "$GITHUB_ENV"
+      - name: Get uv version from mise.toml
+        run: echo "UV_VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('mise.toml','rb'))['tools']['aqua:astral-sh/uv'])")" >> "$GITHUB_ENV"
 
       - name: Generate GitHub App token
         id: app-token
