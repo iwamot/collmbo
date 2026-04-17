@@ -5,11 +5,6 @@ install_before = "1d"
 
 [tools]
 python = "3.14.4"
-"aqua:hadolint/hadolint" = "2.14.0"
-"aqua:rhysd/actionlint" = "1.7.12"
-"aqua:suzuki-shunsuke/ghalint" = "1.5.5"
-"aqua:suzuki-shunsuke/pinact" = "3.9.0"
-"aqua:zizmorcore/zizmor" = "1.24.1"
 
 [tools."aqua:astral-sh/ruff"]
 version = "0.15.11"
@@ -22,3 +17,8 @@ install_before = "0d"
 [tools."aqua:astral-sh/uv"]
 version = "0.11.7"
 install_before = "0d"
+
+[task_config]
+includes = [
+  "git::https://github.com/iwamot/mise-tasks.git//.mise/tasks?ref=v0.10.0",
+]
