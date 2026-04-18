@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.14"
 
 [options]
-exclude-newer = "2026-04-17T21:09:06.260210975Z"
+exclude-newer = "2026-04-17T21:10:54.782469602Z"
 exclude-newer-span = "P1D"
 
 [manifest]
@@ -323,7 +323,7 @@ requires-dist = [
     { name = "slack-bolt", specifier = "==1.28.0" },
     { name = "slack-sdk", specifier = "==3.41.0" },
     { name = "strands-agents", specifier = "==1.36.0" },
-    { name = "strands-agents-tools", specifier = "==0.4.1" },
+    { name = "strands-agents-tools", specifier = "==0.5.0" },
 ]
 provides-extras = ["dev"]
 
@@ -1547,7 +1547,7 @@ wheels = [
 
 [[package]]
 name = "strands-agents-tools"
-version = "0.4.1"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -1568,9 +1568,9 @@ dependencies = [
     { name = "tzdata", marker = "sys_platform == 'win32'" },
     { name = "watchdog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/39/7a/9f8d9868768669dd658f1c424534ef8e0aef4d7bb44af70c102f08041efa/strands_agents_tools-0.4.1.tar.gz", hash = "sha256:4d5c77fe6019b89d483bea2a5ad41bd1b56f17b0f696b7aa06be31cca73344e1", size = 480977, upload-time = "2026-04-09T14:09:17.376Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d2/37/cb34bd20aedef7f315a183691dfa0e36ed7f3bd9a7c4e55cf7e67a3f2d76/strands_agents_tools-0.5.0.tar.gz", hash = "sha256:e90641525392931d1de413bb184dcacb5f7efbdeea4d1077caff12f7dd79fce2", size = 481773, upload-time = "2026-04-17T20:44:41.309Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7e/93/0f04a8fd253df239792b79f5578679e3112e3f8ff69d26301190f7f9f890/strands_agents_tools-0.4.1-py3-none-any.whl", hash = "sha256:6736c54237270114aeb90d57a5fb8ccd2a363a22bab4feddc472755873bf7b0a", size = 315607, upload-time = "2026-04-09T14:09:15.577Z" },
+    { url = "https://files.pythonhosted.org/packages/86/65/30d5d1a34ee5d88cc07b3aa4c15f89795ad208161b7e5988cdf002e3de06/strands_agents_tools-0.5.0-py3-none-any.whl", hash = "sha256:0e10e26308fddaab570e63abf8549d23a2b133203739d6626db5d390c9d4ccfb", size = 315694, upload-time = "2026-04-17T20:44:39.177Z" },
 ]
 
 [[package]]
