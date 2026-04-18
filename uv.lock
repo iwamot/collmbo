@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.14"
 
 [options]
-exclude-newer = "2026-04-15T13:41:35.226587542Z"
+exclude-newer = "2026-04-17T13:03:21.5219308Z"
 exclude-newer-span = "P1D"
 
 [manifest]
@@ -147,7 +147,7 @@ wheels = [
 
 [[package]]
 name = "bedrock-agentcore"
-version = "1.6.2"
+version = "1.6.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
@@ -159,9 +159,9 @@ dependencies = [
     { name = "uvicorn" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a4/b7/8fcd60547f449d484c7652eb8adbd62116771c1c9d0dfbdeff9d756dc248/bedrock_agentcore-1.6.2.tar.gz", hash = "sha256:988622a5e56a0381772c9d03694cb8e51b2c886ce0b14f6f6174cc7b35874bff", size = 515652, upload-time = "2026-04-13T18:10:55.064Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2a/78/90b00222b15b1c667eed72f2abeb8a2bb7c992aa3dd8415fdf3bf962438b/bedrock_agentcore-1.6.3.tar.gz", hash = "sha256:3876840713aba033232165e3cf442ee959df291e3d410b602f08baaea6aee883", size = 517941, upload-time = "2026-04-16T23:55:22.447Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cc/2d/66021f787a0f36f7c4df8a53054c10930076385d7357d59982b5f4500bdc/bedrock_agentcore-1.6.2-py3-none-any.whl", hash = "sha256:887fd9645b7f1ba40389df480eac9614a63df86b36069df853b40cfc154e7b2a", size = 164722, upload-time = "2026-04-13T18:10:53.168Z" },
+    { url = "https://files.pythonhosted.org/packages/95/e0/cba6bfcc239bc94e6735ab2bdfe507692c9f395520acb156d02453ecaaf8/bedrock_agentcore-1.6.3-py3-none-any.whl", hash = "sha256:88a83e214c674a20157ad658876c5a5ee1b874bae87b45e42984b23c883e7210", size = 165854, upload-time = "2026-04-16T23:55:20.958Z" },
 ]
 
 [[package]]
@@ -312,7 +312,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bedrock-agentcore", specifier = "==1.6.2" },
+    { name = "bedrock-agentcore", specifier = "==1.6.3" },
     { name = "httpx", specifier = "==0.28.1" },
     { name = "litellm", specifier = "==1.83.8" },
     { name = "mcp", specifier = "==1.27.0" },
