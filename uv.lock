@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.14"
 
 [options]
-exclude-newer = "2026-04-17T13:03:21.5219308Z"
+exclude-newer = "2026-04-17T13:05:07.430081339Z"
 exclude-newer-span = "P1D"
 
 [manifest]
@@ -314,7 +314,7 @@ dev = [
 requires-dist = [
     { name = "bedrock-agentcore", specifier = "==1.6.3" },
     { name = "httpx", specifier = "==0.28.1" },
-    { name = "litellm", specifier = "==1.83.8" },
+    { name = "litellm", specifier = "==1.83.9" },
     { name = "mcp", specifier = "==1.27.0" },
     { name = "pillow", specifier = "==12.2.0" },
     { name = "pip-licenses", marker = "extra == 'dev'", specifier = "==5.5.5" },
@@ -736,7 +736,7 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.83.8"
+version = "1.83.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -752,9 +752,9 @@ dependencies = [
     { name = "tiktoken" },
     { name = "tokenizers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d2/5a/a7b4b4bf9443b1f1d8fb1e1ed7d1936eca93851ff3e43113c3dad17c6556/litellm-1.83.8.tar.gz", hash = "sha256:38db022b4bf5a51cbe597a8308e6e51eb71254ae684d41aa210b76df0c827063", size = 14751978, upload-time = "2026-04-15T03:37:51.462Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f1/5f/8553dab44ea787e43800af6cd1019046e80595cdb3229e55b66e6c678f04/litellm-1.83.9.tar.gz", hash = "sha256:e21b2e854c5dcc8ff2c96d584adb20a9e10af8846b1965236fd44557a820680f", size = 14795769, upload-time = "2026-04-17T01:29:08.011Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f0/02/ee86522b2cb359079596d224db9b23dc12c02d7eeaf3d458abd7a0c54444/litellm-1.83.8-py3-none-any.whl", hash = "sha256:3bc8cfeff9d73a6a11409006c0d66bafeed9a23db65f642000f72f1cdb2e9ce8", size = 16333221, upload-time = "2026-04-15T03:37:47.934Z" },
+    { url = "https://files.pythonhosted.org/packages/f8/54/8e288b0a5ac203dfe75210e694d75ddc27a87aa91ed769bf8eb97bb787e8/litellm-1.83.9-py3-none-any.whl", hash = "sha256:1bd8c50630e6379c4d2dbfbe088ee24cc921ca5fc2234111e2bd2c916ab6a02e", size = 16376879, upload-time = "2026-04-17T01:29:04.725Z" },
 ]
 
 [[package]]
