@@ -9,4 +9,4 @@ permissions:
 
 jobs:
   dependency-review:
-    uses: iwamot/workflows/.github/workflows/dependency-review.yml@e9a56e77e45e55c263246485f179021c37834034 # v0.10.3
+    uses: iwamot/workflows/.github/workflows/dependency-review.yml@4bd41065254022a2b4189e4d3faf19cc50d7a415 # v0.10.4
