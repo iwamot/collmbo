@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   renovate:
-    uses: iwamot/workflows/.github/workflows/renovate.yml@4bd41065254022a2b4189e4d3faf19cc50d7a415 # v0.10.4
+    uses: iwamot/workflows/.github/workflows/renovate.yml@b3d2f10167c0cb280d7307b4cbc3dfff42e11c7b # v0.10.5
     with:
       log-level: ${{ inputs.log-level || 'info' }}
     secrets:
