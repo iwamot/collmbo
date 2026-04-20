@@ -11,7 +11,7 @@ version = "0.15.11"
 install_before = "0d"
 
 [tools."aqua:astral-sh/ty"]
-version = "0.0.31"
+version = "0.0.32"
 install_before = "0d"
 
 [tools."aqua:astral-sh/uv"]
