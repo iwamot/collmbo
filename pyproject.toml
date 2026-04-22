@@ -27,7 +27,7 @@ dev = [
 
 [tool.uv]
 exclude-newer = "1 day"
-override-dependencies = ["aiohttp>=3.13.5"]
+override-dependencies = ["aiohttp>=3.13.5", "python-dotenv>=1.2.2"]
 
 [tool.ruff]
 include = ["*.py", "app/**/*.py", "tests/**/*.py"]
