@@ -7,7 +7,7 @@ install_before = "1d"
 python = "3.14.4"
 
 [tools."aqua:astral-sh/ruff"]
-version = "0.15.11"
+version = "0.15.12"
 install_before = "0d"
 
 [tools."aqua:astral-sh/ty"]
