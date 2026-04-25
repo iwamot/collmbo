@@ -1,6 +1,6 @@
 # Collmbo
 
-[![CI](https://github.com/iwamot/collmbo/actions/workflows/ci.yml/badge.svg)](https://github.com/iwamot/collmbo/actions/workflows/ci.yml)
+[![Validate](https://github.com/iwamot/collmbo/actions/workflows/validate.yml/badge.svg)](https://github.com/iwamot/collmbo/actions/workflows/validate.yml)
 [![codecov](https://codecov.io/gh/iwamot/collmbo/branch/main/graph/badge.svg)](https://app.codecov.io/gh/iwamot/collmbo)
 
 ![Collmbo icon](https://github.com/user-attachments/assets/b13da1c7-5d2f-4ad3-8c5b-9ef4e500deb8)
