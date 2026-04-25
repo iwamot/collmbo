@@ -3,11 +3,11 @@ revision = 3
 requires-python = ">=3.14"
 
 [options]
-exclude-newer = "2026-04-24T06:54:53.099419666Z"
+exclude-newer = "2026-04-24T12:00:33.395933402Z"
 exclude-newer-span = "P1D"
 
 [options.exclude-newer-package]
-uv-override-prune = { timestamp = "2026-04-25T06:54:53.099969661Z", span = "PT0S" }
+uv-override-prune = { timestamp = "2026-04-25T12:00:33.395941617Z", span = "PT0S" }
 
 [manifest]
 overrides = [
@@ -331,7 +331,7 @@ requires-dist = [
     { name = "slack-sdk", specifier = "==3.41.0" },
     { name = "strands-agents", specifier = "==1.37.0" },
     { name = "strands-agents-tools", specifier = "==0.5.1" },
-    { name = "uv-override-prune", marker = "extra == 'dev'", specifier = "==0.0.1" },
+    { name = "uv-override-prune", marker = "extra == 'dev'", specifier = "==0.0.5" },
 ]
 provides-extras = ["dev"]
 
@@ -1731,15 +1731,15 @@ wheels = [
 
 [[package]]
 name = "uv-override-prune"
-version = "0.0.1"
+version = "0.0.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
     { name = "tomlkit" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/04/50/8ad69d000a3b8014ee043bf0abfa5db939e21cf9e4813e290aed35b901e2/uv_override_prune-0.0.1.tar.gz", hash = "sha256:7d40352898d034f6d13439454f21db4f216892eb5417c1344e85a9a265a12aae", size = 10681, upload-time = "2026-04-25T06:45:47.139Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/74/18/d07d5dd3f9444a9c9caa370f27f8adc68a17ee098d1fdd8fece469a4a3b4/uv_override_prune-0.0.5.tar.gz", hash = "sha256:0fffff60a99ee8ca2ddac5a253ddbdbf5cfbe34956af7433911b06e433610a75", size = 10435, upload-time = "2026-04-25T11:53:07.573Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f3/7d/426b9bca14502379cce39d70a7811865ecc4b1874e7bf006c02b35fd36c6/uv_override_prune-0.0.1-py3-none-any.whl", hash = "sha256:21011d50b53829b6d4029d3d5a715674f256ff93f5c0430223c90deb49b16d8c", size = 10217, upload-time = "2026-04-25T06:45:47.839Z" },
+    { url = "https://files.pythonhosted.org/packages/88/16/da5e4b6935d90ea1ba8f2534e5ff2a95d8f4a5dda34dd94c30d9e46f9807/uv_override_prune-0.0.5-py3-none-any.whl", hash = "sha256:f30dcc77b3df0290f9ca4bde811e9094e3b9a8b1e3d8a1fc12eb6bb8773c37aa", size = 9867, upload-time = "2026-04-25T11:53:06.528Z" },
 ]
 
 [[package]]
