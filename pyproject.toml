@@ -23,10 +23,12 @@ dev = [
     "pip-licenses==5.5.5",
     "pytest==9.0.3",
     "pytest-cov==7.1.0",
+    "uv-override-prune==0.0.1",
 ]
 
 [tool.uv]
 exclude-newer = "1 day"
+exclude-newer-package = { "uv-override-prune" = "0 days" }
 override-dependencies = ["aiohttp>=3.13.5", "python-dotenv>=1.2.2"]
 
 [tool.ruff]

@@ -3,8 +3,11 @@ revision = 3
 requires-python = ">=3.14"
 
 [options]
-exclude-newer = "2026-04-24T01:32:29.845492357Z"
+exclude-newer = "2026-04-24T06:54:53.099419666Z"
 exclude-newer-span = "P1D"
+
+[options.exclude-newer-package]
+uv-override-prune = { timestamp = "2026-04-25T06:54:53.099969661Z", span = "PT0S" }
 
 [manifest]
 overrides = [
@@ -311,6 +314,7 @@ dev = [
     { name = "pip-licenses" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "uv-override-prune" },
 ]
 
 [package.metadata]
@@ -327,6 +331,7 @@ requires-dist = [
     { name = "slack-sdk", specifier = "==3.41.0" },
     { name = "strands-agents", specifier = "==1.37.0" },
     { name = "strands-agents-tools", specifier = "==0.5.1" },
+    { name = "uv-override-prune", marker = "extra == 'dev'", specifier = "==0.0.1" },
 ]
 provides-extras = ["dev"]
 
@@ -1650,6 +1655,15 @@ wheels = [
 ]
 
 [[package]]
+name = "tomlkit"
+version = "0.14.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c3/af/14b24e41977adb296d6bd1fb59402cf7d60ce364f90c890bd2ec65c43b5a/tomlkit-0.14.0.tar.gz", hash = "sha256:cf00efca415dbd57575befb1f6634c4f42d2d87dbba376128adb42c121b87064", size = 187167, upload-time = "2026-01-13T01:14:53.304Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b5/11/87d6d29fb5d237229d67973a6c9e06e048f01cf4994dee194ab0ea841814/tomlkit-0.14.0-py3-none-any.whl", hash = "sha256:592064ed85b40fa213469f81ac584f67a4f2992509a7c3ea2d632208623a3680", size = 39310, upload-time = "2026-01-13T01:14:51.965Z" },
+]
+
+[[package]]
 name = "tqdm"
 version = "4.67.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1713,6 +1727,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/c7/24/5f1b3bdffd70275f6661c76461e25f024d5a38a46f04aaca912426a2b1d3/urllib3-2.6.3.tar.gz", hash = "sha256:1b62b6884944a57dbe321509ab94fd4d3b307075e0c2eae991ac71ee15ad38ed", size = 435556, upload-time = "2026-01-07T16:24:43.925Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/39/08/aaaad47bc4e9dc8c725e68f9d04865dbcb2052843ff09c97b08904852d84/urllib3-2.6.3-py3-none-any.whl", hash = "sha256:bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4", size = 131584, upload-time = "2026-01-07T16:24:42.685Z" },
+]
+
+[[package]]
+name = "uv-override-prune"
+version = "0.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "tomlkit" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/04/50/8ad69d000a3b8014ee043bf0abfa5db939e21cf9e4813e290aed35b901e2/uv_override_prune-0.0.1.tar.gz", hash = "sha256:7d40352898d034f6d13439454f21db4f216892eb5417c1344e85a9a265a12aae", size = 10681, upload-time = "2026-04-25T06:45:47.139Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f3/7d/426b9bca14502379cce39d70a7811865ecc4b1874e7bf006c02b35fd36c6/uv_override_prune-0.0.1-py3-none-any.whl", hash = "sha256:21011d50b53829b6d4029d3d5a715674f256ff93f5c0430223c90deb49b16d8c", size = 10217, upload-time = "2026-04-25T06:45:47.839Z" },
 ]
 
 [[package]]
