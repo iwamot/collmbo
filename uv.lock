@@ -3,17 +3,14 @@ revision = 3
 requires-python = ">=3.14"
 
 [options]
-exclude-newer = "2026-04-26T05:02:51.840015732Z"
+exclude-newer = "2026-04-26T05:45:54.923956653Z"
 exclude-newer-span = "P1D"
 
 [options.exclude-newer-package]
-uv-override-prune = { timestamp = "2026-04-27T05:02:51.840025747Z", span = "PT0S" }
+uv-override-prune = { timestamp = "2026-04-27T05:45:54.923993414Z", span = "PT0S" }
 
 [manifest]
-overrides = [
-    { name = "aiohttp", specifier = ">=3.13.5" },
-    { name = "python-dotenv", specifier = ">=1.2.2" },
-]
+overrides = [{ name = "aiohttp", specifier = ">=3.13.5" }]
 
 [[package]]
 name = "aiohappyeyeballs"
