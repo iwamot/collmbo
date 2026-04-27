@@ -15,7 +15,7 @@ version = "0.0.32"
 install_before = "0d"
 
 [tools."aqua:astral-sh/uv"]
-version = "0.11.7"
+version = "0.11.8"
 install_before = "0d"
 
 [tools."pipx:uv-override-prune"]
