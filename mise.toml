@@ -19,7 +19,7 @@ version = "0.11.7"
 install_before = "0d"
 
 [tools."pipx:uv-override-prune"]
-version = "0.0.7"
+version = "0.0.8"
 install_before = "0d"
 
 [task_config]
