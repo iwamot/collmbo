@@ -18,7 +18,11 @@ install_before = "0d"
 version = "0.11.7"
 install_before = "0d"
 
+[tools."pipx:uv-override-prune"]
+version = "0.0.7"
+install_before = "0d"
+
 [task_config]
 includes = [
-  "git::https://github.com/iwamot/mise-tasks.git//.mise/tasks?ref=v1.2.0",
+  "git::https://github.com/iwamot/mise-tasks.git//.mise/tasks?ref=v1.3.0",
 ]
