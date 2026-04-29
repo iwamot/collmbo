@@ -22,6 +22,7 @@ fi
 
 # Shared lint tasks
 mise run gha-lint
+mise run shell-lint
 mise run docker-lint
 
 # Check for uncommitted changes
