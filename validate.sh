@@ -10,10 +10,10 @@ mise install
 uv sync --extra dev
 uv run pip-licenses --partial-match --allow-only="Apache;BSD;CNRI-Python;ISC;MIT;MPL;PSF;Python Software Foundation"
 uv audit
-uv run uv-override-prune --fix
-uv run ruff check --fix
-uv run ruff format
-uv run ty check
+uv-override-prune --fix
+ruff check --fix
+ruff format
+ty check
 if [[ -n "$CI" ]]; then
   uv run pytest --cov --cov-report=term --cov-report=xml
 else
