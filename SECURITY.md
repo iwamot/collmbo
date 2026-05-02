@@ -7,5 +7,3 @@ This software is provided "as is" without warranty. Security issues will be addr
 ## Reporting a Vulnerability
 
 Please report security vulnerabilities through GitHub's Security Advisory "Report a Vulnerability" feature.
-
-https://github.com/iwamot/collmbo/security/advisories/new
