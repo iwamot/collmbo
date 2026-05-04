@@ -1,18 +1,26 @@
-# Contributing to Collmbo
+# Contributing
 
 We welcome contributions! Please follow these guidelines when submitting pull requests.
+
+## Recommended setup
+
+After cloning, enable the git hooks:
+
+```bash
+mise run enable-git-hooks
+```
+
+This wires `./validate.sh` to `pre-commit` and a DCO check to `commit-msg`, so the two requirements below run automatically on each commit.
 
 ## Before Submitting a PR
 
 ### 1. Run Validation
 
-Ensure code quality by running:
-
 ```bash
 ./validate.sh
 ```
 
-This runs formatting, linting, type checking, and tests.
+Runs the project's validation pipeline.
 
 ### 2. Sign Commits with DCO
 
