@@ -13,7 +13,7 @@ uv audit
 uv-override-prune --fix
 ruff check --fix
 ruff format
-ty check
+ty check --error-on-warning
 if [[ -n "$CI" ]]; then
   uv run pytest --cov --cov-report=term --cov-report=xml
 else
