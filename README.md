@@ -1,7 +1,6 @@
 # Collmbo
 
-[![Validate](https://github.com/iwamot/collmbo/actions/workflows/validate.yml/badge.svg)](https://github.com/iwamot/collmbo/actions/workflows/validate.yml)
-[![codecov](https://codecov.io/gh/iwamot/collmbo/branch/main/graph/badge.svg)](https://app.codecov.io/gh/iwamot/collmbo)
+[![ghcr.io](https://img.shields.io/github/v/release/iwamot/collmbo?logo=docker&label=ghcr.io)](https://github.com/iwamot/collmbo/pkgs/container/collmbo)
 
 ![Collmbo icon](https://github.com/user-attachments/assets/b13da1c7-5d2f-4ad3-8c5b-9ef4e500deb8)
 
