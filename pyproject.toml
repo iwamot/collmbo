@@ -28,7 +28,6 @@ dev = [
 [tool.uv]
 exclude-newer = "1 day"
 override-dependencies = [
-    "aiohttp>=3.13.5",
 ]
 
 [tool.ruff]
