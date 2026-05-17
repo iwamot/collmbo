@@ -28,7 +28,7 @@ jobs:
 
   publish:
     needs: release-draft
-    uses: iwamot/workflows/.github/workflows/publish-ghcr.yml@cdc42cf2f91fd796de35bdc27aaaa1057695afcc # v6.1.0
+    uses: iwamot/workflows/.github/workflows/publish-ghcr.yml@d21b0a8606441bf9ace76ad014a80a9165de3a36 # v6.2.0
     permissions:
       contents: read
       id-token: write   # to mint OIDC token for image signing
