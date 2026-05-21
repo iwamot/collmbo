@@ -9,7 +9,8 @@ mise install
 # Python
 uv sync --extra dev
 uv run pip-licenses --partial-match --allow-only="Apache;BSD;CNRI-Python;ISC;MIT;MPL;PSF;Python Software Foundation"
-uv audit
+# PYSEC-2025-183: no fixed version is available for pyjwt.
+uv run pip-audit --ignore-vuln PYSEC-2025-183
 uv-override-prune --fix
 ruff check --fix
 ruff format
