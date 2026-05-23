@@ -27,7 +27,6 @@ dev = [
 
 [tool.uv]
 exclude-newer = "1 day"
-exclude-newer-package = { starlette = "0 day" }
 override-dependencies = [
 ]
 
