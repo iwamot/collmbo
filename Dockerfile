@@ -4,7 +4,7 @@ COPY --from=dhi.io/uv:0.11.17-debian13-dev@sha256:d47efbfb994c4db8bf7e8e9f880850
 COPY pyproject.toml uv.lock /build/
 RUN uv sync --frozen --no-dev
 
-FROM dhi.io/python:3.14.5-debian13@sha256:ff889c0f24838055e6b1343a3c11abee14ec639d885efd257e7e636c0d1de6cc AS app
+FROM dhi.io/python:3.14.5-debian13@sha256:4c20a9a5ea50f6cbce78dc399e535462df723e05d805e81bea68e626f44706ec AS app
 WORKDIR /app/
 COPY --from=builder /build/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
