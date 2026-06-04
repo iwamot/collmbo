@@ -1,4 +1,11 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>iwamot/renovate-config#v0.14.0"]
+  "extends": ["github>iwamot/renovate-config#v0.14.0"],
+  "packageRules": [
+    {
+      "description": "Query both the PyPI JSON and Simple APIs and merge results (pypi datasource uses registryStrategy=merge). PyPI's JSON API intermittently returns an empty 200 response, which Renovate reports as a 'no-result' lookup failure; the Simple index then supplies the versions instead. The JSON API stays first so release timestamps (used by minimumReleaseAge) and sourceUrl are retained whenever it responds normally.",
+      "matchDatasources": ["pypi"],
+      "registryUrls": ["https://pypi.org/pypi", "https://pypi.org/simple/"]
+    }
+  ]
 }
