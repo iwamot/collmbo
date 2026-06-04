@@ -6,6 +6,9 @@ requires-python = ">=3.14"
 exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
 exclude-newer-span = "P1D"
 
+[options.exclude-newer-package]
+strands-agents-tools = { timestamp = "0001-01-01T00:00:00Z", span = "PT0S" }
+
 [[package]]
 name = "aiohappyeyeballs"
 version = "2.6.1"
@@ -327,7 +330,7 @@ requires-dist = [
     { name = "slack-bolt", specifier = "==1.28.0" },
     { name = "slack-sdk", specifier = "==3.42.0" },
     { name = "strands-agents", specifier = "==1.42.0" },
-    { name = "strands-agents-tools", specifier = "==0.7.0" },
+    { name = "strands-agents-tools", specifier = "==0.8.0" },
 ]
 provides-extras = ["dev"]
 
@@ -1551,7 +1554,7 @@ wheels = [
 
 [[package]]
 name = "strands-agents-tools"
-version = "0.7.0"
+version = "0.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -1572,9 +1575,9 @@ dependencies = [
     { name = "tzdata", marker = "sys_platform == 'win32'" },
     { name = "watchdog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f1/01/fd57af78135223e801f2b8d1464b0b83aab4e73b1b3e9dcf5195287e2aaf/strands_agents_tools-0.7.0.tar.gz", hash = "sha256:b3b1aa536788697cbcd4c190419355986cf9537a38ebb5d0e4184ec454ea86d1", size = 490289, upload-time = "2026-05-29T19:33:24.86Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d4/74/aed74502a19a18ce1ddcd56e1dc4a0de6e9f2cb6babcc9f2d1969f253c0b/strands_agents_tools-0.8.0.tar.gz", hash = "sha256:fd93104d2d8dcff780505e8a2fca0cb2fa7a3da6bae01369073b60da0e08c5aa", size = 490638, upload-time = "2026-06-03T19:20:03.872Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7a/96/0f5755b74780fa9820b001058d1d7fbc1ecddce53cef4bbee951c2a6fdc7/strands_agents_tools-0.7.0-py3-none-any.whl", hash = "sha256:ba352d5bf254e54f1548a4858c1456107252c2ff6d6213312f338905543b167c", size = 319359, upload-time = "2026-05-29T19:33:22.939Z" },
+    { url = "https://files.pythonhosted.org/packages/0a/37/9f611363451cf38f912c7551b73308339e6af54bf1b5e9a3e8efc7ae0972/strands_agents_tools-0.8.0-py3-none-any.whl", hash = "sha256:7446ae423794b6f886fb36e1a0f8a62fe0546978c18b805e6f50dcdddee1559e", size = 319602, upload-time = "2026-06-03T19:20:01.92Z" },
 ]
 
 [[package]]
