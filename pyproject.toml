@@ -15,7 +15,7 @@ dependencies = [
     "bedrock-agentcore==1.13.0",
     "mcp==1.27.2",
     "strands-agents==1.42.0",
-    "strands-agents-tools==0.7.0",
+    "strands-agents-tools==0.8.0",
 ]
 
 [project.optional-dependencies]
@@ -29,6 +29,13 @@ dev = [
 exclude-newer = "1 day"
 override-dependencies = [
 ]
+
+[tool.uv.exclude-newer-package]
+slack-bolt = "0 day"
+slack-sdk = "0 day"
+bedrock-agentcore = "0 day"
+strands-agents = "0 day"
+strands-agents-tools = "0 day"
 
 [tool.ruff]
 include = ["*.py", "app/**/*.py", "tests/**/*.py"]
