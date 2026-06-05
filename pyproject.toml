@@ -30,13 +30,6 @@ exclude-newer = "1 day"
 override-dependencies = [
 ]
 
-[tool.uv.exclude-newer-package]
-slack-bolt = "0 day"
-slack-sdk = "0 day"
-bedrock-agentcore = "0 day"
-strands-agents = "0 day"
-strands-agents-tools = "0 day"
-
 [tool.ruff]
 include = ["*.py", "app/**/*.py", "tests/**/*.py"]
 
