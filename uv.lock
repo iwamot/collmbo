@@ -151,7 +151,7 @@ wheels = [
 
 [[package]]
 name = "bedrock-agentcore"
-version = "1.13.0"
+version = "1.14.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
@@ -163,9 +163,9 @@ dependencies = [
     { name = "uvicorn" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/17/f7/a3c6680f2c5e940c6c8a1ec78c0b300c5c31e8d7276f189590ec70d00f78/bedrock_agentcore-1.13.0.tar.gz", hash = "sha256:ed93e7fba2c141cd7051a60ab39ded332e23248f74142f504e5173075ae0044b", size = 889506, upload-time = "2026-06-02T19:00:17.009Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/40/12/ce582c748c9d476856dd5fc96a3a4ba009bfc3889fc2af6ae3b6501f55fe/bedrock_agentcore-1.14.0.tar.gz", hash = "sha256:d7169463bd352d56d842cac037b351897337e6cda6985e26eff3cd7b5a5a7486", size = 913679, upload-time = "2026-06-05T23:08:28.462Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/df/c8/583f186d250ac17ac7e76a669da1521f784f8df12758ed9b8a880df67fe1/bedrock_agentcore-1.13.0-py3-none-any.whl", hash = "sha256:50bc59a47e6b82ce93044a31d216186dc94c1d70fc039e092f6be70c5c74cae0", size = 407916, upload-time = "2026-06-02T19:00:15.255Z" },
+    { url = "https://files.pythonhosted.org/packages/a6/0d/be8dc495c066f7962e180665036bf3c6bfd80589f8ae4f35505d2470ff3e/bedrock_agentcore-1.14.0-py3-none-any.whl", hash = "sha256:af367db6c3f30b55313ef999e28252c2fcd2128734abc8fa8dcf8a091ef0ac2b", size = 425369, upload-time = "2026-06-05T23:08:26.853Z" },
 ]
 
 [[package]]
@@ -316,7 +316,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bedrock-agentcore", specifier = "==1.13.0" },
+    { name = "bedrock-agentcore", specifier = "==1.14.0" },
     { name = "httpx", specifier = "==0.28.1" },
     { name = "litellm", specifier = "==1.87.1" },
     { name = "mcp", specifier = "==1.27.2" },
