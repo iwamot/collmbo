@@ -6,7 +6,7 @@ install_before = "1d"
 [tools]
 python = "3.14.6"
 "aqua:astral-sh/ruff" = "0.15.16"
-"aqua:astral-sh/ty" = "0.0.47"
+"aqua:astral-sh/ty" = "0.0.48"
 "aqua:astral-sh/uv" = "0.11.20"
 
 [tools."pipx:uv-override-prune"]
