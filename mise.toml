@@ -3,7 +3,7 @@ min_version = "2026.6.3"
 [tools]
 python = "3.14.6"
 "aqua:astral-sh/ruff" = "0.15.17"
-"aqua:astral-sh/ty" = "0.0.49"
+"aqua:astral-sh/ty" = "0.0.50"
 "aqua:astral-sh/uv" = "0.11.21"
 
 [tools."pipx:uv-override-prune"]
