@@ -2,7 +2,7 @@ min_version = "2026.6.3"
 
 [tools]
 python = "3.14.6"
-"aqua:astral-sh/ruff" = "0.15.18"
+"aqua:astral-sh/ruff" = "0.15.19"
 "aqua:astral-sh/ty" = "0.0.52"
 "aqua:astral-sh/uv" = "0.11.24"
 
