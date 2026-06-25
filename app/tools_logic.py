@@ -7,7 +7,6 @@ from importlib import import_module
 from app.mcp.tools_logic import (
     AUTH_TYPE_ABBREVIATIONS,
     MCP_TOOL_NAME_SEPARATOR,
-    MCP_TOOL_NAME_SEPARATOR_FOR_GEMINI,
 )
 
 ABBREVIATION_TO_AUTH_TYPE = {v: k for k, v in AUTH_TYPE_ABBREVIATIONS.items()}
@@ -23,8 +22,39 @@ def is_mcp_tool_name(name: str) -> bool:
     Returns:
         bool: True if the tool is an MCP tool, False otherwise.
     """
-    # Check for both dot-separated (Gemini) and hyphen-separated (GPT) formats
-    return MCP_TOOL_NAME_SEPARATOR_FOR_GEMINI in name or MCP_TOOL_NAME_SEPARATOR in name
+    # An MCP tool name has the structure "{auth_abbrev}_{server_index}_{spec_name}".
+    parts = name.split(MCP_TOOL_NAME_SEPARATOR)
+    if len(parts) < 3:
+        return False
+    auth_abbrev, server_index = parts[0], parts[1]
+    return auth_abbrev in ABBREVIATION_TO_AUTH_TYPE and server_index.isdigit()
+
+
+def split_classic_tools_by_mcp_collision(
+    tools: list[dict],
+) -> tuple[list[dict], list[dict]]:
+    """
+    Partition classic tools by whether their name collides with the MCP tool
+    naming scheme.
+
+    A classic tool whose name is shaped like an MCP tool name would be
+    misrouted to an MCP server instead of being called as a classic tool.
+
+    Args:
+        tools (list[dict]): Classic tools in OpenAI tool format.
+
+    Returns:
+        tuple[list[dict], list[dict]]: (usable tools, colliding tools).
+    """
+    usable: list[dict] = []
+    colliding: list[dict] = []
+    for tool in tools:
+        name = tool.get("function", {}).get("name", "")
+        if is_mcp_tool_name(name):
+            colliding.append(tool)
+        else:
+            usable.append(tool)
+    return usable, colliding
 
 
 def load_classic_tools(module_name: str | None) -> list[dict]:

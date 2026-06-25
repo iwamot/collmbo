@@ -6,15 +6,12 @@ from copy import deepcopy
 
 from strands.types.tools import ToolSpec
 
-MCP_TOOL_NAME_SEPARATOR = "-"
-MCP_TOOL_NAME_SEPARATOR_FOR_GEMINI = "."
+MCP_TOOL_NAME_SEPARATOR = "_"
 
 AUTH_TYPE_ABBREVIATIONS = {"none": "n", "user_federation": "u", "bearer": "b"}
 
 
-def build_mcp_tool_name(
-    spec_name: str, auth_type: str, server_index: int, model: str
-) -> str:
+def build_mcp_tool_name(spec_name: str, auth_type: str, server_index: int) -> str:
     """
     Build a name for an MCP tool based on its specification name, auth type, and server index.
 
@@ -22,20 +19,12 @@ def build_mcp_tool_name(
         spec_name (str): The name of the tool specification.
         auth_type (str): The authentication type (none, user_federation, bearer).
         server_index (int): The index of the MCP server.
-        model (str): The model name, used to determine separator format.
 
     Returns:
-        str: The constructed tool name. Format depends on model:
-        - Gemini: "{auth_abbrev}.{server_index}.{spec_name}"
-        - Others: "{auth_abbrev}-{server_index}-{spec_name}"
+        str: The constructed tool name in the format
+        "{auth_abbrev}_{server_index}_{spec_name}".
     """
     auth_abbrev = AUTH_TYPE_ABBREVIATIONS.get(auth_type, auth_type)
-
-    # Use dot separator for Gemini models, hyphen for others
-    if model.startswith("gemini/"):
-        return MCP_TOOL_NAME_SEPARATOR_FOR_GEMINI.join(
-            [auth_abbrev, str(server_index), spec_name]
-        )
     return MCP_TOOL_NAME_SEPARATOR.join([auth_abbrev, str(server_index), spec_name])
 
 
@@ -75,9 +64,7 @@ def transform_mcp_spec_to_classic_tool(
     return {
         "type": "function",
         "function": {
-            "name": build_mcp_tool_name(
-                mcp_spec["name"], auth_type, server_index, model
-            ),
+            "name": build_mcp_tool_name(mcp_spec["name"], auth_type, server_index),
             "description": mcp_spec["description"],
             "parameters": parameters,
         },

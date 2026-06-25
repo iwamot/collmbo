@@ -126,46 +126,25 @@ def test_create_bearer_auth_headers(token, additional_headers, expected):
 @pytest.mark.parametrize(
     "tool_name, expected",
     [
-        # Gemini format (dot-separated)
         (
-            "u.0.get_user_info",
+            "u_0_get_user_info",
             ("get_user_info", "user_federation", 0),
         ),
         (
-            "u.1.search_repositories",
+            "u_1_search_repositories",
             ("search_repositories", "user_federation", 1),
         ),
         (
-            "n.2.create_issue",
+            "n_2_create_issue",
             ("create_issue", "none", 2),
         ),
         (
-            "u.5.complex-tool-name",
+            "u_5_complex-tool-name",
             ("complex-tool-name", "user_federation", 5),
         ),
+        # Server index with multiple digits
         (
-            "n.10.tool-with-multiple-hyphens-in-name",
-            ("tool-with-multiple-hyphens-in-name", "none", 10),
-        ),
-        # GPT format (hyphen-separated)
-        (
-            "u-0-get_user_info",
-            ("get_user_info", "user_federation", 0),
-        ),
-        (
-            "u-1-search_repositories",
-            ("search_repositories", "user_federation", 1),
-        ),
-        (
-            "n-2-create_issue",
-            ("create_issue", "none", 2),
-        ),
-        (
-            "u-5-complex-tool-name",
-            ("complex-tool-name", "user_federation", 5),
-        ),
-        (
-            "n-10-tool-with-multiple-hyphens-in-name",
+            "n_10_tool-with-multiple-hyphens-in-name",
             ("tool-with-multiple-hyphens-in-name", "none", 10),
         ),
         # Invalid cases
@@ -174,15 +153,15 @@ def test_create_bearer_auth_headers(token, additional_headers, expected):
             ("", "", -1),
         ),
         (
-            "invalid.tool",
+            "invalid_tool",
             ("", "", -1),
         ),
         (
-            "invalid_auth.0.tool",
+            "x_0_tool",
             ("", "", -1),
         ),
         (
-            "u.invalid_index.tool",
+            "u_invalidindex_tool",
             ("", "", -1),
         ),
         (

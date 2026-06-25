@@ -24,7 +24,11 @@ from app.mcp.shared_tools_service import (
     process_shared_mcp_tool_call,
 )
 from app.message_logic import build_tool_message
-from app.tools_logic import is_mcp_tool_name, load_classic_tools
+from app.tools_logic import (
+    is_mcp_tool_name,
+    load_classic_tools,
+    split_classic_tools_by_mcp_collision,
+)
 
 classic_tools: list[dict] | None = None
 
@@ -38,7 +42,16 @@ def get_classic_tools() -> list[dict]:
     """
     global classic_tools
     if classic_tools is None:
-        classic_tools = load_classic_tools(TOOLS_MODULE_NAME)
+        usable, colliding = split_classic_tools_by_mcp_collision(
+            load_classic_tools(TOOLS_MODULE_NAME)
+        )
+        for tool in colliding:
+            logging.warning(
+                "Skipping classic tool %r: its name collides with the MCP tool "
+                "naming scheme and would be misrouted to an MCP server.",
+                tool.get("function", {}).get("name", ""),
+            )
+        classic_tools = usable
     return classic_tools
 
 
