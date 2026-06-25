@@ -14,9 +14,11 @@ from app.tools_logic import is_mcp_tool_name
     [
         ("tool1", "none", 0, "gemini/gemini-pro", "n.0.tool1"),
         ("tool2", "user_federation", 1, "gemini/gemini-pro", "u.1.tool2"),
+        ("tool4", "bearer", 3, "gemini/gemini-pro", "b.3.tool4"),
         ("tool3", "unknown", 2, "gemini/gemini-pro", "unknown.2.tool3"),
         ("tool1", "none", 0, "gpt-4", "n-0-tool1"),
         ("tool2", "user_federation", 1, "gpt-4", "u-1-tool2"),
+        ("tool4", "bearer", 3, "gpt-4", "b-3-tool4"),
         ("tool3", "unknown", 2, "gpt-4", "unknown-2-tool3"),
     ],
 )
@@ -32,10 +34,12 @@ def test_build_mcp_tool_name(spec_name, auth_type, server_index, model, expected
         # Gemini format (dot-separated)
         ("n.0.tool1", ("tool1", "none", 0)),
         ("u.1.tool2", ("tool2", "user_federation", 1)),
+        ("b.3.tool4", ("tool4", "bearer", 3)),
         ("u.2.my-complex-tool", ("my-complex-tool", "user_federation", 2)),
         # GPT format (hyphen-separated)
         ("n-0-tool1", ("tool1", "none", 0)),
         ("u-1-tool2", ("tool2", "user_federation", 1)),
+        ("b-3-tool4", ("tool4", "bearer", 3)),
         ("u-2-my-complex-tool", ("my-complex-tool", "user_federation", 2)),
     ],
 )

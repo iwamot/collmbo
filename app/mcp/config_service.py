@@ -9,6 +9,7 @@ import yaml
 from app.mcp.config_logic import (
     DEFAULT_AGENTCORE_REGION,
     DEFAULT_WORKLOAD_NAME,
+    get_bearer_servers_from_config,
     get_no_auth_servers_from_config,
     get_oauth_server_from_config,
     get_oauth_server_index_from_config,
@@ -58,6 +59,17 @@ def get_no_auth_servers() -> list[dict]:
     """
     config = get_mcp_config()
     return get_no_auth_servers_from_config(config)
+
+
+def get_bearer_servers() -> list[dict]:
+    """
+    Get bearer MCP servers from configuration.
+
+    Returns:
+        list[dict]: List of bearer server configurations.
+    """
+    config = get_mcp_config()
+    return get_bearer_servers_from_config(config)
 
 
 def get_oauth_servers() -> list[dict]:

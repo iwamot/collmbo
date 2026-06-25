@@ -9,7 +9,7 @@ from strands.types.tools import ToolSpec
 MCP_TOOL_NAME_SEPARATOR = "-"
 MCP_TOOL_NAME_SEPARATOR_FOR_GEMINI = "."
 
-AUTH_TYPE_ABBREVIATIONS = {"none": "n", "user_federation": "u"}
+AUTH_TYPE_ABBREVIATIONS = {"none": "n", "user_federation": "u", "bearer": "b"}
 
 
 def build_mcp_tool_name(
@@ -20,7 +20,7 @@ def build_mcp_tool_name(
 
     Args:
         spec_name (str): The name of the tool specification.
-        auth_type (str): The authentication type (none, user_federation, m2m).
+        auth_type (str): The authentication type (none, user_federation, bearer).
         server_index (int): The index of the MCP server.
         model (str): The model name, used to determine separator format.
 
@@ -51,7 +51,7 @@ def transform_mcp_spec_to_classic_tool(
 
     Args:
         mcp_spec (dict): The MCP tool specification.
-        auth_type (str): The authentication type (none, user_federation).
+        auth_type (str): The authentication type (none, user_federation, bearer).
         server_index (int): The index of the MCP server.
         model (str): The model name, used to determine if specific properties should be removed.
 

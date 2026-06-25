@@ -14,6 +14,14 @@ servers:
     url: https://knowledge-mcp.global.api.aws
     auth_type: none
 
+# Bearer token example (shared by all users)
+# The token is read from the named environment variable, so it is never
+# stored in this file.
+#  - name: Context7
+#    url: https://mcp.context7.com/mcp
+#    auth_type: bearer
+#    token_env: CONTEXT7_TOKEN
+
 # OAuth examples (requires AgentCore Identity provider setup)
 #  - name: GitHub
 #    url: https://api.githubcopilot.com/mcp/

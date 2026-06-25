@@ -5,6 +5,8 @@ Tests for the MCP configuration logic module.
 import pytest
 
 from app.mcp.config_logic import (
+    build_bearer_headers,
+    get_bearer_servers_from_config,
     get_no_auth_servers_from_config,
     get_oauth_server_from_config,
     get_oauth_server_index_from_config,
@@ -123,12 +125,18 @@ def test_normalize_mcp_config(config_data, expected):
                     {
                         "name": "Server 2",
                         "url": "https://server2.example.com",
-                        "auth_type": "oauth",
+                        "auth_type": "user_federation",
                     },
                     {
                         "name": "Server 3",
                         "url": "https://server3.example.com",
                         "auth_type": "none",
+                    },
+                    {
+                        "name": "Server 4",
+                        "url": "https://server4.example.com",
+                        "auth_type": "bearer",
+                        "token_env": "SERVER4_TOKEN",
                     },
                 ]
             },
@@ -151,7 +159,7 @@ def test_get_no_auth_servers(config, expected):
 @pytest.mark.parametrize(
     "config, expected",
     [
-        # Multiple servers with mixed auth types
+        # Mixed auth types - only bearer servers are returned
         (
             {
                 "servers": [
@@ -163,7 +171,8 @@ def test_get_no_auth_servers(config, expected):
                     {
                         "name": "Server 2",
                         "url": "https://server2.example.com",
-                        "auth_type": "oauth",
+                        "auth_type": "bearer",
+                        "token_env": "SERVER2_TOKEN",
                     },
                     {
                         "name": "Server 3",
@@ -176,8 +185,90 @@ def test_get_no_auth_servers(config, expected):
                 {
                     "name": "Server 2",
                     "url": "https://server2.example.com",
-                    "auth_type": "oauth",
+                    "token_env": "SERVER2_TOKEN",
                 },
+            ],
+        ),
+        # Bearer server without token_env - token_env defaults to empty string
+        (
+            {
+                "servers": [
+                    {
+                        "name": "Server 1",
+                        "url": "https://server1.example.com",
+                        "auth_type": "bearer",
+                    },
+                ]
+            },
+            [
+                {
+                    "name": "Server 1",
+                    "url": "https://server1.example.com",
+                    "token_env": "",
+                },
+            ],
+        ),
+        # Empty servers list
+        ({"servers": []}, []),
+        # No servers key
+        ({}, []),
+    ],
+)
+def test_get_bearer_servers_from_config(config, expected):
+    result = get_bearer_servers_from_config(config)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "server, env, expected",
+    [
+        # Token resolves from the named env var
+        (
+            {"token_env": "MCP_TOKEN"},
+            {"MCP_TOKEN": "secret-123"},
+            {"Authorization": "Bearer secret-123"},
+        ),
+        # Missing token_env key
+        ({}, {"MCP_TOKEN": "secret-123"}, None),
+        # Empty token_env value
+        ({"token_env": ""}, {"MCP_TOKEN": "secret-123"}, None),
+        # Named env var is not set
+        ({"token_env": "MCP_TOKEN"}, {}, None),
+        # Named env var is set but empty
+        ({"token_env": "MCP_TOKEN"}, {"MCP_TOKEN": ""}, None),
+    ],
+)
+def test_build_bearer_headers(server, env, expected):
+    result = build_bearer_headers(server, env)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "config, expected",
+    [
+        # Multiple servers with mixed auth types
+        (
+            {
+                "servers": [
+                    {
+                        "name": "Server 1",
+                        "url": "https://server1.example.com",
+                        "auth_type": "none",
+                    },
+                    {
+                        "name": "Server 2",
+                        "url": "https://server2.example.com",
+                        "auth_type": "bearer",
+                        "token_env": "SERVER2_TOKEN",
+                    },
+                    {
+                        "name": "Server 3",
+                        "url": "https://server3.example.com",
+                        "auth_type": "user_federation",
+                    },
+                ]
+            },
+            [
                 {
                     "name": "Server 3",
                     "url": "https://server3.example.com",
@@ -223,7 +314,7 @@ def test_get_oauth_servers_from_config(config, expected):
                     {
                         "name": "Server 1",
                         "url": "https://server1.example.com",
-                        "auth_type": "oauth",
+                        "auth_type": "user_federation",
                     },
                     {
                         "name": "Server 2",
@@ -246,7 +337,7 @@ def test_get_oauth_servers_from_config(config, expected):
                     {
                         "name": "Server 1",
                         "url": "https://server1.example.com",
-                        "auth_type": "oauth",
+                        "auth_type": "user_federation",
                     },
                     {
                         "name": "Server 2",
@@ -259,7 +350,7 @@ def test_get_oauth_servers_from_config(config, expected):
             {
                 "name": "Server 1",
                 "url": "https://server1.example.com",
-                "auth_type": "oauth",
+                "auth_type": "user_federation",
             },
         ),
         # Negative index
@@ -269,7 +360,7 @@ def test_get_oauth_servers_from_config(config, expected):
                     {
                         "name": "Server 1",
                         "url": "https://server1.example.com",
-                        "auth_type": "oauth",
+                        "auth_type": "user_federation",
                     },
                 ]
             },
@@ -283,7 +374,7 @@ def test_get_oauth_servers_from_config(config, expected):
                     {
                         "name": "Server 1",
                         "url": "https://server1.example.com",
-                        "auth_type": "oauth",
+                        "auth_type": "user_federation",
                     },
                 ]
             },
@@ -311,7 +402,7 @@ def test_get_oauth_server_from_config(config, server_index, expected):
                     {
                         "name": "Server 1",
                         "url": "https://server1.example.com",
-                        "auth_type": "oauth",
+                        "auth_type": "user_federation",
                     },
                     {
                         "name": "Server 2",
@@ -330,7 +421,7 @@ def test_get_oauth_server_from_config(config, server_index, expected):
                     {
                         "name": "Server 1",
                         "url": "https://server1.example.com",
-                        "auth_type": "oauth",
+                        "auth_type": "user_federation",
                     },
                     {
                         "name": "Server 2",
@@ -349,7 +440,7 @@ def test_get_oauth_server_from_config(config, server_index, expected):
                     {
                         "name": "Server 1",
                         "url": "https://server1.example.com",
-                        "auth_type": "oauth",
+                        "auth_type": "user_federation",
                     },
                 ]
             },
