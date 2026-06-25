@@ -7,8 +7,8 @@ from slack_sdk.models.views import View
 from app.home_tab_logic import (
     build_home_tab_blocks,
     build_home_tab_view,
-    build_no_auth_servers_section,
     build_oauth_servers_section,
+    build_shared_servers_section,
     extract_cancel_server_index,
     extract_disable_server_index,
     extract_enable_server_index,
@@ -41,18 +41,14 @@ def test_format_timestamp(expires_at_timestamp, user_tz, expected):
         (
             [],
             [
-                HeaderBlock(
-                    text=PlainTextObject(text="🌐 MCP Servers without Authentication")
-                ),
+                HeaderBlock(text=PlainTextObject(text="👥 Shared MCP Servers")),
                 SectionBlock(text=MarkdownTextObject(text="No servers configured.")),
             ],
         ),
         (
             [{"name": "TestServer", "url": "http://localhost:8000/mcp/"}],
             [
-                HeaderBlock(
-                    text=PlainTextObject(text="🌐 MCP Servers without Authentication")
-                ),
+                HeaderBlock(text=PlainTextObject(text="👥 Shared MCP Servers")),
                 SectionBlock(text=MarkdownTextObject(text="*TestServer*")),
             ],
         ),
@@ -62,17 +58,15 @@ def test_format_timestamp(expires_at_timestamp, user_tz, expected):
                 {"name": "Server2", "url": "http://localhost:8002/mcp/"},
             ],
             [
-                HeaderBlock(
-                    text=PlainTextObject(text="🌐 MCP Servers without Authentication")
-                ),
+                HeaderBlock(text=PlainTextObject(text="👥 Shared MCP Servers")),
                 SectionBlock(text=MarkdownTextObject(text="*Server1*")),
                 SectionBlock(text=MarkdownTextObject(text="*Server2*")),
             ],
         ),
     ],
 )
-def test_build_no_auth_servers_section(mcp_servers, expected_blocks):
-    result = build_no_auth_servers_section(mcp_servers)
+def test_build_shared_servers_section(mcp_servers, expected_blocks):
+    result = build_shared_servers_section(mcp_servers)
 
     assert result == expected_blocks
 
@@ -95,9 +89,7 @@ def test_build_no_auth_servers_section(mcp_servers, expected_blocks):
             ],
             "UTC",
             [
-                HeaderBlock(
-                    text=PlainTextObject(text="🔒 MCP Servers with Authentication")
-                ),
+                HeaderBlock(text=PlainTextObject(text="👤 Per-User MCP Servers")),
                 SectionBlock(text=MarkdownTextObject(text="GitHubServer")),
                 ActionsBlock(
                     elements=[
@@ -124,9 +116,7 @@ def test_build_no_auth_servers_section(mcp_servers, expected_blocks):
             ],
             "UTC",
             [
-                HeaderBlock(
-                    text=PlainTextObject(text="🔒 MCP Servers with Authentication")
-                ),
+                HeaderBlock(text=PlainTextObject(text="👤 Per-User MCP Servers")),
                 SectionBlock(text=MarkdownTextObject(text="GitHubServer")),
                 SectionBlock(text=MarkdownTextObject(text="⏳ Please wait...")),
                 ActionsBlock(
@@ -153,9 +143,7 @@ def test_build_no_auth_servers_section(mcp_servers, expected_blocks):
             ],
             "UTC",
             [
-                HeaderBlock(
-                    text=PlainTextObject(text="🔒 MCP Servers with Authentication")
-                ),
+                HeaderBlock(text=PlainTextObject(text="👤 Per-User MCP Servers")),
                 SectionBlock(text=MarkdownTextObject(text="GitHubServer")),
                 SectionBlock(
                     text=MarkdownTextObject(
@@ -186,9 +174,7 @@ def test_build_no_auth_servers_section(mcp_servers, expected_blocks):
             ],
             "UTC",
             [
-                HeaderBlock(
-                    text=PlainTextObject(text="🔒 MCP Servers with Authentication")
-                ),
+                HeaderBlock(text=PlainTextObject(text="👤 Per-User MCP Servers")),
                 SectionBlock(
                     text=MarkdownTextObject(text="*GitHubServer* (expires at 00:00:00)")
                 ),
@@ -216,9 +202,7 @@ def test_build_no_auth_servers_section(mcp_servers, expected_blocks):
             ],
             "UTC",
             [
-                HeaderBlock(
-                    text=PlainTextObject(text="🔒 MCP Servers with Authentication")
-                ),
+                HeaderBlock(text=PlainTextObject(text="👤 Per-User MCP Servers")),
                 SectionBlock(text=MarkdownTextObject(text="*GitHubServer*")),
                 ActionsBlock(
                     elements=[
@@ -244,9 +228,7 @@ def test_build_no_auth_servers_section(mcp_servers, expected_blocks):
             ],
             "UTC",
             [
-                HeaderBlock(
-                    text=PlainTextObject(text="🔒 MCP Servers with Authentication")
-                ),
+                HeaderBlock(text=PlainTextObject(text="👤 Per-User MCP Servers")),
                 SectionBlock(text=MarkdownTextObject(text="GitHubServer")),
                 SectionBlock(text=MarkdownTextObject(text="⏳ Fetching tools...")),
             ],
@@ -265,18 +247,14 @@ def test_build_oauth_servers_section(server_data, user_tz, expected):
         (
             [],
             [
-                HeaderBlock(
-                    text=PlainTextObject(text="🌐 MCP Servers without Authentication")
-                ),
+                HeaderBlock(text=PlainTextObject(text="👥 Shared MCP Servers")),
                 SectionBlock(text=MarkdownTextObject(text="No servers configured.")),
             ],
         ),
         (
             [{"name": "TestServer", "url": "http://localhost:8000/mcp/"}],
             [
-                HeaderBlock(
-                    text=PlainTextObject(text="🌐 MCP Servers without Authentication")
-                ),
+                HeaderBlock(text=PlainTextObject(text="👥 Shared MCP Servers")),
                 SectionBlock(text=MarkdownTextObject(text="*TestServer*")),
             ],
         ),
@@ -286,9 +264,7 @@ def test_build_oauth_servers_section(server_data, user_tz, expected):
                 {"name": "Server2", "url": "http://localhost:8002/mcp/"},
             ],
             [
-                HeaderBlock(
-                    text=PlainTextObject(text="🌐 MCP Servers without Authentication")
-                ),
+                HeaderBlock(text=PlainTextObject(text="👥 Shared MCP Servers")),
                 SectionBlock(text=MarkdownTextObject(text="*Server1*")),
                 SectionBlock(text=MarkdownTextObject(text="*Server2*")),
             ],
@@ -332,13 +308,9 @@ def test_build_home_tab_blocks(mcp_servers, expected_blocks):
             {},
             {},
             [
-                HeaderBlock(
-                    text=PlainTextObject(text="🌐 MCP Servers without Authentication")
-                ),
+                HeaderBlock(text=PlainTextObject(text="👥 Shared MCP Servers")),
                 SectionBlock(text=MarkdownTextObject(text="No servers configured.")),
-                HeaderBlock(
-                    text=PlainTextObject(text="🔒 MCP Servers with Authentication")
-                ),
+                HeaderBlock(text=PlainTextObject(text="👤 Per-User MCP Servers")),
                 SectionBlock(text=MarkdownTextObject(text="GitHubServer")),
                 ActionsBlock(
                     elements=[
@@ -367,13 +339,9 @@ def test_build_home_tab_blocks(mcp_servers, expected_blocks):
             {},
             {},
             [
-                HeaderBlock(
-                    text=PlainTextObject(text="🌐 MCP Servers without Authentication")
-                ),
+                HeaderBlock(text=PlainTextObject(text="👥 Shared MCP Servers")),
                 SectionBlock(text=MarkdownTextObject(text="No servers configured.")),
-                HeaderBlock(
-                    text=PlainTextObject(text="🔒 MCP Servers with Authentication")
-                ),
+                HeaderBlock(text=PlainTextObject(text="👤 Per-User MCP Servers")),
                 SectionBlock(text=MarkdownTextObject(text="GitHubServer")),
                 SectionBlock(
                     text=MarkdownTextObject(
@@ -390,6 +358,49 @@ def test_build_home_tab_blocks(mcp_servers, expected_blocks):
                 ),
             ],
         ),  # OAuth server with pending auth URL and oauth_verification_code
+        (
+            {
+                "servers": [
+                    {
+                        "name": "NoneServer",
+                        "url": "http://none",
+                        "auth_type": "none",
+                    },
+                    {
+                        "name": "BearerServer",
+                        "url": "http://bearer",
+                        "auth_type": "bearer",
+                        "token_env": "BEARER_TOKEN",
+                    },
+                    {
+                        "name": "GitHubServer",
+                        "url": "http://test",
+                        "auth_type": "user_federation",
+                        "agentcore_provider": "github",
+                    },
+                ]
+            },
+            {},
+            {},
+            {},
+            {},
+            [
+                HeaderBlock(text=PlainTextObject(text="👥 Shared MCP Servers")),
+                SectionBlock(text=MarkdownTextObject(text="*NoneServer*")),
+                SectionBlock(text=MarkdownTextObject(text="*BearerServer*")),
+                HeaderBlock(text=PlainTextObject(text="👤 Per-User MCP Servers")),
+                SectionBlock(text=MarkdownTextObject(text="GitHubServer")),
+                ActionsBlock(
+                    elements=[
+                        ButtonElement(
+                            text=PlainTextObject(text="Enable"),
+                            action_id="enable_mcp_oauth_0",
+                            style="primary",
+                        )
+                    ]
+                ),
+            ],
+        ),  # Shared section combines none and bearer servers
     ],
 )
 def test_build_home_tab_blocks_with_oauth(

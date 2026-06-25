@@ -2,7 +2,47 @@
 
 Collmbo can integrate with MCP servers using streamable HTTP transport.
 
-## Prerequisites for Using OAuth MCP Servers
+Each server in [`config/mcp.yml`](../../config/mcp.yml) declares an `auth_type`:
+
+- `none`: No authentication. Available to all users.
+- `bearer`: A static token that Collmbo sends as an `Authorization: Bearer`
+  header. Shared by all users. See [Bearer Token MCP Servers](#bearer-token-mcp-servers).
+- `user_federation`: Per-user OAuth via AgentCore Identity. Each user signs in
+  from the Home tab. See [OAuth MCP Servers](#oauth-mcp-servers).
+
+## Usage
+
+1. Edit [`config/mcp.yml`](../../config/mcp.yml).
+2. Run Collmbo.
+3. Check the Home tab in Slack to view available MCP servers.
+4. Send a message in Slack that triggers tool execution.
+
+## Bearer Token MCP Servers
+
+For an MCP server that authenticates with a static bearer token, set
+`auth_type: bearer` and name the environment variable that holds the token via
+`token_env`. The token itself is never stored in `config/mcp.yml`.
+
+```yaml
+servers:
+  - name: Context7
+    url: https://mcp.context7.com/mcp
+    auth_type: bearer
+    token_env: CONTEXT7_TOKEN
+```
+
+```sh
+CONTEXT7_TOKEN=...
+```
+
+Collmbo sends the token as `Authorization: Bearer <token>` on every request to
+that server.
+
+If the named environment variable is unset, the server is skipped with a
+warning. Because the token belongs to Collmbo rather than an individual user,
+these servers are available to all users.
+
+## OAuth MCP Servers
 
 If you will use MCP Servers with OAuth authentication, you need:
 
@@ -29,13 +69,6 @@ Deploy the [oauth-callback-app](../../oauth-callback-app/) to handle OAuth callb
 
 > [!CAUTION]
 > **Security Note:** Access tokens are temporarily stored in memory during use. Do not share your Collmbo instance with untrusted parties, as they may be able to access authenticated resources on behalf of users.
-
-## Usage
-
-1. Edit [`config/mcp.yml`](../../config/mcp.yml).
-2. Run Collmbo.
-3. Check the Home tab in Slack to view available MCP servers.
-4. Send a message in Slack that triggers tool execution.
 
 ## Try this Feature
 

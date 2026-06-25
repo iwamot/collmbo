@@ -27,7 +27,7 @@ from app.bolt_logic import append_rate_limit_retry_handler
 from app.bolt_middlewares import before_authorize, set_locale
 from app.env import SLACK_APP_LOG_LEVEL, USE_SLACK_LOCALE
 from app.mcp.agentcore_service import shutdown_all_oauth_pollers
-from app.mcp.no_auth_tools_service import start_no_auth_mcp_tools_refresh_loop
+from app.mcp.shared_tools_service import start_shared_mcp_tools_refresh_loop
 
 
 def main() -> None:
@@ -50,7 +50,7 @@ def main() -> None:
     app = create_bolt_app(os.environ["SLACK_BOT_TOKEN"], USE_SLACK_LOCALE)
     append_rate_limit_retry_handler(app.client.retry_handlers, 2)
 
-    start_no_auth_mcp_tools_refresh_loop()
+    start_shared_mcp_tools_refresh_loop()
 
     slack_handler = SocketModeHandler(app, os.environ["SLACK_APP_TOKEN"])
     register_signal_handlers(slack_handler)

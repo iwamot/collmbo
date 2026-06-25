@@ -4,22 +4,24 @@ This module provides service functions for tools.
 
 import json
 import logging
+import os
 from importlib import import_module
 from types import ModuleType
 
 from litellm.types.utils import ChatCompletionMessageToolCall, Message
 
 from app.env import TOOLS_MODULE_NAME
-from app.mcp.config_service import get_no_auth_servers
-from app.mcp.no_auth_tools_service import (
-    get_no_auth_mcp_tools,
-    process_no_auth_mcp_tool_call,
-)
+from app.mcp.config_logic import build_bearer_headers
+from app.mcp.config_service import get_bearer_servers, get_no_auth_servers
 from app.mcp.oauth_tools_logic import parse_mcp_tool_name
 from app.mcp.oauth_tools_service import (
     expire_old_oauth_sessions,
     get_flattened_user_oauth_mcp_tools,
     process_oauth_mcp_tool_call,
+)
+from app.mcp.shared_tools_service import (
+    get_shared_mcp_tools,
+    process_shared_mcp_tool_call,
 )
 from app.message_logic import build_tool_message
 from app.tools_logic import is_mcp_tool_name, load_classic_tools
@@ -55,7 +57,7 @@ def get_all_tools(
     Returns:
         list[dict]: A list of all tools.
     """
-    tools = get_classic_tools() + get_no_auth_mcp_tools()
+    tools = get_classic_tools() + get_shared_mcp_tools()
 
     # Add authenticated MCP tools only for DM conversations
     # DM channels start with 'D' (direct message)
@@ -93,13 +95,14 @@ def process_tool_calls(
     assistant_message["tool_calls"] = response_message.model_dump()["tool_calls"]
 
     no_auth_servers = get_no_auth_servers()
-    no_auth_server_urls = [server["url"] for server in no_auth_servers]
+    bearer_servers = get_bearer_servers()
 
     for tool_call in response_message.tool_calls:
         process_tool_call(
             tool_call=tool_call,
             messages=messages,
-            no_auth_server_urls=no_auth_server_urls,
+            no_auth_servers=no_auth_servers,
+            bearer_servers=bearer_servers,
             user_id=user_id,
         )
 
@@ -108,7 +111,8 @@ def process_tool_call(
     *,
     tool_call: ChatCompletionMessageToolCall,
     messages: list[dict],
-    no_auth_server_urls: list[str],
+    no_auth_servers: list[dict],
+    bearer_servers: list[dict],
     user_id: str | None = None,
 ) -> None:
     """
@@ -117,7 +121,8 @@ def process_tool_call(
     Args:
         tool_call (ChatCompletionMessageToolCall): The tool call to process.
         messages (list[dict]): The list of messages to include in the reply.
-        no_auth_server_urls (list[str]): The list of no-auth MCP server URLs.
+        no_auth_servers (list[dict]): The list of no-auth MCP servers.
+        bearer_servers (list[dict]): The list of bearer MCP servers.
         user_id (Optional[str]): User ID for authenticated tool access.
 
     Returns:
@@ -145,7 +150,7 @@ def process_tool_call(
 
     spec_name, auth_type, server_index = parse_mcp_tool_name(tool_name)
 
-    if auth_type != "none" and user_id:
+    if auth_type == "user_federation" and user_id:
         tool_response = process_oauth_mcp_tool_call(
             tool_call_id=tool_call.id,
             tool_name=spec_name,
@@ -161,8 +166,26 @@ def process_tool_call(
         messages.append(tool_message)
         return
 
-    tool_response = process_no_auth_mcp_tool_call(
-        server_url=no_auth_server_urls[server_index],
+    if auth_type == "bearer":
+        server = bearer_servers[server_index]
+        headers = build_bearer_headers(server, os.environ)
+        tool_response = process_shared_mcp_tool_call(
+            server_url=server["url"],
+            tool_call_id=tool_call.id,
+            tool_name=spec_name,
+            arguments=json.loads(tool_call.function.arguments),
+            headers=headers,
+        )
+        tool_message = build_tool_message(
+            tool_call_id=tool_call.id,
+            name=tool_name,
+            content=tool_response,
+        )
+        messages.append(tool_message)
+        return
+
+    tool_response = process_shared_mcp_tool_call(
+        server_url=no_auth_servers[server_index]["url"],
         tool_call_id=tool_call.id,
         tool_name=spec_name,
         arguments=json.loads(tool_call.function.arguments),

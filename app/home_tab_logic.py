@@ -16,6 +16,7 @@ from slack_sdk.models.blocks.basic_components import MarkdownTextObject, PlainTe
 from slack_sdk.models.views import View
 
 from app.mcp.config_logic import (
+    get_bearer_servers_from_config,
     get_no_auth_servers_from_config,
     get_oauth_servers_from_config,
 )
@@ -171,7 +172,8 @@ def build_home_tab_blocks(
         return blocks
 
     no_auth_servers = get_no_auth_servers_from_config(mcp_config)
-    blocks.extend(build_no_auth_servers_section(no_auth_servers))
+    bearer_servers = get_bearer_servers_from_config(mcp_config)
+    blocks.extend(build_shared_servers_section(no_auth_servers + bearer_servers))
 
     mcp_servers = []
     oauth_servers = get_oauth_servers_from_config(mcp_config)
@@ -202,21 +204,22 @@ def build_home_tab_blocks(
     return blocks
 
 
-def build_no_auth_servers_section(mcp_servers: list[dict[str, str]]) -> list[Block]:
+def build_shared_servers_section(mcp_servers: list[dict[str, str]]) -> list[Block]:
     """
-    Build section for servers without authentication.
+    Build section for shared MCP servers (none and bearer).
+
+    These servers are authenticated by Collmbo itself (or need no auth), so
+    they are available to every user without a per-user sign-in.
 
     Args:
-        mcp_servers (list[dict[str, str]]): List of no-auth MCP server info.
+        mcp_servers (list[dict[str, str]]): List of shared MCP server info.
 
     Returns:
-        List[Block]: Block Kit blocks for no-auth servers.
+        List[Block]: Block Kit blocks for shared servers.
     """
     blocks: list[Block] = []
 
-    blocks.append(
-        HeaderBlock(text=PlainTextObject(text="🌐 MCP Servers without Authentication"))
-    )
+    blocks.append(HeaderBlock(text=PlainTextObject(text="👥 Shared MCP Servers")))
 
     if not mcp_servers:
         blocks.append(
@@ -225,7 +228,7 @@ def build_no_auth_servers_section(mcp_servers: list[dict[str, str]]) -> list[Blo
         return blocks
 
     for server in mcp_servers:
-        # No-auth servers are always active, so they're always enabled
+        # Shared servers are always active, so they're always enabled
         server_display = format_server_display(
             server_name=server["name"],
             is_enabled=True,
@@ -239,7 +242,7 @@ def build_no_auth_servers_section(mcp_servers: list[dict[str, str]]) -> list[Blo
 
 def build_oauth_servers_section(mcp_servers: list[dict], user_tz: str) -> list[Block]:
     """
-    Build section for servers requiring authentication.
+    Build section for per-user MCP servers (user_federation).
 
     Args:
         mcp_servers (List[dict]): List of server data with authentication status.
@@ -253,9 +256,7 @@ def build_oauth_servers_section(mcp_servers: list[dict], user_tz: str) -> list[B
     if not mcp_servers:
         return blocks
 
-    blocks.append(
-        HeaderBlock(text=PlainTextObject(text="🔒 MCP Servers with Authentication"))
-    )
+    blocks.append(HeaderBlock(text=PlainTextObject(text="👤 Per-User MCP Servers")))
 
     for data in mcp_servers:
         index = data["index"]
