@@ -28,7 +28,10 @@ from app.tools_logic import (
     is_mcp_tool_name,
     load_classic_tools,
     split_classic_tools_by_mcp_collision,
+    split_classic_tools_by_reserved_name,
 )
+from app.vector_store_logic import VECTOR_STORE_TOOL_NAME
+from app.vector_store_service import get_vector_store_tools, run_vector_store_search
 
 classic_tools: list[dict] | None = None
 
@@ -51,6 +54,15 @@ def get_classic_tools() -> list[dict]:
                 "naming scheme and would be misrouted to an MCP server.",
                 tool.get("function", {}).get("name", ""),
             )
+        usable, reserved = split_classic_tools_by_reserved_name(
+            usable, VECTOR_STORE_TOOL_NAME
+        )
+        for tool in reserved:
+            logging.warning(
+                "Skipping classic tool %r: its name is reserved for the vector "
+                "store search tool.",
+                tool.get("function", {}).get("name", ""),
+            )
         classic_tools = usable
     return classic_tools
 
@@ -70,7 +82,7 @@ def get_all_tools(
     Returns:
         list[dict]: A list of all tools.
     """
-    tools = get_classic_tools() + get_shared_mcp_tools()
+    tools = get_classic_tools() + get_shared_mcp_tools() + get_vector_store_tools()
 
     # Add authenticated MCP tools only for DM conversations
     # DM channels start with 'D' (direct message)
@@ -144,6 +156,17 @@ def process_tool_call(
     tool_name = tool_call.function.name
     if not tool_name:
         logging.warning("Skipped tool call with empty name: %s", tool_call)
+        return
+
+    if tool_name == VECTOR_STORE_TOOL_NAME:
+        arguments = json.loads(tool_call.function.arguments)
+        tool_response = run_vector_store_search(arguments.get("query", ""))
+        tool_message = build_tool_message(
+            tool_call_id=tool_call.id,
+            name=tool_name,
+            content=tool_response,
+        )
+        messages.append(tool_message)
         return
 
     if not is_mcp_tool_name(tool_name) and TOOLS_MODULE_NAME is not None:

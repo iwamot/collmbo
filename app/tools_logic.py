@@ -57,6 +57,34 @@ def split_classic_tools_by_mcp_collision(
     return usable, colliding
 
 
+def split_classic_tools_by_reserved_name(
+    tools: list[dict],
+    reserved_name: str,
+) -> tuple[list[dict], list[dict]]:
+    """
+    Partition classic tools by whether their name matches a reserved tool name.
+
+    A classic tool that reuses a reserved name would be misrouted to the built-in
+    tool that owns that name instead of being called as a classic tool.
+
+    Args:
+        tools (list[dict]): Classic tools in OpenAI tool format.
+        reserved_name (str): The reserved tool name.
+
+    Returns:
+        tuple[list[dict], list[dict]]: (usable tools, colliding tools).
+    """
+    usable: list[dict] = []
+    colliding: list[dict] = []
+    for tool in tools:
+        name = tool.get("function", {}).get("name", "")
+        if name == reserved_name:
+            colliding.append(tool)
+        else:
+            usable.append(tool)
+    return usable, colliding
+
+
 def load_classic_tools(module_name: str | None) -> list[dict]:
     """
     Load tools from a module.

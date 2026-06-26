@@ -104,6 +104,7 @@ Collmbo does not serve endpoints and can run in any environment with internet ac
 
 - **[MCP Tools](docs/features/mcp-tools.md)** - Extends functionality with MCP server.
 - **[Tools (Function Calling)](docs/features/tools-function-calling.md)** - Extends functionality with function calling.
+- **[Vector Store](docs/features/vector-store.md)** - Retrieves context from a knowledge base (RAG).
 - **[Custom Callbacks](docs/features/custom-callbacks.md)** - Hooks into requests and responses for custom processing.
 - **[Redaction](docs/features/redaction.md)** - Masks sensitive information before sending requests.
 - **[Slack-friendly Formatting](docs/features/slack-friendly-formatting.md)** - Formats messages for better readability in Slack.
