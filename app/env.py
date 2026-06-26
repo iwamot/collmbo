@@ -83,7 +83,7 @@ Only mention users (e.g., `<@U12345>`) when you are explicitly instructed to do 
 SYSTEM_PROMPT_TEMPLATE = get_env(
     "SYSTEM_PROMPT_TEMPLATE", DEFAULT_SYSTEM_PROMPT_TEMPLATE
 )
-LLM_MODEL = get_env("LLM_MODEL", "gpt-5.2")
+LLM_MODEL = get_env("LLM_MODEL", "gpt-5.5")
 LLM_TIMEOUT_SECONDS = get_env("LLM_TIMEOUT_SECONDS", 30)
 LLM_TEMPERATURE = get_env("LLM_TEMPERATURE", 1.0)
 LLM_MAX_TOKENS = get_env("LLM_MAX_TOKENS", 2048)
