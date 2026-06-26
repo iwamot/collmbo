@@ -10,7 +10,7 @@
 
 ## Quick Start
 
-Collmbo supports multiple LLMs, but let's begin with OpenAI's gpt-5.2 model for a quick setup.
+Collmbo supports multiple LLMs, but let's begin with OpenAI's gpt-5.5 model for a quick setup.
 
 ### 1. Create a Slack App
 
@@ -26,7 +26,7 @@ Save your credentials in a `.env` file:
 ```sh
 SLACK_APP_TOKEN=xapp-1-...
 SLACK_BOT_TOKEN=xoxb-...
-LLM_MODEL=gpt-5.2
+LLM_MODEL=gpt-5.5
 OPENAI_API_KEY=sk-...
 ```
 
@@ -69,7 +69,7 @@ LLM_MODEL=gemini/gemini-3-pro-preview
 GEMINI_API_KEY=...
 ```
 
-### Azure OpenAI (gpt-5.2)
+### Azure OpenAI (gpt-5.5)
 
 ```sh
 SLACK_APP_TOKEN=xapp-1-...
@@ -81,12 +81,12 @@ AZURE_API_BASE=...
 AZURE_API_VERSION=...
 ```
 
-### Amazon Bedrock (Claude Opus 4.5)
+### Amazon Bedrock (Claude Opus 4.8)
 
 ```sh
 SLACK_APP_TOKEN=...
 SLACK_BOT_TOKEN=...
-LLM_MODEL=bedrock/global.anthropic.claude-opus-4-5-20251101-v1:0
+LLM_MODEL=bedrock/global.anthropic.claude-opus-4-8
 
 # You can specify a Bedrock region if it's different from your default AWS region
 AWS_REGION_NAME=us-west-2
