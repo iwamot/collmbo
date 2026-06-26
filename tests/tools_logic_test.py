@@ -3,6 +3,7 @@ import pytest
 from app.tools_logic import (
     load_classic_tools,
     split_classic_tools_by_mcp_collision,
+    split_classic_tools_by_reserved_name,
 )
 
 
@@ -78,6 +79,39 @@ def test_split_classic_tools_by_mcp_collision(
     tools, expected_usable, expected_colliding
 ):
     usable, colliding = split_classic_tools_by_mcp_collision(tools)
+
+    assert usable == expected_usable
+    assert colliding == expected_colliding
+
+
+@pytest.mark.parametrize(
+    "tools, reserved_name, expected_usable, expected_colliding",
+    [
+        ([], "reserved", [], []),
+        (
+            [_classic_tool("get_weather"), _classic_tool("search")],
+            "reserved",
+            [_classic_tool("get_weather"), _classic_tool("search")],
+            [],
+        ),
+        (
+            [_classic_tool("get_weather"), _classic_tool("reserved")],
+            "reserved",
+            [_classic_tool("get_weather")],
+            [_classic_tool("reserved")],
+        ),
+        (
+            [{"type": "function", "function": {}}],
+            "reserved",
+            [{"type": "function", "function": {}}],
+            [],
+        ),
+    ],
+)
+def test_split_classic_tools_by_reserved_name(
+    tools, reserved_name, expected_usable, expected_colliding
+):
+    usable, colliding = split_classic_tools_by_reserved_name(tools, reserved_name)
 
     assert usable == expected_usable
     assert colliding == expected_colliding

@@ -106,6 +106,10 @@ PDF_INPUT_ENABLED = get_env("PDF_INPUT_ENABLED", "false") == "true"
 # Tools
 TOOLS_MODULE_NAME = get_env("TOOLS_MODULE_NAME")
 
+# Vector store
+VECTOR_STORE_IDS = get_env("VECTOR_STORE_IDS")
+VECTOR_STORE_PROVIDER = get_env("VECTOR_STORE_PROVIDER")
+
 # Prompt caching
 PROMPT_CACHING_ENABLED = get_env("PROMPT_CACHING_ENABLED", "false") == "true"
 PROMPT_CACHING_TTL = get_env("PROMPT_CACHING_TTL")
