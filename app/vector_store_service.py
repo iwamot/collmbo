@@ -12,7 +12,11 @@ import os
 import litellm
 import litellm.vector_stores
 
-from app.env import VECTOR_STORE_IDS, VECTOR_STORE_PROVIDER
+from app.env import (
+    VECTOR_STORE_IDS,
+    VECTOR_STORE_PROVIDER,
+    VECTOR_STORE_TOOL_DESCRIPTION,
+)
 from app.vector_store_logic import (
     build_tool_result_content,
     build_vector_store_tool,
@@ -38,7 +42,7 @@ def get_vector_store_tools() -> list[dict]:
         )
         return []
 
-    return [build_vector_store_tool()]
+    return [build_vector_store_tool(VECTOR_STORE_TOOL_DESCRIPTION)]
 
 
 def run_vector_store_search(query: str) -> str:

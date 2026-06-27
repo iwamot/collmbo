@@ -21,9 +21,13 @@ def parse_vector_store_ids(raw: str) -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
-def build_vector_store_tool() -> dict:
+def build_vector_store_tool(description: str) -> dict:
     """
     Build the function tool definition the model calls to search the knowledge base.
+
+    Args:
+        description (str): The tool description shown to the model. It guides when the
+            model searches, so it can be tailored to the contents of the knowledge base.
 
     Returns:
         dict: The tool definition in OpenAI function-calling format.
@@ -32,11 +36,7 @@ def build_vector_store_tool() -> dict:
         "type": "function",
         "function": {
             "name": VECTOR_STORE_TOOL_NAME,
-            "description": (
-                "Search the knowledge base for information relevant to the user's "
-                "question. Call this whenever the answer may depend on the user's own "
-                "documents, then answer using the results."
-            ),
+            "description": description,
             "parameters": {
                 "type": "object",
                 "properties": {
