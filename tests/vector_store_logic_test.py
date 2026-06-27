@@ -27,10 +27,11 @@ def test_parse_vector_store_ids(raw, expected):
 
 
 def test_build_vector_store_tool():
-    result = build_vector_store_tool()
+    result = build_vector_store_tool("Search the knowledge base.")
 
     assert result["type"] == "function"
     assert result["function"]["name"] == VECTOR_STORE_TOOL_NAME
+    assert result["function"]["description"] == "Search the knowledge base."
     assert result["function"]["parameters"]["required"] == ["query"]
     assert "query" in result["function"]["parameters"]["properties"]
 

@@ -109,6 +109,14 @@ TOOLS_MODULE_NAME = get_env("TOOLS_MODULE_NAME")
 # Vector store
 VECTOR_STORE_IDS = get_env("VECTOR_STORE_IDS")
 VECTOR_STORE_PROVIDER = get_env("VECTOR_STORE_PROVIDER")
+DEFAULT_VECTOR_STORE_TOOL_DESCRIPTION = (
+    "Search the knowledge base for information relevant to the user's "
+    "question. Call this whenever the answer may depend on the user's own "
+    "documents, then answer using the results."
+)
+VECTOR_STORE_TOOL_DESCRIPTION = get_env(
+    "VECTOR_STORE_TOOL_DESCRIPTION", DEFAULT_VECTOR_STORE_TOOL_DESCRIPTION
+)
 
 # Prompt caching
 PROMPT_CACHING_ENABLED = get_env("PROMPT_CACHING_ENABLED", "false") == "true"

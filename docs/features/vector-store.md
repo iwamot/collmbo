@@ -25,3 +25,9 @@ To search multiple stores, separate IDs with commas:
 ```sh
 VECTOR_STORE_IDS=vs_aaa,vs_bbb
 ```
+
+The model decides when to search based on the search tool's description. Set `VECTOR_STORE_TOOL_DESCRIPTION` to tailor it to your documents, since only you know what the knowledge base contains:
+
+```sh
+VECTOR_STORE_TOOL_DESCRIPTION=Search the internal HR handbook for company policies, benefits, and leave rules.
+```
