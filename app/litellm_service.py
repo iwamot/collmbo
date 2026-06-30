@@ -389,6 +389,10 @@ def update_reply_text(
     text = assistant_reply_text
     if with_loading_character:
         text += SLACK_LOADING_CHARACTER
+    # Slack rejects chat.update with empty text (no_text). Reasoning models can
+    # emit whitespace-only content on a tool-call turn, which formats to "" here.
+    if not text.strip():
+        return
     client.chat_update(channel=channel, ts=wip_message["ts"], text=text)
 
 
