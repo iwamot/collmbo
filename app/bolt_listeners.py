@@ -140,7 +140,6 @@ def respond_to_new_post(
             user_id=user_id,
             thread_ts=reply_thread_ts,
             messages=messages,
-            loading_text=loading_text,
             wip_reply=wip_reply,
             timeout_seconds=LLM_TIMEOUT_SECONDS,
         )
