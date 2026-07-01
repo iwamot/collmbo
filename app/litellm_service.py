@@ -24,7 +24,11 @@ from app.env import (
     SLACK_LOADING_CHARACTER,
     SLACK_UPDATE_TEXT_BUFFER_SIZE,
 )
-from app.litellm_logic import extract_delta_content, is_final_chunk
+from app.litellm_logic import (
+    extract_delta_content,
+    has_visible_text,
+    is_final_chunk,
+)
 from app.message_logic import (
     build_assistant_message,
     convert_markdown_to_mrkdwn,
@@ -46,7 +50,6 @@ def reply_to_slack_with_litellm(
     user_id: str,
     thread_ts: str | None,
     messages: list[dict],
-    loading_text: str,
     wip_reply: dict | SlackResponse,
     timeout_seconds: int,
 ) -> None:
@@ -59,7 +62,6 @@ def reply_to_slack_with_litellm(
         user_id (str): The user ID of the person who initiated the conversation.
         thread_ts (Optional[str]): The timestamp of the thread to reply to.
         messages (list[dict]): The list of messages to include in the reply.
-        loading_text (str): The text to display while waiting for a response.
         wip_reply (Union[dict, SlackResponse]): The message object for the in-progress reply.
         timeout_seconds (int): The timeout duration in seconds.
 
@@ -80,7 +82,6 @@ def reply_to_slack_with_litellm(
         messages=messages,
         stream=stream,
         thread_ts=thread_ts,
-        loading_text=loading_text,
         timeout_seconds=timeout_seconds,
     )
 
@@ -175,7 +176,6 @@ def stream_litellm_reply_to_slack(
     messages: list[dict],
     stream: CustomStreamWrapper,
     thread_ts: str | None,
-    loading_text: str,
     timeout_seconds: int,
 ):
     """
@@ -189,7 +189,6 @@ def stream_litellm_reply_to_slack(
         messages (list[dict]): The list of messages to include in the reply.
         stream (CustomStreamWrapper): The stream wrapper for the response.
         thread_ts (Optional[str]): The timestamp of the thread to reply to.
-        loading_text (str): The text to display while waiting for a response.
         timeout_seconds (int): The timeout duration in seconds.
 
     Returns:
@@ -210,21 +209,21 @@ def stream_litellm_reply_to_slack(
         messages.append(assistant_message)
         if not is_response_too_long:
             break
-        wip_reply = client.chat_postMessage(
-            channel=channel,
-            thread_ts=thread_ts,
-            text=SLACK_LOADING_CHARACTER,
+        wip_reply = post_loading_placeholder(
+            client=client, channel=channel, thread_ts=thread_ts
         )
 
     if response_message is None or response_message.tool_calls is None:
         return
 
-    # If the message has already been updated, post a new one
-    if (wip_message := wip_reply["message"]) and wip_message["text"] != loading_text:
-        wip_reply = client.chat_postMessage(
-            channel=channel,
-            thread_ts=thread_ts,
-            text=loading_text,
+    # If the model streamed visible narration into the current message, keep it
+    # and start a fresh placeholder for the next tool-calling round. If the turn
+    # produced no visible text (e.g. a pure tool call, or whitespace-only content
+    # from a reasoning model), reuse the existing placeholder instead of stacking
+    # another one -- this is what stops multi-step replies from spamming loaders.
+    if has_visible_text(assistant_message["content"]):
+        wip_reply = post_loading_placeholder(
+            client=client, channel=channel, thread_ts=thread_ts
         )
 
     process_tool_calls(
@@ -240,8 +239,34 @@ def stream_litellm_reply_to_slack(
         user_id=user_id,
         messages=messages,
         thread_ts=thread_ts,
-        loading_text=loading_text,
         timeout_seconds=int(timeout_seconds - (time.time() - start_time)),
+    )
+
+
+def post_loading_placeholder(
+    *,
+    client: WebClient,
+    channel: str,
+    thread_ts: str | None,
+) -> SlackResponse:
+    """
+    Posts a lightweight loading placeholder message to a Slack thread.
+
+    Used between tool-calling rounds and when continuing a too-long reply, so the
+    next chunk of the response has a message to stream into.
+
+    Args:
+        client (WebClient): The Slack WebClient instance.
+        channel (str): The Slack channel ID.
+        thread_ts (Optional[str]): The timestamp of the thread to reply to.
+
+    Returns:
+        SlackResponse: The Slack API response for the posted message.
+    """
+    return client.chat_postMessage(
+        channel=channel,
+        thread_ts=thread_ts,
+        text=SLACK_LOADING_CHARACTER,
     )
 
 

@@ -32,3 +32,21 @@ def is_final_chunk(chunk: ModelResponse) -> bool:
         bool: True if the chunk is the final chunk, False otherwise.
     """
     return chunk.choices[0].get("finish_reason") is not None
+
+
+def has_visible_text(content: str) -> bool:
+    """
+    Check whether streamed assistant content has visible text.
+
+    Reasoning models may end a tool-calling turn with empty or whitespace-only
+    content. Such a turn leaves nothing worth preserving in the Slack message, so
+    the in-progress placeholder can be reused for the next round rather than
+    posting a fresh one.
+
+    Args:
+        content (str): The accumulated assistant content for the turn.
+
+    Returns:
+        bool: True if the content has non-whitespace text.
+    """
+    return bool(content and content.strip())
