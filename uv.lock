@@ -318,7 +318,7 @@ dev = [
 requires-dist = [
     { name = "bedrock-agentcore", specifier = "==1.18.0" },
     { name = "httpx", specifier = "==0.28.1" },
-    { name = "litellm", specifier = "==1.91.2" },
+    { name = "litellm", specifier = "==1.91.3" },
     { name = "mcp", specifier = "==1.28.1" },
     { name = "pillow", specifier = "==12.3.0" },
     { name = "slack-bolt", specifier = "==1.29.0" },
@@ -740,7 +740,7 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.91.2"
+version = "1.91.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -756,9 +756,9 @@ dependencies = [
     { name = "tiktoken" },
     { name = "tokenizers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6b/5d/2dfda0e057511ba24904c5c9af720512b1fc86893821947fa52f4cc0231b/litellm-1.91.2.tar.gz", hash = "sha256:e9aa292b95f25fa9d127e47a6e7266a2a99f7a1645f41100a411d7a8a77a6a46", size = 14872927, upload-time = "2026-07-11T06:04:18.847Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/36/33/879369fe202498a307e1130bae1f59c5f226362afc07829ba5a0279a563d/litellm-1.91.3.tar.gz", hash = "sha256:096cee401dfd353f050422adc6ed9b25da0fc5e110fc923ce3f0ffa5bc5c2957", size = 14875767, upload-time = "2026-07-11T22:43:32.975Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/50/54/760eb0a5ffbfdb57364963e5330abe542b1292f7163a51963e88eb649a8d/litellm-1.91.2-py3-none-any.whl", hash = "sha256:9f78f82f818bc3644ba6aec770adc6e67b063e2b1ff4ebf8b5c3b085488f711e", size = 16670494, upload-time = "2026-07-11T06:04:14.941Z" },
+    { url = "https://files.pythonhosted.org/packages/d6/3c/157c54c924f9e6025797545a0cd915a98e98ad8d3f9011502a575781d4b5/litellm-1.91.3-py3-none-any.whl", hash = "sha256:5be4df2bdf5459f46a6224a75046f365dc979995a37a81f5aa3ce29f92f534cf", size = 16674504, upload-time = "2026-07-11T22:43:30.517Z" },
 ]
 
 [[package]]
