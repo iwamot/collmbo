@@ -18,7 +18,9 @@ dependencies = [
     "strands-agents-tools==0.8.3",
 ]
 
-[project.optional-dependencies]
+# The dev group is included by `uv sync` and `uv run` by default, and
+# excluded from the container by `uv sync --no-dev`.
+[dependency-groups]
 dev = [
     "pip-licenses==5.5.5",
     "pytest==9.1.1",
