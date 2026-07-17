@@ -5,7 +5,7 @@ lockfile = true
 
 [tools]
 python = "3.14.6"
-"aqua:astral-sh/ruff" = "0.15.21"
+"aqua:astral-sh/ruff" = "0.15.22"
 "aqua:astral-sh/ty" = "0.0.60"
 "aqua:astral-sh/uv" = "0.11.29"
 
