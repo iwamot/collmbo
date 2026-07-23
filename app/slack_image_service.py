@@ -35,7 +35,7 @@ def build_image_url_items_from_slack_files(
 
     for file in files:
         mime_type = file.get("mimetype")
-        if mime_type not in SUPPORTED_IMAGE_MIME_TYPES:
+        if mime_type is None or mime_type not in SUPPORTED_IMAGE_MIME_TYPES:
             continue
         file_url = file.get("url_private")
         if file_url is None:
