@@ -323,7 +323,7 @@ requires-dist = [
     { name = "pillow", specifier = "==12.3.0" },
     { name = "slack-bolt", specifier = "==1.30.0" },
     { name = "slack-sdk", specifier = "==3.43.0" },
-    { name = "strands-agents", specifier = "==1.48.0" },
+    { name = "strands-agents", specifier = "==1.50.0" },
     { name = "strands-agents-tools", specifier = "==0.8.5" },
 ]
 
@@ -1546,12 +1546,13 @@ wheels = [
 
 [[package]]
 name = "strands-agents"
-version = "1.48.0"
+version = "1.50.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
     { name = "botocore" },
     { name = "docstring-parser" },
+    { name = "httpx" },
     { name = "jsonschema" },
     { name = "mcp" },
     { name = "opentelemetry-api" },
@@ -1562,9 +1563,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "watchdog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a5/1e/834e4a63c6ad039d10924b5ba8c0651ccb24d7e28fd8c07c1a09b859120f/strands_agents-1.48.0.tar.gz", hash = "sha256:bfbf5af9d8f1cb348b617d5f8d17b949ef3c3fdd74fa8c849f1fda46885449c2", size = 1174326, upload-time = "2026-07-17T14:03:45.509Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d4/3d/284f691125ad921bd9815afa2612d35da2a23009949145cbf6bac9acc8be/strands_agents-1.50.0.tar.gz", hash = "sha256:fd06a16e86f450eb2ffb33948d01a7f7578f362afa8bf59d1185bca9c3f1c810", size = 1223155, upload-time = "2026-07-24T13:47:39.11Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/25/67/67d1e267405f6ae119cc0412891f66997a5a97eed2dbba18fc430a9ac00a/strands_agents-1.48.0-py3-none-any.whl", hash = "sha256:7118a644e844ab6ef77f4bc9883b7082b2e7a309bcd689cc5ef5345e07abcc9e", size = 612156, upload-time = "2026-07-17T14:03:43.06Z" },
+    { url = "https://files.pythonhosted.org/packages/a4/01/1b580827e567a8115d176d89a8ebc44015fc503640a47d4da0621d43fce4/strands_agents-1.50.0-py3-none-any.whl", hash = "sha256:d5878ba82e6f7f79046afefd406d1b821d63f5156f11d5bc9d29de0e830a65a4", size = 640847, upload-time = "2026-07-24T13:47:37.386Z" },
 ]
 
 [[package]]
