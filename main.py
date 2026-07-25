@@ -29,6 +29,8 @@ from app.env import SLACK_APP_LOG_LEVEL, USE_SLACK_LOCALE
 from app.mcp.agentcore_service import shutdown_all_oauth_pollers
 from app.mcp.shared_tools_service import start_shared_mcp_tools_refresh_loop
 
+logger = logging.getLogger(__name__)
+
 
 def main() -> None:
     """
@@ -118,12 +120,12 @@ def register_signal_handlers(slack_handler: SocketModeHandler) -> None:
     """
 
     def handler(signum: int, _: FrameType | None) -> None:
-        logging.info("Received %s, shutting down...", signal.Signals(signum).name)
+        logger.info("Received %s, shutting down...", signal.Signals(signum).name)
         shutdown_all_oauth_pollers()
         try:
             slack_handler.close()
         except Exception:
-            logging.debug("Failed to close slack handler")
+            logger.debug("Failed to close slack handler", exc_info=True)
         sys.exit(0)
 
     for signum in (signal.SIGTERM, signal.SIGINT):

@@ -33,6 +33,8 @@ from app.tools_logic import (
 from app.vector_store_logic import VECTOR_STORE_TOOL_NAME
 from app.vector_store_service import get_vector_store_tools, run_vector_store_search
 
+logger = logging.getLogger(__name__)
+
 classic_tools: list[dict] | None = None
 
 
@@ -49,7 +51,7 @@ def get_classic_tools() -> list[dict]:
             load_classic_tools(TOOLS_MODULE_NAME)
         )
         for tool in colliding:
-            logging.warning(
+            logger.warning(
                 "Skipping classic tool %r: its name collides with the MCP tool "
                 "naming scheme and would be misrouted to an MCP server.",
                 tool.get("function", {}).get("name", ""),
@@ -58,7 +60,7 @@ def get_classic_tools() -> list[dict]:
             usable, VECTOR_STORE_TOOL_NAME
         )
         for tool in reserved:
-            logging.warning(
+            logger.warning(
                 "Skipping classic tool %r: its name is reserved for the vector "
                 "store search tool.",
                 tool.get("function", {}).get("name", ""),
@@ -155,7 +157,7 @@ def process_tool_call(
     """
     tool_name = tool_call.function.name
     if not tool_name:
-        logging.warning("Skipped tool call with empty name: %s", tool_call)
+        logger.warning("Skipped tool call with empty name: %s", tool_call)
         return
 
     if tool_name == VECTOR_STORE_TOOL_NAME:

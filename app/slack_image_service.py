@@ -10,6 +10,8 @@ from PIL import Image
 from app.message_logic import build_image_url_item
 from app.slack_file_service import get_slack_file_content
 
+logger = logging.getLogger(__name__)
+
 SUPPORTED_IMAGE_FORMATS = ["jpeg", "png", "gif", "webp"]
 SUPPORTED_IMAGE_MIME_TYPES = [f"image/{fmt}" for fmt in SUPPORTED_IMAGE_FORMATS]
 
@@ -39,7 +41,7 @@ def build_image_url_items_from_slack_files(
             continue
         file_url = file.get("url_private")
         if file_url is None:
-            logging.warning("Skipped an image file due to missing 'url_private'")
+            logger.warning("Skipped an image file due to missing 'url_private'")
             continue
 
         image_bytes = get_slack_file_content(
@@ -52,10 +54,10 @@ def build_image_url_items_from_slack_files(
         except Exception as e:
             raise RuntimeError(f"Failed to open an image data: {e}") from e
         if image.format is None:
-            logging.warning(f"Skipped image with unknown format (url: {file_url})")
+            logger.warning(f"Skipped image with unknown format (url: {file_url})")
             continue
         if image.format.lower() not in SUPPORTED_IMAGE_FORMATS:
-            logging.info(
+            logger.info(
                 f"Skipped unsupported image (url: {file_url}, format: {image.format})"
             )
             continue

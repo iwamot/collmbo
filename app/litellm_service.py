@@ -38,6 +38,8 @@ from app.tools_service import get_all_tools, process_tool_calls
 
 litellm.drop_params = True
 
+logger = logging.getLogger(__name__)
+
 if LITELLM_CALLBACK_MODULE_NAME is not None:
     callback_module = import_module(LITELLM_CALLBACK_MODULE_NAME)
     litellm.callbacks = [callback_module.CallbackHandler()]
@@ -333,7 +335,7 @@ def handle_litellm_stream(
             try:
                 t.join()
             except Exception:
-                logging.debug("Failed to join thread")
+                logger.debug("Failed to join thread", exc_info=True)
 
     # Final update to remove the loading character after stream ends
     if len(assistant_message["content"]) > 0:

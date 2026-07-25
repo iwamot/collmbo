@@ -61,6 +61,8 @@ from app.slack_image_service import build_image_url_items_from_slack_files
 from app.slack_pdf_service import build_pdf_file_items_from_slack_files
 from app.translation_service import translate
 
+logger = logging.getLogger(__name__)
+
 LOADING_TEXT = ":hourglass_flowing_sand: Wait a second, please ..."
 TIMEOUT_ERROR_MESSAGE = (
     f":warning: Apologies! It seems that the AI didn't respond within the "
@@ -158,6 +160,7 @@ def respond_to_new_post(
             thread_ts=reply_thread_ts,
         )
     except Exception as e:
+        logger.exception("Failed to reply")
         handle_exception(
             client=client,
             channel_id=context.channel_id,
@@ -531,7 +534,6 @@ def handle_exception(
         None
     """
     text = f":warning: Failed to reply: {e}"
-    client.logger.exception(text)
     client.chat_postMessage(
         channel=channel_id,
         thread_ts=thread_ts,
@@ -555,8 +557,8 @@ def handle_app_home_opened(client: WebClient, event: dict) -> None:
     expire_old_oauth_sessions(user_id)
     try:
         update_home_tab(client=client, user_id=user_id)
-    except Exception as e:
-        logging.error(f"Failed to update home tab: {e}")
+    except Exception:
+        logger.exception("Failed to update home tab")
         update_home_tab(
             client=client,
             user_id=user_id,
@@ -583,8 +585,8 @@ def handle_enable_mcp_oauth_action(body: dict, client: WebClient) -> None:
             server_index=server_index,
             on_update=update_home_tab,
         )
-    except Exception as e:
-        logging.error(f"Failed to handle enable auth action: {e}")
+    except Exception:
+        logger.exception("Failed to handle enable auth action")
         update_home_tab(
             client=client,
             user_id=body["user"]["id"],
@@ -614,8 +616,8 @@ def handle_disable_mcp_oauth_action(
             server_index=server_index,
             on_update=update_home_tab,
         )
-    except Exception as e:
-        logging.error(f"Failed to handle disable auth action: {e}")
+    except Exception:
+        logger.exception("Failed to handle disable auth action")
         update_home_tab(
             client=client,
             user_id=body["user"]["id"],
@@ -645,8 +647,8 @@ def handle_cancel_mcp_oauth_action(
             server_index=server_index,
             on_update=update_home_tab,
         )
-    except Exception as e:
-        logging.error(f"Failed to handle cancel auth action: {e}")
+    except Exception:
+        logger.exception("Failed to handle cancel auth action")
         update_home_tab(
             client=client,
             user_id=body["user"]["id"],

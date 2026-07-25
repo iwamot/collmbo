@@ -23,6 +23,8 @@ from app.vector_store_logic import (
     parse_vector_store_ids,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def get_vector_store_tools() -> list[dict]:
     """
@@ -36,7 +38,7 @@ def get_vector_store_tools() -> list[dict]:
         return []
 
     if not VECTOR_STORE_PROVIDER:
-        logging.warning(
+        logger.warning(
             "VECTOR_STORE_IDS is set but VECTOR_STORE_PROVIDER is not; "
             "the knowledge base search tool is disabled."
         )
@@ -67,8 +69,10 @@ def run_vector_store_search(query: str) -> str:
                 aws_region_name=os.environ.get("AWS_REGION_NAME"),
             )
         except Exception:
-            logging.warning(
-                "Vector store search failed for %s; skipping.", vector_store_id
+            logger.warning(
+                "Vector store search failed for %s; skipping.",
+                vector_store_id,
+                exc_info=True,
             )
             continue
         search_responses.append(search_response)

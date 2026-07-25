@@ -8,11 +8,14 @@ Deploy this as a Lambda function with Function URL enabled.
 """
 
 import json
+import logging
 import os
 
 import boto3
 
 AGENTCORE_REGION = os.environ.get("AGENTCORE_REGION", "us-west-2")
+
+logger = logging.getLogger(__name__)
 
 
 def lambda_handler(event, context):
@@ -255,8 +258,8 @@ def lambda_handler(event, context):
                 </html>
                 """,
             }
-        except Exception as e:
-            print(f"CompleteResourceTokenAuth failed: {e}")
+        except Exception:
+            logger.exception("CompleteResourceTokenAuth failed")
             return {
                 "statusCode": 400,
                 "headers": {"Content-Type": "text/html; charset=utf-8"},

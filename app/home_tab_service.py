@@ -17,6 +17,8 @@ from app.mcp.oauth_tools_service import (
     get_user_oauth_sessions,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def get_user_timezone(client: WebClient, user_id: str) -> str:
     """
@@ -36,7 +38,7 @@ def get_user_timezone(client: WebClient, user_id: str) -> str:
             if user_data and hasattr(user_data, "get"):
                 return user_data.get("tz", "UTC")
     except Exception:
-        logging.debug("Failed to get user timezone")
+        logger.debug("Failed to get user timezone", exc_info=True)
     return "UTC"
 
 

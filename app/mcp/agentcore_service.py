@@ -12,6 +12,8 @@ from bedrock_agentcore.services.identity import IdentityClient, TokenPoller
 
 from app.mcp.agentcore_logic import create_agentcore_user_id
 
+logger = logging.getLogger(__name__)
+
 # OAuth token polling timeout in seconds
 OAUTH_POLLING_TIMEOUT_SECONDS = 300
 OAUTH_POLLING_INTERVAL_SECONDS = 5
@@ -81,7 +83,7 @@ def shutdown_all_oauth_pollers() -> None:
         try:
             poller.cancel()
         except Exception:
-            logging.debug("Failed to cancel OAuth poller")
+            logger.debug("Failed to cancel OAuth poller", exc_info=True)
     active_oauth_pollers.clear()
 
 
@@ -158,7 +160,7 @@ def create_workload_identity_token(
                     allowed_resource_oauth_2_return_urls=callback_urls,
                 )
         else:
-            raise e
+            raise
     token_response = client.get_workload_access_token(
         workload_identity_name,
         user_id=agentcore_user_id,
@@ -263,5 +265,4 @@ async def initiate_oauth_flow_with_callback(
             on_timeout_callback()
     finally:
         # Remove poller from active list
-        if key in active_oauth_pollers:
-            del active_oauth_pollers[key]
+        active_oauth_pollers.pop(key, None)
