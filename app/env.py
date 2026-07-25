@@ -38,7 +38,7 @@ def get_env(new_name: str, default: None = None) -> str | None: ...
 
 
 def get_env(
-    new_name: str, default: str | int | float | None = None
+    new_name: str, default: str | float | None = None
 ) -> str | int | float | None:
     """
     Get an environment variable with deprecation warning support.

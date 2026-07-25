@@ -381,7 +381,7 @@ def convert_markdown_to_mrkdwn(content: str) -> str:
     # Apply the bold, italic, and strikethrough formatting to text not within code
     result = ""
     for idx, part in enumerate(parts):
-        if part.startswith("```") or part.startswith("`"):
+        if part.startswith(("```", "`")):
             # Insert ASCII spaces around code spans/blocks when adjacent to
             # East Asian wide/fullwidth characters to improve readability.
             left_space = False

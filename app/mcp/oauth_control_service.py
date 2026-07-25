@@ -128,11 +128,11 @@ def create_token_callback(
                 token=token,
             )
             on_update(client, user_id)
-        except Exception as e:
+        except Exception:
             # If tool fetching fails, clear the session to return to disabled state
             clear_user_oauth_session(user_id, server_name)
             # Re-raise the exception to maintain error logging and debugging capability
-            raise e
+            raise
 
     return on_token_callback
 

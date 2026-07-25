@@ -7,6 +7,8 @@ import logging
 from app.message_logic import build_pdf_file_item
 from app.slack_file_service import get_slack_file_content
 
+logger = logging.getLogger(__name__)
+
 
 def build_pdf_file_items_from_slack_files(
     *,
@@ -38,7 +40,7 @@ def build_pdf_file_items_from_slack_files(
             continue
         file_url = file.get("url_private")
         if file_url is None:
-            logging.warning("Skipped a PDF file due to missing 'url_private'")
+            logger.warning("Skipped a PDF file due to missing 'url_private'")
             continue
 
         pdf_bytes = get_slack_file_content(
@@ -47,7 +49,7 @@ def build_pdf_file_items_from_slack_files(
             expected_content_types=["application/pdf", "binary/octet-stream"],
         )
         if not pdf_bytes.startswith(b"%PDF-"):
-            logging.warning(f"Skipped invalid PDF (url: {file_url})")
+            logger.warning(f"Skipped invalid PDF (url: {file_url})")
             continue
 
         file_item = build_pdf_file_item(file.get("name"), pdf_bytes)

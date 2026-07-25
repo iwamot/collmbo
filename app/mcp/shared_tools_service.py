@@ -16,6 +16,8 @@ from app.mcp.config_logic import build_bearer_headers
 from app.mcp.config_service import get_bearer_servers, get_no_auth_servers
 from app.mcp.tools_logic import transform_mcp_spec_to_classic_tool
 
+logger = logging.getLogger(__name__)
+
 REFRESH_INTERVAL_SECONDS = 3600
 
 shared_mcp_tools: list[dict] = []
@@ -69,13 +71,13 @@ def load_shared_mcp_tools() -> None:
                     url=url, headers=None, auth_type="none", server_index=idx
                 )
             )
-        except Exception as exc:
-            logging.warning("Failed to load MCP tools from %s: %s", url, exc)
+        except Exception:
+            logger.warning("Failed to load MCP tools from %s", url, exc_info=True)
     for idx, server in enumerate(get_bearer_servers()):
         url = server["url"]
         headers = build_bearer_headers(server, os.environ)
         if headers is None:
-            logging.warning(
+            logger.warning(
                 "Skipping bearer MCP server %s: token env var %r is not set",
                 server.get("name"),
                 server.get("token_env"),
@@ -87,8 +89,8 @@ def load_shared_mcp_tools() -> None:
                     url=url, headers=headers, auth_type="bearer", server_index=idx
                 )
             )
-        except Exception as exc:
-            logging.warning("Failed to load MCP tools from %s: %s", url, exc)
+        except Exception:
+            logger.warning("Failed to load MCP tools from %s", url, exc_info=True)
     shared_mcp_tools = result
 
 
@@ -114,7 +116,7 @@ def start_shared_mcp_tools_refresh_loop() -> None:
         while True:
             time.sleep(REFRESH_INTERVAL_SECONDS)
             load_shared_mcp_tools()
-            logging.info(f"Shared MCP tools refreshed: {len(shared_mcp_tools)} tools")
+            logger.info(f"Shared MCP tools refreshed: {len(shared_mcp_tools)} tools")
 
     threading.Thread(
         target=refresh_loop,

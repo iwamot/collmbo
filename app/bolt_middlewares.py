@@ -10,6 +10,8 @@ from slack_sdk.web import WebClient
 
 from app.bolt_logic import extract_user_id_from_context, should_skip_event
 
+logger = logging.getLogger(__name__)
+
 
 def before_authorize(
     body: dict,
@@ -31,7 +33,7 @@ def before_authorize(
         Optional[BoltResponse]: A BoltResponse object if the event is skipped, None otherwise.
     """
     if should_skip_event(body, payload):
-        logging.debug(
+        logger.debug(
             "Skipped the following middleware and listeners "
             f"for this message event (subtype: {payload.get('subtype')})"
         )
