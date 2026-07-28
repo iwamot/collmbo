@@ -6,7 +6,7 @@ lockfile = true
 [tools]
 python = "3.14.6"
 "aqua:astral-sh/ruff" = "0.16.0"
-"aqua:astral-sh/ty" = "0.0.63"
+"aqua:astral-sh/ty" = "0.0.64"
 "aqua:astral-sh/uv" = "0.11.32"
 
 [tools."pipx:uv-override-prune"]
