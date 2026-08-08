@@ -15,7 +15,7 @@ dependencies = [
     "bedrock-agentcore==1.21.0",
     "mcp==1.29.0",
     "strands-agents==1.50.2",
-    "strands-agents-tools==0.8.5",
+    "strands-agents-tools==0.8.6",
 ]
 
 # The dev group is included by `uv sync` and `uv run` by default, and
