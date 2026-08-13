@@ -139,7 +139,7 @@ url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/505387809"
 provenance = "github-attestations"
 
 [[tools."pipx:uv-override-prune"]]
-version = "0.0.10"
+version = "0.0.11"
 backend = "pipx:uv-override-prune"
 
 [[tools.python]]
