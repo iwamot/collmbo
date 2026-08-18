@@ -125,6 +125,12 @@ def process_tool_calls(
     bearer_servers = get_bearer_servers()
 
     for tool_call in response_message.tool_calls:
+        if not isinstance(tool_call, ChatCompletionMessageToolCall):
+            # Custom tool calls carry freeform text instead of a function
+            # payload; Collmbo never registers custom tools, so none should
+            # ever arrive.
+            logger.warning("Skipped non-function tool call: %s", tool_call)
+            continue
         process_tool_call(
             tool_call=tool_call,
             messages=messages,
