@@ -5,9 +5,9 @@ version = "0.16.3"
 backend = "aqua:astral-sh/ruff"
 
 [tools."aqua:astral-sh/ruff"."platforms.linux-arm64"]
-checksum = "sha256:8319ba22f655e6efc086103486d7165bf0de73f71ff1c5f25ba580153ad05feb"
-url = "https://github.com/astral-sh/ruff/releases/download/0.16.3/ruff-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/513140238"
+checksum = "sha256:b9cc833f5db856484b38718c9da195a6ec990707307bda30530913a09705419a"
+url = "https://github.com/astral-sh/ruff/releases/download/0.16.3/ruff-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/513140223"
 provenance = "github-attestations"
 
 [tools."aqua:astral-sh/ruff"."platforms.linux-arm64-musl"]
@@ -17,9 +17,9 @@ url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/513140238
 provenance = "github-attestations"
 
 [tools."aqua:astral-sh/ruff"."platforms.linux-x64"]
-checksum = "sha256:d67c9b5949981698c48915abf65e0b3406ba9184ad73521cdf20a926bc889c73"
-url = "https://github.com/astral-sh/ruff/releases/download/0.16.3/ruff-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/513140356"
+checksum = "sha256:7ab3b978d2c0b1c96b2323d4e5c4f35284ae1cdf35d2f7399595c74c805f5fa3"
+url = "https://github.com/astral-sh/ruff/releases/download/0.16.3/ruff-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/513140349"
 provenance = "github-attestations"
 
 [tools."aqua:astral-sh/ruff"."platforms.linux-x64-musl"]
@@ -51,9 +51,9 @@ version = "0.0.72"
 backend = "aqua:astral-sh/ty"
 
 [tools."aqua:astral-sh/ty"."platforms.linux-arm64"]
-checksum = "sha256:2e3cecf23c7c0f47a6c7bc6b913597f7701452ce9e081df1782a46dfaef36355"
-url = "https://github.com/astral-sh/ty/releases/download/0.0.72/ty-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/ty/releases/assets/514948364"
+checksum = "sha256:80e7d05a2620fc3a57335888d4f46f67fef348999eee7e0c515eb8c115009f94"
+url = "https://github.com/astral-sh/ty/releases/download/0.0.72/ty-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/ty/releases/assets/514948355"
 provenance = "github-attestations"
 
 [tools."aqua:astral-sh/ty"."platforms.linux-arm64-musl"]
@@ -63,9 +63,9 @@ url_api = "https://api.github.com/repos/astral-sh/ty/releases/assets/514948364"
 provenance = "github-attestations"
 
 [tools."aqua:astral-sh/ty"."platforms.linux-x64"]
-checksum = "sha256:0a0f8025cac337bf4939f65fea4f71652d8e2a2bab12c3a2e45b15bcdd1be626"
-url = "https://github.com/astral-sh/ty/releases/download/0.0.72/ty-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/ty/releases/assets/514948432"
+checksum = "sha256:11087394fa6aeac8d449bce42a30eb03fd76dd9ad8f38e69dd8004785d3f98b0"
+url = "https://github.com/astral-sh/ty/releases/download/0.0.72/ty-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/ty/releases/assets/514948425"
 provenance = "github-attestations"
 
 [tools."aqua:astral-sh/ty"."platforms.linux-x64-musl"]
@@ -97,9 +97,9 @@ version = "0.12.5"
 backend = "aqua:astral-sh/uv"
 
 [tools."aqua:astral-sh/uv"."platforms.linux-arm64"]
-checksum = "sha256:8767a0e77f2cd45436401b1b42bf7e9ed5a4a91a74a5305d6fe93249d0f6dbc5"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.5/uv-aarch64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/514850993"
+checksum = "sha256:9bf43b4d1a07665bf64d4c4e710930b382321a785e0eb10aac07f46471f86a31"
+url = "https://github.com/astral-sh/uv/releases/download/0.12.5/uv-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/514850990"
 provenance = "github-attestations"
 
 [tools."aqua:astral-sh/uv"."platforms.linux-arm64-musl"]
@@ -109,9 +109,9 @@ url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/514850993"
 provenance = "github-attestations"
 
 [tools."aqua:astral-sh/uv"."platforms.linux-x64"]
-checksum = "sha256:a4742988791c9aeae68c78150d6cba762062ad2a47e53738c2779d2b596bfcdb"
-url = "https://github.com/astral-sh/uv/releases/download/0.12.5/uv-x86_64-unknown-linux-musl.tar.gz"
-url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/514851105"
+checksum = "sha256:68a509da24b06b4223a1c0175fb5eb5bc79342b76cbeff0cfe51ac3f5b17b6b2"
+url = "https://github.com/astral-sh/uv/releases/download/0.12.5/uv-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/514851093"
 provenance = "github-attestations"
 
 [tools."aqua:astral-sh/uv"."platforms.linux-x64-musl"]
