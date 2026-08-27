@@ -9,7 +9,7 @@ locked = true
 [tools]
 python = "3.14.7"
 "aqua:astral-sh/ruff" = "0.16.4"
-"aqua:astral-sh/ty" = "0.0.74"
+"aqua:astral-sh/ty" = "0.0.75"
 "aqua:astral-sh/uv" = "0.12.6"
 
 [tools."pipx:uv-override-prune"]
