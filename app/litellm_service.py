@@ -199,14 +199,15 @@ def stream_litellm_reply_to_slack(
     start_time = time.time()
     while True:
         assistant_message = build_assistant_message()
+        # Each Slack message gets the full budget. The timeout catches a stalled
+        # stream; the length of the reply is already bounded by LLM_MAX_TOKENS.
         response_message, is_response_too_long = handle_litellm_stream(
             stream=stream,
             assistant_message=assistant_message,
             wip_reply=wip_reply,
             client=client,
             channel=channel,
-            timeout_seconds=int(timeout_seconds - (time.time() - start_time)),
-            start_time=start_time,
+            deadline=time.time() + timeout_seconds,
         )
         messages.append(assistant_message)
         if not is_response_too_long:
@@ -279,8 +280,7 @@ def handle_litellm_stream(
     wip_reply: dict | SlackResponse,
     client: WebClient,
     channel: str,
-    timeout_seconds: int,
-    start_time: float,
+    deadline: float,
 ) -> tuple[Message | None, bool]:
     """
     Handles the streaming response from LiteLLM and updates the Slack message.
@@ -291,8 +291,8 @@ def handle_litellm_stream(
         wip_reply (Union[dict, SlackResponse]): The message object for the in-progress reply.
         client (WebClient): The Slack WebClient instance.
         channel (str): The Slack channel ID.
-        timeout_seconds (int): The timeout duration in seconds.
-        start_time (float): The start time of the request.
+        deadline (float): The wall-clock time (as from time.time()) after which
+            streaming raises TimeoutError.
 
     Returns:
         tuple[Optional[Message], bool]: The response and whether it exceeded the length limit.
@@ -303,7 +303,7 @@ def handle_litellm_stream(
     buffered_text = ""
     try:
         for chunk in stream:
-            if (time.time() - start_time) > timeout_seconds:
+            if time.time() > deadline:
                 raise TimeoutError()
             response_chunks.append(chunk)
             delta_content = extract_delta_content(cast("ModelResponse", chunk))
