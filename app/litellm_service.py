@@ -197,18 +197,17 @@ def stream_litellm_reply_to_slack(
         None
     """
     start_time = time.time()
-    # One deadline for the whole reply: continuation rounds of a too-long
-    # response share it rather than each getting a shrunken budget.
-    deadline = start_time + timeout_seconds
     while True:
         assistant_message = build_assistant_message()
+        # Each Slack message gets the full budget. The timeout catches a stalled
+        # stream; the length of the reply is already bounded by LLM_MAX_TOKENS.
         response_message, is_response_too_long = handle_litellm_stream(
             stream=stream,
             assistant_message=assistant_message,
             wip_reply=wip_reply,
             client=client,
             channel=channel,
-            deadline=deadline,
+            deadline=time.time() + timeout_seconds,
         )
         messages.append(assistant_message)
         if not is_response_too_long:
