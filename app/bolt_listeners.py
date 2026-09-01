@@ -51,6 +51,7 @@ from app.message_logic import (
     build_system_message,
     build_user_message,
     filter_replies_after_last_marker,
+    is_reply_from_bot,
     maybe_redact_string,
     maybe_set_cache_points,
     maybe_slack_to_markdown,
@@ -396,7 +397,7 @@ def convert_replies_to_messages(
     """
 
     # Ignore trailing bot replies (including a loading reply)
-    while replies and replies[-1].get("user") == context.bot_user_id:
+    while replies and is_reply_from_bot(replies[-1], context.bot_user_id):
         replies.pop()
 
     messages: list[dict] = []
@@ -414,7 +415,7 @@ def convert_replies_to_messages(
         text = maybe_slack_to_markdown(text, SLACK_FORMATTING_ENABLED)
         text = build_slack_user_prefixed_text(reply, text)
 
-        if reply["user"] == context.bot_user_id:
+        if is_reply_from_bot(reply, context.bot_user_id):
             messages.append(build_assistant_message(text))
             continue
 

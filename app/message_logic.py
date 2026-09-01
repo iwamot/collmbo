@@ -7,6 +7,23 @@ import re
 import unicodedata
 
 
+def is_reply_from_bot(reply: dict, bot_user_id: str | None) -> bool:
+    """
+    Check if a reply was posted by this bot.
+
+    Replies with the `bot_message` subtype (incoming webhooks, classic bots) carry no `user` key,
+    only `username` and `bot_id`, so the key is read with `.get()`.
+
+    Args:
+        - reply (dict): The Slack reply.
+        - bot_user_id (Optional[str]): The bot's user ID.
+
+    Returns:
+        - bool: True if the reply is from this bot, False otherwise.
+    """
+    return reply.get("user") == bot_user_id
+
+
 def is_last_marker_reply(
     *,
     reply: dict,

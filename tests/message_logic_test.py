@@ -14,12 +14,37 @@ from app.message_logic import (
     filter_replies_after_last_marker,
     format_assistant_reply_for_slack,
     is_last_marker_reply,
+    is_reply_from_bot,
     maybe_redact_string,
     maybe_set_cache_points,
     maybe_slack_to_markdown,
     remove_bot_mention,
     unescape_slack_formatting,
 )
+
+
+@pytest.mark.parametrize(
+    "reply,bot_user_id,expected",
+    [
+        ({"user": "U123", "text": "Hello"}, "U123", True),
+        ({"user": "U456", "text": "Hello"}, "U123", False),
+        # bot_message subtype (incoming webhook / classic bot): no "user" key
+        (
+            {
+                "subtype": "bot_message",
+                "username": "Deploy Bot",
+                "bot_id": "B123",
+                "text": "Hello",
+            },
+            "U123",
+            False,
+        ),
+    ],
+)
+def test_is_reply_from_bot(reply, bot_user_id, expected):
+    result = is_reply_from_bot(reply, bot_user_id)
+
+    assert result == expected
 
 
 @pytest.mark.parametrize(
