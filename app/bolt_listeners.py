@@ -144,7 +144,6 @@ def respond_to_new_post(
             thread_ts=reply_thread_ts,
             messages=messages,
             wip_reply=wip_reply,
-            timeout_seconds=LLM_TIMEOUT_SECONDS,
         )
     except Timeout, TimeoutError:
         handle_timeout_error(
