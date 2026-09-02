@@ -2,7 +2,6 @@
 This module provides service functions for tools.
 """
 
-import json
 import logging
 import os
 from importlib import import_module
@@ -25,6 +24,8 @@ from app.mcp.shared_tools_service import (
 )
 from app.message_logic import build_tool_message
 from app.tools_logic import (
+    RejectedToolCall,
+    decode_tool_call,
     is_mcp_tool_name,
     load_classic_tools,
     split_classic_tools_by_mcp_collision,
@@ -102,8 +103,9 @@ def process_tool_calls(
     response_message: Message,
     assistant_message: dict,
     messages: list[dict],
+    tool_names: frozenset[str],
     user_id: str | None = None,
-) -> None:
+) -> list[str]:
     """
     Processes the tool calls in the response message.
 
@@ -111,19 +113,22 @@ def process_tool_calls(
         response_message (Message): The response message containing tool calls.
         assistant_message (dict): The assistant message to update.
         messages (list[dict]): The list of messages to include in the reply.
+        tool_names (frozenset[str]): The names of the tools offered to the model.
         user_id (Optional[str]): User ID for authenticated tool access.
 
     Returns:
-        None
+        list[str]: The reasons of the tool calls that were rejected instead of
+        dispatched; empty when every call was dispatched.
     """
     if response_message.tool_calls is None:
-        return
+        return []
 
     assistant_message["tool_calls"] = response_message.model_dump()["tool_calls"]
 
     no_auth_servers = get_no_auth_servers()
     bearer_servers = get_bearer_servers()
 
+    rejections: list[str] = []
     for tool_call in response_message.tool_calls:
         if not isinstance(tool_call, ChatCompletionMessageToolCall):
             # Custom tool calls carry freeform text instead of a function
@@ -131,43 +136,62 @@ def process_tool_calls(
             # ever arrive.
             logger.warning("Skipped non-function tool call: %s", tool_call)
             continue
-        process_tool_call(
+        rejection = process_tool_call(
             tool_call=tool_call,
             messages=messages,
+            tool_names=tool_names,
             no_auth_servers=no_auth_servers,
             bearer_servers=bearer_servers,
             user_id=user_id,
         )
+        if rejection is not None:
+            rejections.append(rejection)
+    return rejections
 
 
 def process_tool_call(
     *,
     tool_call: ChatCompletionMessageToolCall,
     messages: list[dict],
+    tool_names: frozenset[str],
     no_auth_servers: list[dict],
     bearer_servers: list[dict],
     user_id: str | None = None,
-) -> None:
+) -> str | None:
     """
     Processes a single tool call and updates the messages list.
 
     Args:
         tool_call (ChatCompletionMessageToolCall): The tool call to process.
         messages (list[dict]): The list of messages to include in the reply.
+        tool_names (frozenset[str]): The names of the tools offered to the model.
         no_auth_servers (list[dict]): The list of no-auth MCP servers.
         bearer_servers (list[dict]): The list of bearer MCP servers.
         user_id (Optional[str]): User ID for authenticated tool access.
 
     Returns:
-        None
+        Optional[str]: The reason the call was rejected and answered with a
+        tool message instead of dispatched, or None when it was dispatched.
     """
-    tool_name = tool_call.function.name
-    if not tool_name:
-        logger.warning("Skipped tool call with empty name: %s", tool_call)
-        return
+    tool_name = tool_call.function.name or ""
+    decoded = decode_tool_call(
+        name=tool_name,
+        arguments=tool_call.function.arguments,
+        tool_names=tool_names,
+    )
+    if isinstance(decoded, RejectedToolCall):
+        logger.warning("Rejected tool call %s: %s", tool_call.id, decoded.reason)
+        messages.append(
+            build_tool_message(
+                tool_call_id=tool_call.id,
+                name=tool_name,
+                content=decoded.reason,
+            )
+        )
+        return decoded.reason
+    arguments = decoded.arguments
 
     if tool_name == VECTOR_STORE_TOOL_NAME:
-        arguments = json.loads(tool_call.function.arguments)
         tool_response = run_vector_store_search(arguments.get("query", ""))
         tool_message = build_tool_message(
             tool_call_id=tool_call.id,
@@ -175,14 +199,14 @@ def process_tool_call(
             content=tool_response,
         )
         messages.append(tool_message)
-        return
+        return None
 
     if not is_mcp_tool_name(tool_name) and TOOLS_MODULE_NAME is not None:
         tools_module = import_module(TOOLS_MODULE_NAME)
         tool_response = process_classic_tool_call(
             tools_module=tools_module,
             tool_name=tool_name,
-            arguments=json.loads(tool_call.function.arguments),
+            arguments=arguments,
         )
         tool_message = build_tool_message(
             tool_call_id=tool_call.id,
@@ -190,7 +214,7 @@ def process_tool_call(
             content=tool_response,
         )
         messages.append(tool_message)
-        return
+        return None
 
     spec_name, auth_type, server_index = parse_mcp_tool_name(tool_name)
 
@@ -198,7 +222,7 @@ def process_tool_call(
         tool_response = process_oauth_mcp_tool_call(
             tool_call_id=tool_call.id,
             tool_name=spec_name,
-            arguments=json.loads(tool_call.function.arguments),
+            arguments=arguments,
             user_id=user_id,
             server_index=server_index,
         )
@@ -208,7 +232,7 @@ def process_tool_call(
             content=tool_response,
         )
         messages.append(tool_message)
-        return
+        return None
 
     if auth_type == "bearer":
         server = bearer_servers[server_index]
@@ -217,7 +241,7 @@ def process_tool_call(
             server_url=server["url"],
             tool_call_id=tool_call.id,
             tool_name=spec_name,
-            arguments=json.loads(tool_call.function.arguments),
+            arguments=arguments,
             headers=headers,
         )
         tool_message = build_tool_message(
@@ -226,13 +250,13 @@ def process_tool_call(
             content=tool_response,
         )
         messages.append(tool_message)
-        return
+        return None
 
     tool_response = process_shared_mcp_tool_call(
         server_url=no_auth_servers[server_index]["url"],
         tool_call_id=tool_call.id,
         tool_name=spec_name,
-        arguments=json.loads(tool_call.function.arguments),
+        arguments=arguments,
     )
     tool_message = build_tool_message(
         tool_call_id=tool_call.id,
@@ -240,6 +264,7 @@ def process_tool_call(
         content=tool_response,
     )
     messages.append(tool_message)
+    return None
 
 
 def process_classic_tool_call(

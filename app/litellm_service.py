@@ -5,7 +5,6 @@ This module provides functions to interact with the LiteLLM API.
 import logging
 import os
 import threading
-import time
 from importlib import import_module
 from typing import cast
 
@@ -20,6 +19,7 @@ from app.env import (
     LLM_MAX_TOKENS,
     LLM_MODEL,
     LLM_TEMPERATURE,
+    LLM_TIMEOUT_SECONDS,
     SLACK_FORMATTING_ENABLED,
     SLACK_LOADING_CHARACTER,
     SLACK_UPDATE_TEXT_BUFFER_SIZE,
@@ -33,6 +33,11 @@ from app.message_logic import (
     build_assistant_message,
     convert_markdown_to_mrkdwn,
     format_assistant_reply_for_slack,
+)
+from app.tools_logic import (
+    RejectedToolCallsError,
+    collect_tool_names,
+    format_rejected_tool_calls,
 )
 from app.tools_service import get_all_tools, process_tool_calls
 
@@ -53,7 +58,7 @@ def reply_to_slack_with_litellm(
     thread_ts: str | None,
     messages: list[dict],
     wip_reply: dict | SlackResponse,
-    timeout_seconds: int,
+    rejected_tool_rounds: int = 0,
 ) -> None:
     """
     Sends a reply to Slack using LiteLLM.
@@ -65,16 +70,18 @@ def reply_to_slack_with_litellm(
         thread_ts (Optional[str]): The timestamp of the thread to reply to.
         messages (list[dict]): The list of messages to include in the reply.
         wip_reply (Union[dict, SlackResponse]): The message object for the in-progress reply.
-        timeout_seconds (int): The timeout duration in seconds.
+        rejected_tool_rounds (int): How many earlier rounds of this reply had a
+            tool call rejected.
 
     Returns:
         None
     """
+    tools = get_all_tools(channel=channel, user_id=user_id)
     stream = start_litellm_stream(
         temperature=LLM_TEMPERATURE,
         messages=messages,
         user=user_id,
-        channel=channel,
+        tools=tools,
     )
     stream_litellm_reply_to_slack(
         client=client,
@@ -84,7 +91,8 @@ def reply_to_slack_with_litellm(
         messages=messages,
         stream=stream,
         thread_ts=thread_ts,
-        timeout_seconds=timeout_seconds,
+        tool_names=collect_tool_names(tools),
+        rejected_tool_rounds=rejected_tool_rounds,
     )
 
 
@@ -122,6 +130,10 @@ def call_litellm_completion(
         "frequency_penalty": 0,
         "user": user,
         "stream": stream,
+        # Bounds the wait for the next streamed chunk (or for the whole
+        # response when not streaming). A reply that keeps streaming is never
+        # cut off by this.
+        "timeout": LLM_TIMEOUT_SECONDS,
         "aws_region_name": os.environ.get("AWS_REGION_NAME"),
     }
 
@@ -142,7 +154,7 @@ def start_litellm_stream(
     temperature: float,
     messages: list[dict],
     user: str,
-    channel: str | None = None,
+    tools: list[dict],
 ) -> CustomStreamWrapper:
     """
     Starts a LiteLLM stream for generating completions.
@@ -151,7 +163,7 @@ def start_litellm_stream(
         temperature (float): The temperature for sampling.
         messages (list[dict]): The list of messages to send to the API.
         user (str): The user ID of the person making the request.
-        channel (Optional[str]): Slack channel ID for context-aware tool selection.
+        tools (list[dict]): The tools to offer to the model.
 
     Returns:
         CustomStreamWrapper: The stream wrapper for the response.
@@ -162,7 +174,7 @@ def start_litellm_stream(
         temperature=temperature,
         user=user,
         stream=True,
-        tools=get_all_tools(channel=channel, user_id=user),
+        tools=tools,
     )
     if not isinstance(response, CustomStreamWrapper):
         raise TypeError("Expected CustomStreamWrapper when streaming is enabled")
@@ -178,7 +190,8 @@ def stream_litellm_reply_to_slack(
     messages: list[dict],
     stream: CustomStreamWrapper,
     thread_ts: str | None,
-    timeout_seconds: int,
+    tool_names: frozenset[str],
+    rejected_tool_rounds: int,
 ):
     """
     Streams the LiteLLM response and updates the Slack message.
@@ -191,23 +204,21 @@ def stream_litellm_reply_to_slack(
         messages (list[dict]): The list of messages to include in the reply.
         stream (CustomStreamWrapper): The stream wrapper for the response.
         thread_ts (Optional[str]): The timestamp of the thread to reply to.
-        timeout_seconds (int): The timeout duration in seconds.
+        tool_names (frozenset[str]): The names of the tools offered to the model.
+        rejected_tool_rounds (int): How many earlier rounds of this reply had a
+            tool call rejected.
 
     Returns:
         None
     """
-    start_time = time.time()
     while True:
         assistant_message = build_assistant_message()
-        # Each Slack message gets the full budget. The timeout catches a stalled
-        # stream; the length of the reply is already bounded by LLM_MAX_TOKENS.
         response_message, is_response_too_long = handle_litellm_stream(
             stream=stream,
             assistant_message=assistant_message,
             wip_reply=wip_reply,
             client=client,
             channel=channel,
-            deadline=time.time() + timeout_seconds,
         )
         messages.append(assistant_message)
         if not is_response_too_long:
@@ -229,12 +240,20 @@ def stream_litellm_reply_to_slack(
             client=client, channel=channel, thread_ts=thread_ts
         )
 
-    process_tool_calls(
+    rejections = process_tool_calls(
         response_message=response_message,
         assistant_message=assistant_message,
         messages=messages,
+        tool_names=tool_names,
         user_id=user_id,
     )
+    if rejections:
+        # A rejected call is answered with a tool message so the model can
+        # correct itself once. A model that gets it wrong again is not going
+        # to recover, so the reply ends instead of looping.
+        if rejected_tool_rounds > 0:
+            raise RejectedToolCallsError(format_rejected_tool_calls(rejections))
+        rejected_tool_rounds += 1
     reply_to_slack_with_litellm(
         client=client,
         wip_reply=wip_reply,
@@ -242,7 +261,7 @@ def stream_litellm_reply_to_slack(
         user_id=user_id,
         messages=messages,
         thread_ts=thread_ts,
-        timeout_seconds=int(timeout_seconds - (time.time() - start_time)),
+        rejected_tool_rounds=rejected_tool_rounds,
     )
 
 
@@ -280,7 +299,6 @@ def handle_litellm_stream(
     wip_reply: dict | SlackResponse,
     client: WebClient,
     channel: str,
-    deadline: float,
 ) -> tuple[Message | None, bool]:
     """
     Handles the streaming response from LiteLLM and updates the Slack message.
@@ -291,8 +309,6 @@ def handle_litellm_stream(
         wip_reply (Union[dict, SlackResponse]): The message object for the in-progress reply.
         client (WebClient): The Slack WebClient instance.
         channel (str): The Slack channel ID.
-        deadline (float): The wall-clock time (as from time.time()) after which
-            streaming raises TimeoutError.
 
     Returns:
         tuple[Optional[Message], bool]: The response and whether it exceeded the length limit.
@@ -304,8 +320,6 @@ def handle_litellm_stream(
     stream_completed = False
     try:
         for chunk in stream:
-            if time.time() > deadline:
-                raise TimeoutError()
             response_chunks.append(chunk)
             delta_content = extract_delta_content(cast("ModelResponse", chunk))
             if delta_content is None:
@@ -340,7 +354,7 @@ def handle_litellm_stream(
                 logger.debug("Failed to join thread", exc_info=True)
 
         # Final update to remove the loading character. Runs even when the
-        # stream is aborted (e.g. TimeoutError), so the partial reply does
+        # stream is aborted (e.g. by a timeout), so the partial reply does
         # not keep showing the loading character forever. While an exception
         # is propagating, a failure here is only logged so that the original
         # cause reaches the user instead of being replaced.

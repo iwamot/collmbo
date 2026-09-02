@@ -5,7 +5,7 @@ Collmbo works fine with defaults, but you can customize its behavior by setting 
 - `LITELLM_DROP_PARAMS` (Comma-separated list of parameters to drop when calling LiteLLM. Example: `"top_p"`)
 - `LLM_MAX_TOKENS`
 - `LLM_TEMPERATURE`
-- `LLM_TIMEOUT_SECONDS`
+- `LLM_TIMEOUT_SECONDS` (How long to wait for the model to send the next piece of a reply. A reply that keeps streaming is never cut off.)
 - `SLACK_APP_LOG_LEVEL`
 - `SLACK_LOADING_CHARACTER`
 - `SLACK_UPDATE_TEXT_BUFFER_SIZE` (Slack message update buffer size. Increase if hitting rate limits.)
