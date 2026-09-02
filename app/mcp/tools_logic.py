@@ -4,7 +4,7 @@ This module provides logical functions for MCP tools.
 
 from copy import deepcopy
 
-from strands.types.tools import ToolSpec
+from strands.types.tools import ToolResult, ToolSpec
 
 MCP_TOOL_NAME_SEPARATOR = "_"
 
@@ -69,3 +69,31 @@ def transform_mcp_spec_to_classic_tool(
             "parameters": parameters,
         },
     }
+
+
+def render_tool_result(result: ToolResult) -> str:
+    """
+    Render an MCP tool result as the text of a tool message.
+
+    A tool message carries only text, so text blocks are kept in order and
+    every other block is replaced by a note that it was there, so the model
+    knows it received a result it cannot see rather than an empty one. An
+    error result is marked as such, since the tool message has no error flag.
+
+    Args:
+        result (ToolResult): The tool result from the MCP client.
+
+    Returns:
+        str: The text for the tool message.
+    """
+    parts: list[str] = []
+    for block in result["content"]:
+        if "text" in block:
+            parts.append(block["text"])
+        else:
+            for kind in block:
+                parts.append(f"[{kind} omitted]")
+    body = "\n".join(parts)
+    if result["status"] != "error":
+        return body
+    return f"Tool error: {body}" if body else "Tool error"
