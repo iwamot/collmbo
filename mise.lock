@@ -515,9 +515,9 @@ url_api = "https://api.github.com/repos/iwamot/gitignore-prune/releases/assets/4
 provenance = "github-attestations"
 
 [[tools."pipx:uv-override-prune"]]
-version = "0.0.12"
+version = "0.0.13"
 backend = "pipx:uv-override-prune"
-specifiers = ["0.0.12"]
+specifiers = ["0.0.13"]
 
 [[tools.python]]
 version = "3.14.7"
