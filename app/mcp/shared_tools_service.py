@@ -14,7 +14,7 @@ from strands.tools.mcp.mcp_client import MCPClient
 from app.env import LLM_MODEL
 from app.mcp.config_logic import build_bearer_headers
 from app.mcp.config_service import get_bearer_servers, get_no_auth_servers
-from app.mcp.tools_logic import transform_mcp_spec_to_classic_tool
+from app.mcp.tools_logic import render_tool_result, transform_mcp_spec_to_classic_tool
 
 logger = logging.getLogger(__name__)
 
@@ -154,5 +154,4 @@ def process_shared_mcp_tool_call(
             name=tool_name,
             arguments=arguments,
         )
-    content = result["content"][0]
-    return content.get("text", "")
+    return render_tool_result(result)

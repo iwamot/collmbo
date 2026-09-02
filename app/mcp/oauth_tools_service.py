@@ -11,7 +11,7 @@ from strands.types.exceptions import MCPClientInitializationError
 from app.env import LLM_MODEL
 from app.mcp.config_service import get_oauth_server, get_oauth_server_index
 from app.mcp.oauth_tools_logic import create_bearer_auth_headers, is_session_not_expired
-from app.mcp.tools_logic import transform_mcp_spec_to_classic_tool
+from app.mcp.tools_logic import render_tool_result, transform_mcp_spec_to_classic_tool
 
 user_oauth_sessions: dict[str, dict[str, dict]] = {}
 
@@ -265,8 +265,7 @@ def process_oauth_mcp_tool_call(
                 name=tool_name,
                 arguments=arguments,
             )
-        content = result["content"][0]
-        return content.get("text", "")
+        return render_tool_result(result)
     except MCPClientInitializationError as err:
         # MCP client failed to initialize, likely due to authentication error
         # Clear the invalid session and cached tools

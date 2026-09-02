@@ -5,7 +5,11 @@ Tests for MCP tools logic module.
 import pytest
 
 from app.mcp.oauth_tools_logic import parse_mcp_tool_name
-from app.mcp.tools_logic import build_mcp_tool_name, transform_mcp_spec_to_classic_tool
+from app.mcp.tools_logic import (
+    build_mcp_tool_name,
+    render_tool_result,
+    transform_mcp_spec_to_classic_tool,
+)
 from app.tools_logic import is_mcp_tool_name
 
 
@@ -221,3 +225,47 @@ def test_transform_mcp_spec_to_classic_tool(
     )
 
     assert result == expected
+
+
+@pytest.mark.parametrize(
+    "result, expected",
+    [
+        (
+            {"status": "success", "toolUseId": "t1", "content": [{"text": "hello"}]},
+            "hello",
+        ),
+        (
+            {
+                "status": "success",
+                "toolUseId": "t1",
+                "content": [{"text": "one"}, {"text": "two"}],
+            },
+            "one\ntwo",
+        ),
+        (
+            {"status": "success", "toolUseId": "t1", "content": []},
+            "",
+        ),
+        (
+            {
+                "status": "success",
+                "toolUseId": "t1",
+                "content": [
+                    {"image": {"format": "png", "source": {"bytes": b""}}},
+                    {"text": "caption"},
+                ],
+            },
+            "[image omitted]\ncaption",
+        ),
+        (
+            {"status": "error", "toolUseId": "t1", "content": [{"text": "boom"}]},
+            "Tool error: boom",
+        ),
+        (
+            {"status": "error", "toolUseId": "t1", "content": []},
+            "Tool error",
+        ),
+    ],
+)
+def test_render_tool_result(result, expected):
+    assert render_tool_result(result) == expected
