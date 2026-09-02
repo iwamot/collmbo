@@ -15,7 +15,7 @@ PROMPT_CACHING_ENABLED=true
 $ docker run -it --env-file ./env ghcr.io/iwamot/collmbo:latest
 ```
 
-When enabled, cache breakpoints will automatically be added to **the two most recent user messages** when the total context size is 1,024 tokens or more. This may help reduce API costs.
+When enabled, cache breakpoints will automatically be added to **the two most recent user messages** once the conversation contains at least two user messages. Whether a cache is actually created is up to the provider, which applies its own minimum prompt size. This may help reduce API costs.
 
 Currently, this feature is only supported by [models supported by LiteLLM for prompt caching](https://docs.litellm.ai/docs/completion/prompt_caching), such as **Anthropic Claude and Amazon Bedrock models** (e.g., Claude, Amazon Nova).
 

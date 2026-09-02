@@ -50,7 +50,11 @@ Mention the bot in Slack and start chatting:
 @Collmbo hello!
 ```
 
-Collmbo should respond in channels, threads, and DMs.
+Collmbo should respond in channels, threads, and DMs. The conversation history it sees depends on where you talk to it:
+
+- **Channel**: only the message that mentions the bot
+- **Thread**: all messages in the thread
+- **DM (outside a thread)**: the most recent 100 messages from the last 24 hours. Older DM messages are not remembered, so a conversation from the previous day starts fresh.
 
 ## Want to Use a Different LLM?
 
