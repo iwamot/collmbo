@@ -301,6 +301,7 @@ def handle_litellm_stream(
     is_response_too_long = False
     threads: list[threading.Thread] = []
     buffered_text = ""
+    stream_completed = False
     try:
         for chunk in stream:
             if time.time() > deadline:
@@ -330,6 +331,7 @@ def handle_litellm_stream(
                     break
             if final_chunk:
                 break
+        stream_completed = True
     finally:
         for t in threads:
             try:
@@ -337,15 +339,24 @@ def handle_litellm_stream(
             except Exception:
                 logger.debug("Failed to join thread", exc_info=True)
 
-    # Final update to remove the loading character after stream ends
-    if len(assistant_message["content"]) > 0:
-        update_reply_text(
-            client=client,
-            channel=channel,
-            wip_reply=wip_reply,
-            assistant_content=assistant_message["content"],
-            with_loading_character=False,
-        )
+        # Final update to remove the loading character. Runs even when the
+        # stream is aborted (e.g. TimeoutError), so the partial reply does
+        # not keep showing the loading character forever. While an exception
+        # is propagating, a failure here is only logged so that the original
+        # cause reaches the user instead of being replaced.
+        if len(assistant_message["content"]) > 0:
+            try:
+                update_reply_text(
+                    client=client,
+                    channel=channel,
+                    wip_reply=wip_reply,
+                    assistant_content=assistant_message["content"],
+                    with_loading_character=False,
+                )
+            except Exception:
+                if stream_completed:
+                    raise
+                logger.warning("Failed to update the final reply", exc_info=True)
 
     return extract_message_from_chunks(response_chunks), is_response_too_long
 
