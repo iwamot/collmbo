@@ -246,7 +246,11 @@ def process_oauth_mcp_tool_call(
         str: The response from the tool call.
     """
     server_config = get_oauth_server(server_index)
-    session = get_user_oauth_session_for_server(user_id, server_config["name"])
+    server_name = server_config["name"]
+    session = get_user_oauth_session_for_server(user_id, server_name)
+    # The session can expire between listing the tools and calling one
+    if not session:
+        raise reauthorization_required_error(server_name)
 
     additional_headers = server_config.get("additional_headers", {})
     headers = create_bearer_auth_headers(session["token"], additional_headers)
@@ -266,8 +270,21 @@ def process_oauth_mcp_tool_call(
     except MCPClientInitializationError as err:
         # MCP client failed to initialize, likely due to authentication error
         # Clear the invalid session and cached tools
-        clear_user_oauth_session(user_id, server_config["name"])
-        raise RuntimeError(
-            f"Authentication error for {server_config['name']}. "
-            "Please visit the Home tab to re-authorize."
-        ) from err
+        clear_user_oauth_session(user_id, server_name)
+        raise reauthorization_required_error(server_name) from err
+
+
+def reauthorization_required_error(server_name: str) -> RuntimeError:
+    """
+    Builds the error raised when a user has no usable OAuth session for a server.
+
+    Args:
+        server_name (str): The MCP server name.
+
+    Returns:
+        RuntimeError: The error telling the user how to re-authorize.
+    """
+    return RuntimeError(
+        f"Authentication error for {server_name}. "
+        "Please visit the Home tab to re-authorize."
+    )
