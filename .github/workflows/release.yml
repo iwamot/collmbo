@@ -9,7 +9,7 @@ permissions: {}
 
 jobs:
   release:
-    uses: iwamot/workflows/.github/workflows/release-ghcr.yml@3a60350ff82e769fc95271d672a481d135d0c059 # v8.8.4
+    uses: iwamot/workflows/.github/workflows/release-ghcr.yml@45ef58fbb304855f7201a3d2c5d8f892934e533e # v8.9.0
     permissions:
       contents: write  # to draft and publish the GitHub Release
       packages: write  # to push images to GHCR
