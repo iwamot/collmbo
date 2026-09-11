@@ -10,7 +10,7 @@ locked = true
 python = "3.14.7"
 "aqua:astral-sh/ruff" = "0.16.7"
 "aqua:astral-sh/ty" = "0.0.80"
-"aqua:astral-sh/uv" = "0.12.12"
+"aqua:astral-sh/uv" = "0.12.13"
 
 [tools."pipx:uv-override-prune"]
 version = "0.0.14"
