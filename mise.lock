@@ -231,91 +231,44 @@ url = "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellche
 url_api = "https://api.github.com/repos/koalaman/shellcheck/releases/assets/279056944"
 
 [[tools."aqua:mvdan/sh"]]
-version = "3.13.1"
+version = "3.14.0"
 backend = "aqua:mvdan/sh"
-specifiers = ["3.13.1"]
+specifiers = ["3.14.0"]
 
 [tools."aqua:mvdan/sh"."platforms.linux-arm64"]
-checksum = "sha256:32d92acaa5cd8abb29fc49dac123dc412442d5713967819d8af2c29f1b3857c7"
-url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_arm64"
-url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/390322859"
+checksum = "sha256:8029959a945b5c6f2bc92ce53fca5cf0384c811cc0884b25b196a093a005657a"
+url = "https://github.com/mvdan/sh/releases/download/v3.14.0/shfmt_v3.14.0_linux_arm64"
+url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/534119958"
 
 [tools."aqua:mvdan/sh"."platforms.linux-arm64-musl"]
-checksum = "sha256:32d92acaa5cd8abb29fc49dac123dc412442d5713967819d8af2c29f1b3857c7"
-url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_arm64"
-url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/390322859"
+checksum = "sha256:8029959a945b5c6f2bc92ce53fca5cf0384c811cc0884b25b196a093a005657a"
+url = "https://github.com/mvdan/sh/releases/download/v3.14.0/shfmt_v3.14.0_linux_arm64"
+url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/534119958"
 
 [tools."aqua:mvdan/sh"."platforms.linux-x64"]
-checksum = "sha256:fb096c5d1ac6beabbdbaa2874d025badb03ee07929f0c9ff67563ce8c75398b1"
-url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_amd64"
-url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/390322866"
+checksum = "sha256:fe42021c7272ef2d67ea36cbc3031683c625d0badec733ef3a57b567246a0b66"
+url = "https://github.com/mvdan/sh/releases/download/v3.14.0/shfmt_v3.14.0_linux_amd64"
+url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/534119985"
 
 [tools."aqua:mvdan/sh"."platforms.linux-x64-musl"]
-checksum = "sha256:fb096c5d1ac6beabbdbaa2874d025badb03ee07929f0c9ff67563ce8c75398b1"
-url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_linux_amd64"
-url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/390322866"
+checksum = "sha256:fe42021c7272ef2d67ea36cbc3031683c625d0badec733ef3a57b567246a0b66"
+url = "https://github.com/mvdan/sh/releases/download/v3.14.0/shfmt_v3.14.0_linux_amd64"
+url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/534119985"
 
 [tools."aqua:mvdan/sh"."platforms.macos-arm64"]
-checksum = "sha256:9680526be4a66ea1ffe988ed08af58e1400fe1e4f4aef5bd88b20bb9b3da33f8"
-url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_darwin_arm64"
-url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/390322881"
+checksum = "sha256:4710ba8074a74334069719d5b82f8cb97532e5623bfe43ef7cdb3442101b9cb2"
+url = "https://github.com/mvdan/sh/releases/download/v3.14.0/shfmt_v3.14.0_darwin_arm64"
+url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/534120008"
 
 [tools."aqua:mvdan/sh"."platforms.macos-x64"]
-checksum = "sha256:6feedafc72915794163114f512348e2437d080d0047ef8b8fa2ec63b575f12af"
-url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_darwin_amd64"
-url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/390322886"
+checksum = "sha256:74255a8087d74a79f5c1307db807e7efa8f062c429e3a05c075550392e0dcfa1"
+url = "https://github.com/mvdan/sh/releases/download/v3.14.0/shfmt_v3.14.0_darwin_amd64"
+url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/534120026"
 
 [tools."aqua:mvdan/sh"."platforms.windows-x64"]
-checksum = "sha256:60cd368533d0ad73fa86d93d5bbf95ef40587245ce684ed138c1b31557b5fe97"
-url = "https://github.com/mvdan/sh/releases/download/v3.13.1/shfmt_v3.13.1_windows_amd64.exe"
-url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/390322844"
-
-[[tools."aqua:rhysd/actionlint"]]
-version = "1.7.12"
-backend = "aqua:rhysd/actionlint"
-specifiers = ["1.7.12"]
-
-[tools."aqua:rhysd/actionlint"."platforms.linux-arm64"]
-checksum = "sha256:325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6"
-url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/384924897"
-provenance = "github-attestations"
-
-[tools."aqua:rhysd/actionlint"."platforms.linux-arm64-musl"]
-checksum = "sha256:325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6"
-url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/384924897"
-provenance = "github-attestations"
-
-[tools."aqua:rhysd/actionlint"."platforms.linux-x64"]
-checksum = "sha256:8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
-url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/384924896"
-provenance = "github-attestations"
-
-[tools."aqua:rhysd/actionlint"."platforms.linux-x64-musl"]
-checksum = "sha256:8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
-url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/384924896"
-provenance = "github-attestations"
-
-[tools."aqua:rhysd/actionlint"."platforms.macos-arm64"]
-checksum = "sha256:aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f"
-url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/384924893"
-provenance = "github-attestations"
-
-[tools."aqua:rhysd/actionlint"."platforms.macos-x64"]
-checksum = "sha256:5b44c3bc2255115c9b69e30efc0fecdf498fdb63c5d58e17084fd5f16324c644"
-url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_darwin_amd64.tar.gz"
-url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/384924880"
-provenance = "github-attestations"
-
-[tools."aqua:rhysd/actionlint"."platforms.windows-x64"]
-checksum = "sha256:6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9"
-url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_windows_amd64.zip"
-url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/384924919"
-provenance = "github-attestations"
+checksum = "sha256:6738a3e155fbfec3bedc70962f9cd1610197587a43b5d7100f405239d8e11375"
+url = "https://github.com/mvdan/sh/releases/download/v3.14.0/shfmt_v3.14.0_windows_amd64.exe"
+url_api = "https://api.github.com/repos/mvdan/sh/releases/assets/534119909"
 
 [[tools."aqua:suzuki-shunsuke/ghalint"]]
 version = "1.5.6"
@@ -426,92 +379,138 @@ url_api = "https://api.github.com/repos/suzuki-shunsuke/pinact/releases/assets/4
 provenance = "github-attestations"
 
 [[tools."aqua:zizmorcore/zizmor"]]
-version = "1.29.0"
+version = "1.30.0"
 backend = "aqua:zizmorcore/zizmor"
-specifiers = ["1.29.0"]
+specifiers = ["1.30.0"]
 
 [tools."aqua:zizmorcore/zizmor"."platforms.linux-arm64"]
-checksum = "sha256:415eaa7c0a06479a701b8e44a3e812c1047decc848ec4bede7bd6bbf49f22d20"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.29.0/zizmor-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/498263143"
+checksum = "sha256:018a024d6b6d09733b07f6ef42838d984c23ec04bc9b2acd55f7d67826aeafe5"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.0/zizmor-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/537081734"
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.linux-arm64-musl"]
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.linux-x64"]
-checksum = "sha256:dd96df044a6e8538d5f423790f453bdd03d49e5b2bcc38214acc41a2f1297839"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.29.0/zizmor-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/498263145"
+checksum = "sha256:ec8c95cd800845abb9bbc5f377ec7c57d2eb8e2386a00a201d3a74ee4092e5ed"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.0/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/537081732"
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.linux-x64-musl"]
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.macos-arm64"]
-checksum = "sha256:720322fade9e83a9c7953944c438f2ba942636b86b96a8f0e6b15ce94c8a6b6f"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.29.0/zizmor-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/498263141"
+checksum = "sha256:c9c5d83730efb86f2cd71b487605c00a4d63903e4f9458485ed5eac3b1924ab1"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.0/zizmor-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/537081737"
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.macos-x64"]
-checksum = "sha256:648b72ab9941a7f2a8d65d7b68a8e76cef789538c8df3a3950384d38423375b0"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.29.0/zizmor-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/498263144"
+checksum = "sha256:343c85c8f709edf14bf3c8781d53574975ecbb2d23c80ed1eab4932ab0a72343"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.0/zizmor-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/537081736"
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.windows-x64"]
-checksum = "sha256:68a6bc6888f10bf0d53658c75885e7c1b7a0588d4c1fbc3f0ca280ad7324bf06"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.29.0/zizmor-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/498263142"
+checksum = "sha256:a2fcf298b84d3d8498a3d718bb63f0abe26823bf68a11f0f439620f8f2f878f0"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.30.0/zizmor-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/537081735"
 provenance = "github-attestations"
 
 [[tools."github:iwamot/gitignore-prune"]]
-version = "0.0.2"
+version = "0.1.1"
 backend = "github:iwamot/gitignore-prune"
-specifiers = ["0.0.2"]
+specifiers = ["0.1.1"]
 
 [tools."github:iwamot/gitignore-prune"."platforms.linux-arm64"]
-checksum = "sha256:25c451f56ee07ed6b649bc1f7c4cba51fea615fce35ddebaa1fa273eef115073"
-url = "https://github.com/iwamot/gitignore-prune/releases/download/v0.0.2/gitignore-prune_0.0.2_linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/iwamot/gitignore-prune/releases/assets/415909576"
+checksum = "sha256:4aff967ccd9b6a3801d25e9435545d7abb2584c412672496b77cc8f4aae9efea"
+url = "https://github.com/iwamot/gitignore-prune/releases/download/v0.1.1/gitignore-prune_0.1.1_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/iwamot/gitignore-prune/releases/assets/523784063"
 provenance = "github-attestations"
 
 [tools."github:iwamot/gitignore-prune"."platforms.linux-arm64-musl"]
-checksum = "sha256:25c451f56ee07ed6b649bc1f7c4cba51fea615fce35ddebaa1fa273eef115073"
-url = "https://github.com/iwamot/gitignore-prune/releases/download/v0.0.2/gitignore-prune_0.0.2_linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/iwamot/gitignore-prune/releases/assets/415909576"
+checksum = "sha256:4aff967ccd9b6a3801d25e9435545d7abb2584c412672496b77cc8f4aae9efea"
+url = "https://github.com/iwamot/gitignore-prune/releases/download/v0.1.1/gitignore-prune_0.1.1_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/iwamot/gitignore-prune/releases/assets/523784063"
 provenance = "github-attestations"
 
 [tools."github:iwamot/gitignore-prune"."platforms.linux-x64"]
-checksum = "sha256:602a4f3dc717d5e22d3488223f497ace3d94f06ee4017d16b4a815cae33b0571"
-url = "https://github.com/iwamot/gitignore-prune/releases/download/v0.0.2/gitignore-prune_0.0.2_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/iwamot/gitignore-prune/releases/assets/415909579"
+checksum = "sha256:29793fdf8c8f9bf68152ac2f04724a22ace8f508f660e417799b3be2d6924bd9"
+url = "https://github.com/iwamot/gitignore-prune/releases/download/v0.1.1/gitignore-prune_0.1.1_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/iwamot/gitignore-prune/releases/assets/523784061"
 provenance = "github-attestations"
-provenance_verified = true
 
 [tools."github:iwamot/gitignore-prune"."platforms.linux-x64-musl"]
-checksum = "sha256:602a4f3dc717d5e22d3488223f497ace3d94f06ee4017d16b4a815cae33b0571"
-url = "https://github.com/iwamot/gitignore-prune/releases/download/v0.0.2/gitignore-prune_0.0.2_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/iwamot/gitignore-prune/releases/assets/415909579"
+checksum = "sha256:29793fdf8c8f9bf68152ac2f04724a22ace8f508f660e417799b3be2d6924bd9"
+url = "https://github.com/iwamot/gitignore-prune/releases/download/v0.1.1/gitignore-prune_0.1.1_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/iwamot/gitignore-prune/releases/assets/523784061"
 provenance = "github-attestations"
 
 [tools."github:iwamot/gitignore-prune"."platforms.macos-arm64"]
-checksum = "sha256:e6d20a35d8d86ab9458bd31afbd3dc56df9d424ad83653bf820110dfac01a926"
-url = "https://github.com/iwamot/gitignore-prune/releases/download/v0.0.2/gitignore-prune_0.0.2_darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/iwamot/gitignore-prune/releases/assets/415909581"
+checksum = "sha256:daf0b72d763ac5906d1d63ebcfeb9a3ab65a08f2d01eef35485208182688f271"
+url = "https://github.com/iwamot/gitignore-prune/releases/download/v0.1.1/gitignore-prune_0.1.1_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/iwamot/gitignore-prune/releases/assets/523784065"
 provenance = "github-attestations"
 
 [tools."github:iwamot/gitignore-prune"."platforms.macos-x64"]
-checksum = "sha256:e7088e4ef44eceb87c6e424fe689ec4ce9400403e48e02f6a9242a71148599ae"
-url = "https://github.com/iwamot/gitignore-prune/releases/download/v0.0.2/gitignore-prune_0.0.2_darwin_amd64.tar.gz"
-url_api = "https://api.github.com/repos/iwamot/gitignore-prune/releases/assets/415909583"
+checksum = "sha256:7016b88966413bf66a73c5d6a03c831fe04bcab1fbce52bffcbf13452cb97cc2"
+url = "https://github.com/iwamot/gitignore-prune/releases/download/v0.1.1/gitignore-prune_0.1.1_darwin_amd64.tar.gz"
+url_api = "https://api.github.com/repos/iwamot/gitignore-prune/releases/assets/523784064"
 provenance = "github-attestations"
 
 [tools."github:iwamot/gitignore-prune"."platforms.windows-x64"]
-checksum = "sha256:935e548a6b0141fd58523d8817a8b9b98de9ad8b23ddb316c40b9ec24326cdeb"
-url = "https://github.com/iwamot/gitignore-prune/releases/download/v0.0.2/gitignore-prune_0.0.2_windows_amd64.zip"
-url_api = "https://api.github.com/repos/iwamot/gitignore-prune/releases/assets/415909577"
+checksum = "sha256:5bcf2b5aa4215c2102c3609b4beb331438b5f27e02becd9221fdcb58edeb0e19"
+url = "https://github.com/iwamot/gitignore-prune/releases/download/v0.1.1/gitignore-prune_0.1.1_windows_amd64.zip"
+url_api = "https://api.github.com/repos/iwamot/gitignore-prune/releases/assets/523784075"
+provenance = "github-attestations"
+
+[[tools."github:kjanat/actionlint"]]
+version = "1.13.0"
+backend = "github:kjanat/actionlint"
+specifiers = ["1.13.0"]
+
+[tools."github:kjanat/actionlint"."platforms.linux-arm64"]
+checksum = "sha256:66fc4e30c73f7300e76fcc7fa31d06f83d69985eeabc0e6817e5b0eccfcaee25"
+url = "https://github.com/kjanat/actionlint/releases/download/v1.13.0/actionlint_1.13.0_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/534417114"
+provenance = "github-attestations"
+
+[tools."github:kjanat/actionlint"."platforms.linux-arm64-musl"]
+checksum = "sha256:66fc4e30c73f7300e76fcc7fa31d06f83d69985eeabc0e6817e5b0eccfcaee25"
+url = "https://github.com/kjanat/actionlint/releases/download/v1.13.0/actionlint_1.13.0_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/534417114"
+provenance = "github-attestations"
+
+[tools."github:kjanat/actionlint"."platforms.linux-x64"]
+checksum = "sha256:e4106b4c56be58223ce4b68f97a272ae49483ef306c38b5837cefd5616a2c791"
+url = "https://github.com/kjanat/actionlint/releases/download/v1.13.0/actionlint_1.13.0_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/534417115"
+provenance = "github-attestations"
+
+[tools."github:kjanat/actionlint"."platforms.linux-x64-musl"]
+checksum = "sha256:e4106b4c56be58223ce4b68f97a272ae49483ef306c38b5837cefd5616a2c791"
+url = "https://github.com/kjanat/actionlint/releases/download/v1.13.0/actionlint_1.13.0_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/534417115"
+provenance = "github-attestations"
+
+[tools."github:kjanat/actionlint"."platforms.macos-arm64"]
+checksum = "sha256:5800c16968b636ec37f8f03e8c5d630fd1b5ab2fc7043987cb6dd6b03277c37d"
+url = "https://github.com/kjanat/actionlint/releases/download/v1.13.0/actionlint_1.13.0_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/534417117"
+provenance = "github-attestations"
+
+[tools."github:kjanat/actionlint"."platforms.macos-x64"]
+checksum = "sha256:9ff536ffdccd35a878f568dab0daad0464b85d6bce9b82970104c2697ab3ea02"
+url = "https://github.com/kjanat/actionlint/releases/download/v1.13.0/actionlint_1.13.0_darwin_amd64.tar.gz"
+url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/534417101"
+provenance = "github-attestations"
+
+[tools."github:kjanat/actionlint"."platforms.windows-x64"]
+checksum = "sha256:3338dfe4e1ba5d9b1230f5efd2d7e08c3393de9537b575fb011739efd011aa17"
+url = "https://github.com/kjanat/actionlint/releases/download/v1.13.0/actionlint_1.13.0_windows_amd64.zip"
+url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/534417128"
 provenance = "github-attestations"
 
 [[tools."pipx:uv-override-prune"]]
