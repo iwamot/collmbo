@@ -4,7 +4,6 @@ Service functions for MCP OAuth session management.
 
 import time
 
-from mcp.client.streamable_http import streamablehttp_client
 from strands.tools.mcp.mcp_client import MCPClient
 from strands.types.exceptions import MCPClientInitializationError
 
@@ -206,7 +205,7 @@ async def fetch_mcp_oauth_tools(
     additional_headers = server_config.get("additional_headers", {})
     headers = create_bearer_auth_headers(token, additional_headers)
 
-    client = MCPClient(lambda: streamablehttp_client(server_url, headers=headers))
+    client = MCPClient(url=server_url, headers=headers)
     with client:
         mcp_tools = client.list_tools_sync()
 
@@ -254,9 +253,7 @@ def process_oauth_mcp_tool_call(
 
     additional_headers = server_config.get("additional_headers", {})
     headers = create_bearer_auth_headers(session["token"], additional_headers)
-    mcp_client = MCPClient(
-        lambda: streamablehttp_client(server_config["url"], headers=headers)
-    )
+    mcp_client = MCPClient(url=server_config["url"], headers=headers)
 
     try:
         with mcp_client:
