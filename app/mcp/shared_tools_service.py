@@ -6,9 +6,7 @@ import logging
 import os
 import threading
 import time
-from functools import partial
 
-from mcp.client.streamable_http import streamablehttp_client
 from strands.tools.mcp.mcp_client import MCPClient
 
 from app.env import LLM_MODEL
@@ -42,7 +40,7 @@ def _load_server_tools(
     Returns:
         list[dict]: Tools in classic format.
     """
-    client = MCPClient(partial(streamablehttp_client, url, headers=headers))
+    client = MCPClient(url=url, headers=headers)
     with client:
         tools = client.list_tools_sync()
     return [
@@ -147,7 +145,7 @@ def process_shared_mcp_tool_call(
     Returns:
         str: The response from the tool call.
     """
-    mcp_client = MCPClient(lambda: streamablehttp_client(server_url, headers=headers))
+    mcp_client = MCPClient(url=server_url, headers=headers)
     with mcp_client:
         result = mcp_client.call_tool_sync(
             tool_use_id=tool_call_id,
