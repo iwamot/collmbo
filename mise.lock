@@ -514,9 +514,9 @@ url_api = "https://api.github.com/repos/kjanat/actionlint/releases/assets/534417
 provenance = "github-attestations"
 
 [[tools."pipx:uv-override-prune"]]
-version = "0.0.15"
+version = "1.0.0"
 backend = "pipx:uv-override-prune"
-specifiers = ["0.0.15"]
+specifiers = ["1.0.0"]
 
 [[tools.python]]
 version = "3.14.7"
