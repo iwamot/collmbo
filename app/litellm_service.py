@@ -5,6 +5,7 @@ This module provides functions to interact with the LiteLLM API.
 import logging
 import os
 import threading
+from collections.abc import Coroutine
 from importlib import import_module
 from typing import cast
 
@@ -146,7 +147,12 @@ def call_litellm_completion(
             param.strip() for param in LITELLM_DROP_PARAMS.split(",")
         ]
 
-    return litellm.completion(**kwargs, **additional_kwargs)
+    response = litellm.completion(**kwargs, **additional_kwargs)
+    # litellm types completion() as also returning a coroutine, which it does
+    # only when called with acompletion=True. This call never passes it.
+    if isinstance(response, Coroutine):
+        raise TypeError("litellm.completion() returned a coroutine")
+    return response
 
 
 def start_litellm_stream(
