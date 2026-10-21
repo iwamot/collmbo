@@ -23,6 +23,9 @@ jobs:
   renovate:
     permissions:
       contents: read
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.job }}-${{ github.ref }}
+      cancel-in-progress: false
     uses: iwamot/workflows/.github/workflows/renovate.yml@866cf6089ddb88af6b479a14a4a78910b472b5f6 # v8.11.0
     with:
       log-level: ${{ inputs.log-level || 'info' }}

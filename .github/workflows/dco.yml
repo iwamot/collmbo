@@ -9,4 +9,7 @@ jobs:
   dco:
     permissions:
       pull-requests: read  # to read PR commits for DCO sign-off check
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.job }}-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     uses: iwamot/workflows/.github/workflows/dco.yml@866cf6089ddb88af6b479a14a4a78910b472b5f6 # v8.11.0
