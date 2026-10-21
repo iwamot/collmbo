@@ -14,4 +14,7 @@ jobs:
     permissions:
       contents: read
       id-token: write  # for Codecov OIDC upload
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.job }}-${{ github.event.pull_request.number || github.sha }}
+      cancel-in-progress: true
     uses: iwamot/workflows/.github/workflows/validate-with-coverage.yml@866cf6089ddb88af6b479a14a4a78910b472b5f6 # v8.11.0
