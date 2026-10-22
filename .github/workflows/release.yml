@@ -12,7 +12,7 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.job }}-${{ github.ref }}
       cancel-in-progress: false
-    uses: iwamot/workflows/.github/workflows/release-ghcr.yml@ba5efb9911ae0952fe1dee4d5c811fd85f345d52 # v8.12.0
+    uses: iwamot/workflows/.github/workflows/release-ghcr.yml@e5473d794269314bf1ef838dacfcc505c2cb239f # v8.14.0
     permissions:
       contents: write  # to draft and publish the GitHub Release
       packages: write  # to push images to GHCR
