@@ -13,7 +13,7 @@ dependencies = [
     "pillow==13.0.0",
     "httpx==0.28.1",
     "bedrock-agentcore==1.24.2",
-    "strands-agents==1.61.1",
+    "strands-agents==1.62.0",
 ]
 
 # The dev group is included by `uv sync` and `uv run` by default, and
