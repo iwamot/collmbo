@@ -7,6 +7,7 @@ exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for 
 exclude-newer-span = "P1D"
 
 [manifest]
+constraints = [{ name = "mcp", specifier = ">=1.30.0,!=2.0.*,!=2.1.*" }]
 overrides = [{ name = "filelock", specifier = ">=4.2.1" }]
 
 [[package]]
