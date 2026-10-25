@@ -1,4 +1,25 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>iwamot/renovate-config#v0.20.0"]
+  "extends": [
+    "github>iwamot/renovate-config#v0.20.0"
+  ],
+  "packageRules": [
+    {
+      "description": "Update local and container uv together",
+      "matchManagers": [
+        "mise",
+        "dockerfile"
+      ],
+      "matchPackageNames": [
+        "astral-sh/uv",
+        "dhi.io/uv"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch"
+      ],
+      "groupName": "uv"
+    }
+  ]
 }
