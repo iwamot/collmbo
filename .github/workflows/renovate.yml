@@ -26,7 +26,7 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.job }}-${{ github.ref }}
       cancel-in-progress: false
-    uses: iwamot/workflows/.github/workflows/renovate.yml@249b6cfa8fd90b7b58fcaab643e75f9e6cb078dc # v8.16.0
+    uses: iwamot/workflows/.github/workflows/renovate.yml@e30904fbba60ee0a2dde540df2403a90e59e3a5e # v8.17.0
     with:
       log-level: ${{ inputs.log-level || 'info' }}
     secrets:
