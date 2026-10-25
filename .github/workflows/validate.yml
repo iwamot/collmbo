@@ -8,7 +8,8 @@ on:
   # Daily, so a new advisory against the locked dependencies fails the audit
   # even when nothing else changes.
   schedule:
-    - cron: '7 21 * * *'
+    - cron: '0 6 * * *'
+      timezone: Asia/Tokyo
   workflow_dispatch:
 
 permissions: {}
