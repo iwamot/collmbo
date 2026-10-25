@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [ "main" ]
+  # Daily, so a new advisory against the locked dependencies fails the audit
+  # even when nothing else changes.
+  schedule:
+    - cron: '7 21 * * *'
   workflow_dispatch:
 
 permissions: {}
