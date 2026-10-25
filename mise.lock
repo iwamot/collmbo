@@ -25,7 +25,19 @@ url = "https://github.com/astral-sh/ruff/releases/download/0.17.2/ruff-x86_64-un
 url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/666735382"
 provenance = "github-attestations"
 
+[tools."aqua:astral-sh/ruff"."platforms.linux-x64-baseline"]
+checksum = "sha256:7b2e6a6e132ecf7b5fe726163b186d5d209befe93bb25f83767b2d97fbdf14e5"
+url = "https://github.com/astral-sh/ruff/releases/download/0.17.2/ruff-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/666735382"
+provenance = "github-attestations"
+
 [tools."aqua:astral-sh/ruff"."platforms.linux-x64-musl"]
+checksum = "sha256:d6407f429ef15e558cbe980d30a67f27d02e3d2f72780be141ee006b2fdf7df3"
+url = "https://github.com/astral-sh/ruff/releases/download/0.17.2/ruff-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/666735398"
+provenance = "github-attestations"
+
+[tools."aqua:astral-sh/ruff"."platforms.linux-x64-musl-baseline"]
 checksum = "sha256:d6407f429ef15e558cbe980d30a67f27d02e3d2f72780be141ee006b2fdf7df3"
 url = "https://github.com/astral-sh/ruff/releases/download/0.17.2/ruff-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/666735398"
@@ -43,7 +55,19 @@ url = "https://github.com/astral-sh/ruff/releases/download/0.17.2/ruff-x86_64-ap
 url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/666735353"
 provenance = "github-attestations"
 
+[tools."aqua:astral-sh/ruff"."platforms.macos-x64-baseline"]
+checksum = "sha256:db57a84e385435a2c4a7c8946e588f79b9de0851d8618a1b5d4431edfff0bf01"
+url = "https://github.com/astral-sh/ruff/releases/download/0.17.2/ruff-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/666735353"
+provenance = "github-attestations"
+
 [tools."aqua:astral-sh/ruff"."platforms.windows-x64"]
+checksum = "sha256:6f4de58abd7c8de2e8702a89fc0f221e6ca858ad23e25c658c707d83a48c79a0"
+url = "https://github.com/astral-sh/ruff/releases/download/0.17.2/ruff-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/666735367"
+provenance = "github-attestations"
+
+[tools."aqua:astral-sh/ruff"."platforms.windows-x64-baseline"]
 checksum = "sha256:6f4de58abd7c8de2e8702a89fc0f221e6ca858ad23e25c658c707d83a48c79a0"
 url = "https://github.com/astral-sh/ruff/releases/download/0.17.2/ruff-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/astral-sh/ruff/releases/assets/666735367"
@@ -72,7 +96,19 @@ url = "https://github.com/astral-sh/ty/releases/download/0.0.91/ty-x86_64-unknow
 url_api = "https://api.github.com/repos/astral-sh/ty/releases/assets/666701025"
 provenance = "github-attestations"
 
+[tools."aqua:astral-sh/ty"."platforms.linux-x64-baseline"]
+checksum = "sha256:f9ab9cef6d2d96ea4d8bac06aa464bbe6622e57d0476e91156bc0df3478b2c08"
+url = "https://github.com/astral-sh/ty/releases/download/0.0.91/ty-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/ty/releases/assets/666701025"
+provenance = "github-attestations"
+
 [tools."aqua:astral-sh/ty"."platforms.linux-x64-musl"]
+checksum = "sha256:b662ade01d92fa8914bffc445e6a85b034dde3eaecde501d94e05128db09637e"
+url = "https://github.com/astral-sh/ty/releases/download/0.0.91/ty-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/ty/releases/assets/666701064"
+provenance = "github-attestations"
+
+[tools."aqua:astral-sh/ty"."platforms.linux-x64-musl-baseline"]
 checksum = "sha256:b662ade01d92fa8914bffc445e6a85b034dde3eaecde501d94e05128db09637e"
 url = "https://github.com/astral-sh/ty/releases/download/0.0.91/ty-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/astral-sh/ty/releases/assets/666701064"
@@ -90,7 +126,19 @@ url = "https://github.com/astral-sh/ty/releases/download/0.0.91/ty-x86_64-apple-
 url_api = "https://api.github.com/repos/astral-sh/ty/releases/assets/666700957"
 provenance = "github-attestations"
 
+[tools."aqua:astral-sh/ty"."platforms.macos-x64-baseline"]
+checksum = "sha256:1e2f914b23b45f753cd1f2e7e6e0b1db05c9ad7c960ba7f90f2e5744338e5855"
+url = "https://github.com/astral-sh/ty/releases/download/0.0.91/ty-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/ty/releases/assets/666700957"
+provenance = "github-attestations"
+
 [tools."aqua:astral-sh/ty"."platforms.windows-x64"]
+checksum = "sha256:e25d02eba8a3d3a850a2775ae5a391f86485ec8aeace6ea02872ca77a183812a"
+url = "https://github.com/astral-sh/ty/releases/download/0.0.91/ty-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/astral-sh/ty/releases/assets/666700982"
+provenance = "github-attestations"
+
+[tools."aqua:astral-sh/ty"."platforms.windows-x64-baseline"]
 checksum = "sha256:e25d02eba8a3d3a850a2775ae5a391f86485ec8aeace6ea02872ca77a183812a"
 url = "https://github.com/astral-sh/ty/releases/download/0.0.91/ty-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/astral-sh/ty/releases/assets/666700982"
@@ -119,7 +167,19 @@ url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-unknow
 url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664336023"
 provenance = "github-attestations"
 
+[tools."aqua:astral-sh/uv"."platforms.linux-x64-baseline"]
+checksum = "sha256:f68d291c75783122dad58ab77def0e13f3233f358731db5d6d7e8715603b928f"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664336023"
+provenance = "github-attestations"
+
 [tools."aqua:astral-sh/uv"."platforms.linux-x64-musl"]
+checksum = "sha256:57ef9d9ccb01fb1bd998df995b0dd221b52f7d7841fbea93f2d4463bf61fb7a9"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664336027"
+provenance = "github-attestations"
+
+[tools."aqua:astral-sh/uv"."platforms.linux-x64-musl-baseline"]
 checksum = "sha256:57ef9d9ccb01fb1bd998df995b0dd221b52f7d7841fbea93f2d4463bf61fb7a9"
 url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-unknown-linux-musl.tar.gz"
 url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664336027"
@@ -137,7 +197,19 @@ url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-apple-
 url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664335993"
 provenance = "github-attestations"
 
+[tools."aqua:astral-sh/uv"."platforms.macos-x64-baseline"]
+checksum = "sha256:b0f52b0e3945b4107d89024ea38e625683011fbfc05a0d98f9fa2d6dcee28c66"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664335993"
+provenance = "github-attestations"
+
 [tools."aqua:astral-sh/uv"."platforms.windows-x64"]
+checksum = "sha256:a38b8d1902b7cfbc76b423ba1bb456f623f42064cdc72628b6075b89afd1019a"
+url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664336006"
+provenance = "github-attestations"
+
+[tools."aqua:astral-sh/uv"."platforms.windows-x64-baseline"]
 checksum = "sha256:a38b8d1902b7cfbc76b423ba1bb456f623f42064cdc72628b6075b89afd1019a"
 url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/astral-sh/uv/releases/assets/664336006"
@@ -736,7 +808,17 @@ checksum = "sha256:b88a4ac994ac55c35a03a3672103618d5c5d5bf342db7b2093b8d328b6516
 url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261020/cpython-3.14.8+20261020-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
+[tools.python."platforms.linux-x64-baseline"]
+checksum = "sha256:b88a4ac994ac55c35a03a3672103618d5c5d5bf342db7b2093b8d328b6516b42"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261020/cpython-3.14.8+20261020-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
 [tools.python."platforms.linux-x64-musl"]
+checksum = "sha256:c2e4a90795a626d787a6990c29db3277c692de55d2ab049d43a658cb81816b30"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261020/cpython-3.14.8+20261020-x86_64-unknown-linux-musl-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
+[tools.python."platforms.linux-x64-musl-baseline"]
 checksum = "sha256:c2e4a90795a626d787a6990c29db3277c692de55d2ab049d43a658cb81816b30"
 url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261020/cpython-3.14.8+20261020-x86_64-unknown-linux-musl-install_only_stripped.tar.gz"
 provenance = "github-attestations"
@@ -751,7 +833,17 @@ checksum = "sha256:e862bbef6f5109f464323c6827d14717b4d8e3ff2e0050f4452ba770fcd0d
 url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261020/cpython-3.14.8+20261020-x86_64-apple-darwin-install_only_stripped.tar.gz"
 provenance = "github-attestations"
 
+[tools.python."platforms.macos-x64-baseline"]
+checksum = "sha256:e862bbef6f5109f464323c6827d14717b4d8e3ff2e0050f4452ba770fcd0d0b2"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261020/cpython-3.14.8+20261020-x86_64-apple-darwin-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
 [tools.python."platforms.windows-x64"]
+checksum = "sha256:6761cf0dd740591df7643cf55fd03913c8ec7ddd88b419fe2f170abe3479e198"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261020/cpython-3.14.8+20261020-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
+[tools.python."platforms.windows-x64-baseline"]
 checksum = "sha256:6761cf0dd740591df7643cf55fd03913c8ec7ddd88b419fe2f170abe3479e198"
 url = "https://github.com/astral-sh/python-build-standalone/releases/download/20261020/cpython-3.14.8+20261020-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
 provenance = "github-attestations"
