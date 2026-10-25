@@ -14,6 +14,8 @@ jobs:
       cancel-in-progress: false
     uses: iwamot/workflows/.github/workflows/release-ghcr.yml@151b1bf39e0c30c80800f35de3f5aadbd859bae5 # v8.14.1
     permissions:
+      checks: read  # allow the shared release workflow to inspect required CI
+      statuses: read  # allow inspection of required legacy commit statuses
       contents: write  # to draft and publish the GitHub Release
       packages: write  # to push images to GHCR
       id-token: write  # to mint OIDC tokens for cosign and attest
