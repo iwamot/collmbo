@@ -18,7 +18,7 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.job }}-${{ github.ref }}
       cancel-in-progress: false
-    uses: iwamot/workflows/.github/workflows/release-ghcr.yml@e30904fbba60ee0a2dde540df2403a90e59e3a5e # v8.17.0
+    uses: iwamot/workflows/.github/workflows/release-ghcr.yml@7b091fa5fb18e6dc84145fa54fd45ff94e139cd0 # v8.18.0
     with:
       tag: ${{ inputs.tag || '' }}
     permissions:
