@@ -13,4 +13,4 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.job }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
-    uses: iwamot/workflows/.github/workflows/auto-label.yml@249b6cfa8fd90b7b58fcaab643e75f9e6cb078dc # v8.16.0
+    uses: iwamot/workflows/.github/workflows/auto-label.yml@e30904fbba60ee0a2dde540df2403a90e59e3a5e # v8.17.0
