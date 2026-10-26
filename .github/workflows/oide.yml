@@ -16,7 +16,7 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.job }}-${{ github.ref }}
       cancel-in-progress: false
-    uses: iwamot/workflows/.github/workflows/oide.yml@7b091fa5fb18e6dc84145fa54fd45ff94e139cd0 # v8.18.0
+    uses: iwamot/workflows/.github/workflows/oide.yml@96c2e27a41f5c3de4d90d9b8776a1c5aae453812 # v8.18.1
     with:
       SOURCES: |
         # renovate: datasource=github-tags depName=iwamot/repo-template
