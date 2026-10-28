@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>iwamot/renovate-config#v0.22.0"
+    "github>iwamot/renovate-config#v0.23.0"
   ]
 }
