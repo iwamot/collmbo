@@ -21,6 +21,7 @@ jobs:
     uses: iwamot/workflows/.github/workflows/release-ghcr.yml@c803e382b328aefa255da9ca9b3244b0de7f8073 # v8.19.0
     with:
       tag: ${{ inputs.tag || '' }}
+      allowed_endpoints: 'pypi.org:443'
     permissions:
       checks: read  # allow the shared release workflow to inspect required CI
       statuses: read  # allow inspection of required legacy commit statuses
