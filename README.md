@@ -64,15 +64,6 @@ To use it, update the relevant environment variables in your `.env` file and res
 
 Here are some examples:
 
-### Gemini - Google AI Studio (Gemini 3 Pro)
-
-```sh
-SLACK_APP_TOKEN=xapp-1-...
-SLACK_BOT_TOKEN=xoxb-...
-LLM_MODEL=gemini/gemini-3-pro-preview
-GEMINI_API_KEY=...
-```
-
 ### Azure OpenAI (gpt-5.5)
 
 ```sh
