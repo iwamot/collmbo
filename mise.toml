@@ -8,7 +8,7 @@ minimum_release_age = "1d"
 [tools]
 python = "3.14.8"
 "aqua:astral-sh/ruff" = "0.17.3"
-"aqua:astral-sh/ty" = "0.0.94"
+"aqua:astral-sh/ty" = "0.0.95"
 "aqua:astral-sh/uv" = "0.13.6"
 
 [tools."pipx:uv-override-prune"]
