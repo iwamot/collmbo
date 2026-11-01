@@ -30,11 +30,6 @@ exclude-newer = "1 day"
 override-dependencies = [
     "filelock>=4.2.1",
 ]
-# strands-agents caps mcp below 2.2, so an upgrade would land on 2.1.x, which
-# is affected by GHSA-84m7-p3x7-pcfv (fixed in 1.30.0 and 2.2.0).
-constraint-dependencies = [
-    "mcp>=1.30.0,!=2.0.*,!=2.1.*",
-]
 
 [tool.uv.audit]
 # Check the locked packages against OSV malware advisories before any sync
