@@ -9,7 +9,7 @@ minimum_release_age = "1d"
 locked = true
 
 [tools]
-python = "3.14.8"
+python = "3.14.10"
 "aqua:astral-sh/ruff" = "0.17.4"
 "aqua:astral-sh/ty" = "0.0.99"
 "aqua:astral-sh/uv" = "0.13.7"
