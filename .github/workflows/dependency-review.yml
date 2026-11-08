@@ -13,4 +13,4 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.job }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
-    uses: iwamot/workflows/.github/workflows/dependency-review.yml@c803e382b328aefa255da9ca9b3244b0de7f8073 # v8.19.0
+    uses: iwamot/workflows/.github/workflows/dependency-review.yml@0a52ed4c271b93e6acf3264274645d164b03c0ce # v8.19.1
