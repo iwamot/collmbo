@@ -571,74 +571,74 @@ url_api = "https://api.github.com/repos/suzuki-shunsuke/pinact/releases/assets/6
 provenance = "github-attestations"
 
 [[tools."aqua:zizmorcore/zizmor"]]
-version = "1.31.1"
+version = "1.32.0"
 backend = "aqua:zizmorcore/zizmor"
-specifiers = ["1.31.1"]
+specifiers = ["1.32.0"]
 
 [tools."aqua:zizmorcore/zizmor"."platforms.linux-arm64"]
-checksum = "sha256:37eebbd5762a44f262d94875431b14a6d2402991e90a685113ea97b8b41be833"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/645467282"
+checksum = "sha256:cb152b207f815116d7fa1c1ee4614f61578803351395052908095e79adfd9fd0"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.32.0/zizmor-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/703541931"
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.linux-arm64-musl"]
-checksum = "sha256:37eebbd5762a44f262d94875431b14a6d2402991e90a685113ea97b8b41be833"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-aarch64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/645467282"
+checksum = "sha256:cb152b207f815116d7fa1c1ee4614f61578803351395052908095e79adfd9fd0"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.32.0/zizmor-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/703541931"
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.linux-x64"]
-checksum = "sha256:d185f726bdaf92df78273217dfdd24ebcd6b0ef48cf3ce776ff5762b6e138c99"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/645467284"
+checksum = "sha256:bb110cc765eca9cd7efb2e284a956be5974c60027b0970f16397d86208a9957b"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.32.0/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/703541932"
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.linux-x64-baseline"]
-checksum = "sha256:d185f726bdaf92df78273217dfdd24ebcd6b0ef48cf3ce776ff5762b6e138c99"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/645467284"
+checksum = "sha256:bb110cc765eca9cd7efb2e284a956be5974c60027b0970f16397d86208a9957b"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.32.0/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/703541932"
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.linux-x64-musl"]
-checksum = "sha256:d185f726bdaf92df78273217dfdd24ebcd6b0ef48cf3ce776ff5762b6e138c99"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/645467284"
+checksum = "sha256:bb110cc765eca9cd7efb2e284a956be5974c60027b0970f16397d86208a9957b"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.32.0/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/703541932"
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.linux-x64-musl-baseline"]
-checksum = "sha256:d185f726bdaf92df78273217dfdd24ebcd6b0ef48cf3ce776ff5762b6e138c99"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-unknown-linux-gnu.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/645467284"
+checksum = "sha256:bb110cc765eca9cd7efb2e284a956be5974c60027b0970f16397d86208a9957b"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.32.0/zizmor-x86_64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/703541932"
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.macos-arm64"]
-checksum = "sha256:ad5aa633cd56215b11e6c51d51f90c7e6b22904a75047d1215abbd422f61d698"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-aarch64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/645467283"
+checksum = "sha256:6efed18c4539a663fd3c851a2be9533fd8456c4e646d9416206da059154a0d3c"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.32.0/zizmor-aarch64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/703541933"
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.macos-x64"]
-checksum = "sha256:72ae63bb85b67229c06242f04195cb43927e9fab5f43803c6434dc701a517d61"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/645467287"
+checksum = "sha256:6983143c719ada6845a69cc4dd2bacc215f971662fecd8bbd2678388e5ce5969"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.32.0/zizmor-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/703541930"
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.macos-x64-baseline"]
-checksum = "sha256:72ae63bb85b67229c06242f04195cb43927e9fab5f43803c6434dc701a517d61"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-apple-darwin.tar.gz"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/645467287"
+checksum = "sha256:6983143c719ada6845a69cc4dd2bacc215f971662fecd8bbd2678388e5ce5969"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.32.0/zizmor-x86_64-apple-darwin.tar.gz"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/703541930"
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.windows-x64"]
-checksum = "sha256:4de30371c8a3b483aecbcf0dec1fd6a2b6aae65051ca226b4f6527baac6a8c7a"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/645467286"
+checksum = "sha256:d284a16e09d9df4ce2c000357e7b59bd531be093bea5718a1ce225b449b59d49"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.32.0/zizmor-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/703541929"
 provenance = "github-attestations"
 
 [tools."aqua:zizmorcore/zizmor"."platforms.windows-x64-baseline"]
-checksum = "sha256:4de30371c8a3b483aecbcf0dec1fd6a2b6aae65051ca226b4f6527baac6a8c7a"
-url = "https://github.com/zizmorcore/zizmor/releases/download/v1.31.1/zizmor-x86_64-pc-windows-msvc.zip"
-url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/645467286"
+checksum = "sha256:d284a16e09d9df4ce2c000357e7b59bd531be093bea5718a1ce225b449b59d49"
+url = "https://github.com/zizmorcore/zizmor/releases/download/v1.32.0/zizmor-x86_64-pc-windows-msvc.zip"
+url_api = "https://api.github.com/repos/zizmorcore/zizmor/releases/assets/703541929"
 provenance = "github-attestations"
 
 [[tools.gh]]
@@ -713,74 +713,74 @@ url_api = "https://api.github.com/repos/cli/cli/releases/assets/679195750"
 provenance = "github-attestations"
 
 [[tools."github:github/gh-actions-lock"]]
-version = "0.4.0"
+version = "0.4.1"
 backend = "github:github/gh-actions-lock"
-specifiers = ["v0.4.0"]
+specifiers = ["v0.4.1"]
 
 [tools."github:github/gh-actions-lock"."platforms.linux-arm64"]
-checksum = "sha256:7de0e440274688b8ddcbb6f44ce686aaebbe17a54a3052ebc11d4bae9f641fa2"
-url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.0/linux-arm64"
-url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/670717950"
+checksum = "sha256:aee61c993da36a5f09be2c77e6e4a1a22542a1b30ded4996bf8301c15dcf2b39"
+url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/linux-arm64"
+url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/702813294"
 provenance = "github-attestations"
 
 [tools."github:github/gh-actions-lock"."platforms.linux-arm64-musl"]
-checksum = "sha256:7de0e440274688b8ddcbb6f44ce686aaebbe17a54a3052ebc11d4bae9f641fa2"
-url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.0/linux-arm64"
-url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/670717950"
+checksum = "sha256:aee61c993da36a5f09be2c77e6e4a1a22542a1b30ded4996bf8301c15dcf2b39"
+url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/linux-arm64"
+url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/702813294"
 provenance = "github-attestations"
 
 [tools."github:github/gh-actions-lock"."platforms.linux-x64"]
-checksum = "sha256:f9da98f2a6e9e0ae77deadf9a2319a8a86bb002b541cc3203b247cc59fb04842"
-url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.0/linux-amd64"
-url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/670717949"
+checksum = "sha256:39deb2fe714dbf74b073d8245fc7f3d50cd0eee18d5c0900e9e849ae933ae17e"
+url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/linux-amd64"
+url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/702813259"
 provenance = "github-attestations"
 
 [tools."github:github/gh-actions-lock"."platforms.linux-x64-baseline"]
-checksum = "sha256:f9da98f2a6e9e0ae77deadf9a2319a8a86bb002b541cc3203b247cc59fb04842"
-url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.0/linux-amd64"
-url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/670717949"
+checksum = "sha256:39deb2fe714dbf74b073d8245fc7f3d50cd0eee18d5c0900e9e849ae933ae17e"
+url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/linux-amd64"
+url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/702813259"
 provenance = "github-attestations"
 
 [tools."github:github/gh-actions-lock"."platforms.linux-x64-musl"]
-checksum = "sha256:f9da98f2a6e9e0ae77deadf9a2319a8a86bb002b541cc3203b247cc59fb04842"
-url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.0/linux-amd64"
-url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/670717949"
+checksum = "sha256:39deb2fe714dbf74b073d8245fc7f3d50cd0eee18d5c0900e9e849ae933ae17e"
+url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/linux-amd64"
+url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/702813259"
 provenance = "github-attestations"
 
 [tools."github:github/gh-actions-lock"."platforms.linux-x64-musl-baseline"]
-checksum = "sha256:f9da98f2a6e9e0ae77deadf9a2319a8a86bb002b541cc3203b247cc59fb04842"
-url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.0/linux-amd64"
-url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/670717949"
+checksum = "sha256:39deb2fe714dbf74b073d8245fc7f3d50cd0eee18d5c0900e9e849ae933ae17e"
+url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/linux-amd64"
+url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/702813259"
 provenance = "github-attestations"
 
 [tools."github:github/gh-actions-lock"."platforms.macos-arm64"]
-checksum = "sha256:5934d40f8cc78ed3e9be15ba43fc82c2432cbf3aa088107f923878df07099bec"
-url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.0/darwin-arm64"
-url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/670717906"
+checksum = "sha256:f205ea5dbbda67165e08aab1fb6395290ca62f0a038bf27d4b684abd0816635c"
+url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/darwin-arm64"
+url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/702813195"
 provenance = "github-attestations"
 
 [tools."github:github/gh-actions-lock"."platforms.macos-x64"]
-checksum = "sha256:6b81e2050e0fcd1953649886231b2d19f8861428272d86067a59c22bd4b75c76"
-url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.0/darwin-amd64"
-url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/670717905"
+checksum = "sha256:4ef64599440398999f184321d5237df131721434901ecaaf3da6aa018bdd1f8f"
+url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/darwin-amd64"
+url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/702813196"
 provenance = "github-attestations"
 
 [tools."github:github/gh-actions-lock"."platforms.macos-x64-baseline"]
-checksum = "sha256:6b81e2050e0fcd1953649886231b2d19f8861428272d86067a59c22bd4b75c76"
-url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.0/darwin-amd64"
-url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/670717905"
+checksum = "sha256:4ef64599440398999f184321d5237df131721434901ecaaf3da6aa018bdd1f8f"
+url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/darwin-amd64"
+url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/702813196"
 provenance = "github-attestations"
 
 [tools."github:github/gh-actions-lock"."platforms.windows-x64"]
-checksum = "sha256:a64179817d7605d705e805475a09b5ef0be12a3469477d8607350f1f3cc26d8b"
-url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.0/windows-amd64.exe"
-url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/670717964"
+checksum = "sha256:d3582b58f907c145d673f5f31ebfa21a6570df04f3aca9cce667d129a3c607dc"
+url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/windows-amd64.exe"
+url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/702813329"
 provenance = "github-attestations"
 
 [tools."github:github/gh-actions-lock"."platforms.windows-x64-baseline"]
-checksum = "sha256:a64179817d7605d705e805475a09b5ef0be12a3469477d8607350f1f3cc26d8b"
-url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.0/windows-amd64.exe"
-url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/670717964"
+checksum = "sha256:d3582b58f907c145d673f5f31ebfa21a6570df04f3aca9cce667d129a3c607dc"
+url = "https://github.com/github/gh-actions-lock/releases/download/v0.4.1/windows-amd64.exe"
+url_api = "https://api.github.com/repos/github/gh-actions-lock/releases/assets/702813329"
 provenance = "github-attestations"
 
 [[tools."github:iwamot/gitignore-prune"]]
@@ -855,74 +855,74 @@ url_api = "https://api.github.com/repos/iwamot/gitignore-prune/releases/assets/6
 provenance = "github-attestations"
 
 [[tools."github:jdx/jactionlint"]]
-version = "2.4.0"
+version = "2.5.0"
 backend = "github:jdx/jactionlint"
-specifiers = ["v2.4.0"]
+specifiers = ["v2.5.0"]
 
 [tools."github:jdx/jactionlint"."platforms.linux-arm64"]
-checksum = "sha256:42413391c248f99ff4550d6c866ee717d5ea4ca2b966d9d54ad1503af955e22f"
-url = "https://github.com/jdx/jactionlint/releases/download/v2.4.0/jactionlint_2.4.0_linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/688130101"
+checksum = "sha256:ad7e33b6264cea16b7e83ad2bb004824d5b1c15aedb35ba0dc84917f791c5525"
+url = "https://github.com/jdx/jactionlint/releases/download/v2.5.0/jactionlint_2.5.0_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/714298511"
 provenance = "github-attestations"
 
 [tools."github:jdx/jactionlint"."platforms.linux-arm64-musl"]
-checksum = "sha256:42413391c248f99ff4550d6c866ee717d5ea4ca2b966d9d54ad1503af955e22f"
-url = "https://github.com/jdx/jactionlint/releases/download/v2.4.0/jactionlint_2.4.0_linux_arm64.tar.gz"
-url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/688130101"
+checksum = "sha256:ad7e33b6264cea16b7e83ad2bb004824d5b1c15aedb35ba0dc84917f791c5525"
+url = "https://github.com/jdx/jactionlint/releases/download/v2.5.0/jactionlint_2.5.0_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/714298511"
 provenance = "github-attestations"
 
 [tools."github:jdx/jactionlint"."platforms.linux-x64"]
-checksum = "sha256:26ddba81db28fffc51163175c070ee1a9d1150260de4b5232f01d9b749f32d8e"
-url = "https://github.com/jdx/jactionlint/releases/download/v2.4.0/jactionlint_2.4.0_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/688130108"
+checksum = "sha256:5ac307b0499bb0eab45ae99c23e8e0790874fbc667c75224410954e0e3c6e0f5"
+url = "https://github.com/jdx/jactionlint/releases/download/v2.5.0/jactionlint_2.5.0_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/714298541"
 provenance = "github-attestations"
 
 [tools."github:jdx/jactionlint"."platforms.linux-x64-baseline"]
-checksum = "sha256:26ddba81db28fffc51163175c070ee1a9d1150260de4b5232f01d9b749f32d8e"
-url = "https://github.com/jdx/jactionlint/releases/download/v2.4.0/jactionlint_2.4.0_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/688130108"
+checksum = "sha256:5ac307b0499bb0eab45ae99c23e8e0790874fbc667c75224410954e0e3c6e0f5"
+url = "https://github.com/jdx/jactionlint/releases/download/v2.5.0/jactionlint_2.5.0_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/714298541"
 provenance = "github-attestations"
 
 [tools."github:jdx/jactionlint"."platforms.linux-x64-musl"]
-checksum = "sha256:26ddba81db28fffc51163175c070ee1a9d1150260de4b5232f01d9b749f32d8e"
-url = "https://github.com/jdx/jactionlint/releases/download/v2.4.0/jactionlint_2.4.0_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/688130108"
+checksum = "sha256:5ac307b0499bb0eab45ae99c23e8e0790874fbc667c75224410954e0e3c6e0f5"
+url = "https://github.com/jdx/jactionlint/releases/download/v2.5.0/jactionlint_2.5.0_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/714298541"
 provenance = "github-attestations"
 
 [tools."github:jdx/jactionlint"."platforms.linux-x64-musl-baseline"]
-checksum = "sha256:26ddba81db28fffc51163175c070ee1a9d1150260de4b5232f01d9b749f32d8e"
-url = "https://github.com/jdx/jactionlint/releases/download/v2.4.0/jactionlint_2.4.0_linux_amd64.tar.gz"
-url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/688130108"
+checksum = "sha256:5ac307b0499bb0eab45ae99c23e8e0790874fbc667c75224410954e0e3c6e0f5"
+url = "https://github.com/jdx/jactionlint/releases/download/v2.5.0/jactionlint_2.5.0_linux_amd64.tar.gz"
+url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/714298541"
 provenance = "github-attestations"
 
 [tools."github:jdx/jactionlint"."platforms.macos-arm64"]
-checksum = "sha256:349a13dbffdd25376898a256d195806afda08ba97ccc6378cbf2dd11a77ef8e7"
-url = "https://github.com/jdx/jactionlint/releases/download/v2.4.0/jactionlint_2.4.0_darwin_arm64.tar.gz"
-url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/688130202"
+checksum = "sha256:15b47d53e3b1aafbd674cca0e8fff0d5952f3cf2a7d7501a8f67576ef76397b4"
+url = "https://github.com/jdx/jactionlint/releases/download/v2.5.0/jactionlint_2.5.0_darwin_arm64.tar.gz"
+url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/714298455"
 provenance = "github-attestations"
 
 [tools."github:jdx/jactionlint"."platforms.macos-x64"]
-checksum = "sha256:4c21fce834f8267b65a65b32a527aaa2ec1c321c8f066d44b42d7f038835aa90"
-url = "https://github.com/jdx/jactionlint/releases/download/v2.4.0/jactionlint_2.4.0_darwin_amd64.tar.gz"
-url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/688130179"
+checksum = "sha256:f8f10def21260aa9515974f0aa145f5a6741efd60efe1f880c8c6f53a4ba676c"
+url = "https://github.com/jdx/jactionlint/releases/download/v2.5.0/jactionlint_2.5.0_darwin_amd64.tar.gz"
+url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/714298456"
 provenance = "github-attestations"
 
 [tools."github:jdx/jactionlint"."platforms.macos-x64-baseline"]
-checksum = "sha256:4c21fce834f8267b65a65b32a527aaa2ec1c321c8f066d44b42d7f038835aa90"
-url = "https://github.com/jdx/jactionlint/releases/download/v2.4.0/jactionlint_2.4.0_darwin_amd64.tar.gz"
-url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/688130179"
+checksum = "sha256:f8f10def21260aa9515974f0aa145f5a6741efd60efe1f880c8c6f53a4ba676c"
+url = "https://github.com/jdx/jactionlint/releases/download/v2.5.0/jactionlint_2.5.0_darwin_amd64.tar.gz"
+url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/714298456"
 provenance = "github-attestations"
 
 [tools."github:jdx/jactionlint"."platforms.windows-x64"]
-checksum = "sha256:4e0c7b428a4faa35bb3b86af6fa65a0ac9797edcd4c64e4f7e16ca886437e172"
-url = "https://github.com/jdx/jactionlint/releases/download/v2.4.0/jactionlint_2.4.0_windows_amd64.zip"
-url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/688130261"
+checksum = "sha256:6f6202d6fc476cbe3978c7dd2349c881cfcfa98257593cb2f1bde87004f054c6"
+url = "https://github.com/jdx/jactionlint/releases/download/v2.5.0/jactionlint_2.5.0_windows_amd64.zip"
+url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/714298686"
 provenance = "github-attestations"
 
 [tools."github:jdx/jactionlint"."platforms.windows-x64-baseline"]
-checksum = "sha256:4e0c7b428a4faa35bb3b86af6fa65a0ac9797edcd4c64e4f7e16ca886437e172"
-url = "https://github.com/jdx/jactionlint/releases/download/v2.4.0/jactionlint_2.4.0_windows_amd64.zip"
-url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/688130261"
+checksum = "sha256:6f6202d6fc476cbe3978c7dd2349c881cfcfa98257593cb2f1bde87004f054c6"
+url = "https://github.com/jdx/jactionlint/releases/download/v2.5.0/jactionlint_2.5.0_windows_amd64.zip"
+url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/714298686"
 provenance = "github-attestations"
 
 [[tools."pipx:uv-override-prune"]]
