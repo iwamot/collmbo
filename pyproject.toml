@@ -9,7 +9,7 @@ requires-python = ">=3.14"
 dependencies = [
     "slack-bolt==1.30.0",
     "slack-sdk==3.46.0",
-    "litellm==1.108.2",
+    "litellm==1.108.4",
     "pillow==13.0.0",
     "httpx==0.28.1",
     "bedrock-agentcore==1.25.4",
@@ -28,7 +28,6 @@ dev = [
 [tool.uv]
 exclude-newer = "1 day"
 override-dependencies = [
-    "filelock>=4.2.1",
 ]
 
 [tool.uv.audit]
