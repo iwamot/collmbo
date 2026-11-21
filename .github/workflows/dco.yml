@@ -12,4 +12,4 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.job }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
-    uses: iwamot/workflows/.github/workflows/dco.yml@a404711ccc7d69582489ad7712f416ab9941ce3c # v8.21.0
+    uses: iwamot/workflows/.github/workflows/dco.yml@a180a0bcae83bb6eede088999024bc2e3862c16c # v8.22.0
