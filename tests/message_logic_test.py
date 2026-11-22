@@ -513,6 +513,33 @@ def test_maybe_slack_to_markdown(content, slack_formatting_enabled, expected):
     assert result == expected
 
 
+def test_slack_to_markdown_converts_formatting_and_nothing_else():
+    # Each token maps to what it becomes: links, mentions, code, and markers
+    # inside a word stay as written, and formatting at word boundaries turns
+    # into Markdown.
+    tokens = {
+        "<https://example.com/foo_bar_baz>": "<https://example.com/foo_bar_baz>",
+        "<@U123>": "<@U123>",
+        "<#C1|gen_eral>": "<#C1|gen_eral>",
+        "snake_case_name": "snake_case_name",
+        "_lead_ing": "_lead_ing",
+        "2*3*4": "2*3*4",
+        "a~b~c": "a~b~c",
+        "日本語_強調_です": "日本語_強調_です",
+        "`*code*`": "`*code*`",
+        "```_block_```": "```_block_```",
+        "*b*": "**b**",
+        "_i_": "*i*",
+        "~s~": "~~s~~",
+    }
+    for size in range(1, 4):
+        for selected in product(tokens, repeat=size):
+            content = " ".join(selected)
+            expected = " ".join(tokens[t] for t in selected)
+            assert maybe_slack_to_markdown(content, True) == expected, content
+            assert maybe_slack_to_markdown(content, False) == content
+
+
 @pytest.mark.parametrize(
     "reply, text, expected",
     [
