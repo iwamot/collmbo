@@ -1,3 +1,7 @@
+import json
+from copy import deepcopy
+from itertools import product
+
 import pytest
 
 from app.tools_logic import (
@@ -50,101 +54,91 @@ def test_load_classic_tools(module_name, expected):
     assert result == expected
 
 
-def _classic_tool(name: str) -> dict:
-    return {"type": "function", "function": {"name": name}}
-
-
-@pytest.mark.parametrize(
-    "tools, expected_usable, expected_colliding",
-    [
-        ([], [], []),
-        (
-            [_classic_tool("get_weather"), _classic_tool("search_repositories")],
-            [_classic_tool("get_weather"), _classic_tool("search_repositories")],
-            [],
-        ),
-        (
-            [_classic_tool("n_0_get_weather"), _classic_tool("u_3_search")],
-            [],
-            [_classic_tool("n_0_get_weather"), _classic_tool("u_3_search")],
-        ),
-        (
-            [_classic_tool("get_weather"), _classic_tool("b_2_run")],
-            [_classic_tool("get_weather")],
-            [_classic_tool("b_2_run")],
-        ),
-        (
-            [{"type": "function", "function": {}}],
-            [{"type": "function", "function": {}}],
-            [],
-        ),
-    ],
-)
-def test_split_classic_tools_by_mcp_collision(
-    tools, expected_usable, expected_colliding
-):
-    usable, colliding = split_classic_tools_by_mcp_collision(tools)
-
-    assert usable == expected_usable
-    assert colliding == expected_colliding
-
-
-@pytest.mark.parametrize(
-    "tools, reserved_name, expected_usable, expected_colliding",
-    [
-        ([], "reserved", [], []),
-        (
-            [_classic_tool("get_weather"), _classic_tool("search")],
-            "reserved",
-            [_classic_tool("get_weather"), _classic_tool("search")],
-            [],
-        ),
-        (
-            [_classic_tool("get_weather"), _classic_tool("reserved")],
-            "reserved",
-            [_classic_tool("get_weather")],
-            [_classic_tool("reserved")],
-        ),
-        (
-            [{"type": "function", "function": {}}],
-            "reserved",
-            [{"type": "function", "function": {}}],
-            [],
-        ),
-    ],
-)
-def test_split_classic_tools_by_reserved_name(
-    tools, reserved_name, expected_usable, expected_colliding
-):
-    usable, colliding = split_classic_tools_by_reserved_name(tools, reserved_name)
-
-    assert usable == expected_usable
-    assert colliding == expected_colliding
-
-
-def test_collect_tool_names():
-    tools = [
-        {"type": "function", "function": {"name": "get_current_weather"}},
-        {"type": "function", "function": {"name": "n_0_search"}},
-        {"type": "function"},
-    ]
-    assert collect_tool_names(tools) == frozenset(
-        {"get_current_weather", "n_0_search", ""}
-    )
-
-
 TOOL_NAMES = frozenset({"get_current_weather", "n_0_search"})
+
+
+def test_tool_partitions_preserve_every_definition_and_its_relative_order():
+    kinds = (
+        ({"function": {"name": "get_weather"}}, False, "get_weather"),
+        ({"function": {"name": "reserved"}}, False, "reserved"),
+        ({"function": {"name": "n_0_get_weather"}}, True, "n_0_get_weather"),
+        ({"function": {"name": "u_3_search"}}, True, "u_3_search"),
+        ({"function": {"name": "b_2_run"}}, True, "b_2_run"),
+        ({"function": {}}, False, ""),
+        ({}, False, ""),
+    )
+    for size in range(4):
+        for selected in product(kinds, repeat=size):
+            tools: list[dict] = []
+            for i, (definition, _, _) in enumerate(selected):
+                tool: dict = deepcopy(definition) | {"type": "function"}
+                if "function" in tool:
+                    tool["function"]["description"] = f"definition {i}"
+                tools.append(tool)
+            before = deepcopy(tools)
+            assert collect_tool_names(tools) == frozenset(
+                name for _, _, name in selected
+            )
+            assert split_classic_tools_by_mcp_collision(tools) == (
+                [
+                    tool
+                    for tool, (_, collides, _) in zip(tools, selected, strict=True)
+                    if not collides
+                ],
+                [
+                    tool
+                    for tool, (_, collides, _) in zip(tools, selected, strict=True)
+                    if collides
+                ],
+            )
+            for reserved in ("reserved", "get_weather", "n_0_get_weather"):
+                assert split_classic_tools_by_reserved_name(tools, reserved) == (
+                    [
+                        tool
+                        for tool, (_, _, name) in zip(tools, selected, strict=True)
+                        if name != reserved
+                    ],
+                    [
+                        tool
+                        for tool, (_, _, name) in zip(tools, selected, strict=True)
+                        if name == reserved
+                    ],
+                )
+            assert tools == before
+
+
+def test_offered_tool_arguments_preserve_json_values_without_coercion():
+    values = (
+        None,
+        True,
+        False,
+        0,
+        1,
+        42,
+        "",
+        "Tokyo 日本語\n",
+        ["a", None],
+        {"nested": [True, 1]},
+    )
+    for name, first, second, ascii_only in product(
+        TOOL_NAMES, values, values, (False, True)
+    ):
+        arguments = {"first": first, "second": second}
+        encoded = json.dumps(arguments, ensure_ascii=ascii_only)
+        result = decode_tool_call(name=name, arguments=encoded, tool_names=TOOL_NAMES)
+        assert isinstance(result, DecodedToolCall)
+        assert json.dumps(result.arguments, sort_keys=True) == json.dumps(
+            arguments, sort_keys=True
+        )
+    for name in TOOL_NAMES:
+        assert decode_tool_call(
+            name=name, arguments="{}", tool_names=TOOL_NAMES
+        ) == DecodedToolCall(arguments={})
 
 
 @pytest.mark.parametrize(
     "name, arguments, expected",
     [
-        (
-            "get_current_weather",
-            '{"location": "Tokyo"}',
-            DecodedToolCall(arguments={"location": "Tokyo"}),
-        ),
-        ("n_0_search", "{}", DecodedToolCall(arguments={})),
         (
             "get_weather",
             '{"location": "Tokyo"}',
@@ -155,23 +149,25 @@ TOOL_NAMES = frozenset({"get_current_weather", "n_0_search"})
             "get_current_weather",
             '{"location": ',
             RejectedToolCall(
-                reason="Invalid arguments for get_current_weather: "
-                "Expecting value: line 1 column 14 (char 13)"
+                reason="Invalid arguments for get_current_weather: Expecting value: line 1 column 14 (char 13)"
             ),
         ),
         (
             "get_current_weather",
             '["Tokyo"]',
             RejectedToolCall(
-                reason="Invalid arguments for get_current_weather: "
-                "expected a JSON object"
+                reason="Invalid arguments for get_current_weather: expected a JSON object"
             ),
         ),
     ],
 )
-def test_decode_tool_call(name, arguments, expected):
-    result = decode_tool_call(name=name, arguments=arguments, tool_names=TOOL_NAMES)
-    assert result == expected
+def test_rejected_tool_calls_explain_why_they_cannot_be_dispatched(
+    name, arguments, expected
+):
+    assert (
+        decode_tool_call(name=name, arguments=arguments, tool_names=TOOL_NAMES)
+        == expected
+    )
 
 
 @pytest.mark.parametrize(

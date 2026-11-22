@@ -1,4 +1,6 @@
 import base64
+from copy import deepcopy
+from itertools import product
 
 import pytest
 
@@ -13,7 +15,6 @@ from app.message_logic import (
     convert_markdown_to_mrkdwn,
     filter_replies_after_last_marker,
     format_assistant_reply_for_slack,
-    is_last_marker_reply,
     is_reply_from_bot,
     maybe_redact_string,
     maybe_set_cache_points,
@@ -47,64 +48,64 @@ def test_is_reply_from_bot(reply, bot_user_id, expected):
     assert result == expected
 
 
-@pytest.mark.parametrize(
-    "reply,bot_user_id,marker_text,expected",
-    [
-        ({"user": "U123", "text": "This is a marker."}, "U123", "marker", True),
-        ({"user": "U123", "text": "Hello world."}, "U123", "marker", False),
-        ({"user": "U456", "text": "This is a marker."}, "U123", "marker", False),
-        ({"user": "U123", "text": ""}, "U123", "marker", False),
-    ],
-)
-def test_is_last_marker_reply(reply, bot_user_id, marker_text, expected):
-    result = is_last_marker_reply(
-        reply=reply, bot_user_id=bot_user_id, marker_text=marker_text
-    )
+def test_history_keeps_exactly_the_suffix_after_the_last_bot_marker():
+    for marker in ("marker", "RESET [a].* = 日本語"):
+        kinds = (
+            ({"user": "U456", "text": "hello"}, False),
+            ({"user": "U123", "text": "world"}, False),
+            ({"user": "U123", "text": f"prefix {marker} suffix"}, True),
+            ({"user": "U456", "text": marker}, False),
+            ({"user": "U123", "text": ""}, False),
+            ({"user": "U123"}, False),
+        )
+        for size in range(5):
+            for selected in product(kinds, repeat=size):
+                replies = [
+                    deepcopy(reply) | {"ts": str(i)}
+                    for i, (reply, _) in enumerate(selected)
+                ]
+                before = deepcopy(replies)
+                cut = max(
+                    (i + 1 for i, (_, boundary) in enumerate(selected) if boundary),
+                    default=0,
+                )
+                assert (
+                    filter_replies_after_last_marker(
+                        replies=replies, bot_user_id="U123", marker_text=marker
+                    )
+                    == replies[cut:]
+                )
+                assert replies == before
 
-    assert result == expected
 
-
-@pytest.mark.parametrize(
-    "replies,bot_user_id,marker_text,expected",
-    [
-        (
-            [
-                {"user": "U123", "text": "hello"},
-                {"user": "U123", "text": "marker"},
-                {"user": "U123", "text": "world"},
-            ],
-            "U123",
-            "marker",
-            [{"user": "U123", "text": "world"}],
-        ),
-        (
-            [
-                {"user": "U123", "text": "hello"},
-                {"user": "U456", "text": "marker"},
-                {"user": "U123", "text": "world"},
-            ],
-            "U123",
-            "marker",
-            [
-                {"user": "U123", "text": "hello"},
-                {"user": "U456", "text": "marker"},
-                {"user": "U123", "text": "world"},
-            ],
-        ),
-        (
-            [],
-            "U123",
-            "marker",
-            [],
-        ),
-    ],
-)
-def test_filter_replies_after_last_marker(replies, bot_user_id, marker_text, expected):
-    result = filter_replies_after_last_marker(
-        replies=replies, bot_user_id=bot_user_id, marker_text=marker_text
-    )
-
-    assert result == expected
+def test_cache_points_change_only_the_last_blocks_of_the_last_two_user_turns():
+    for size in range(6):
+        for roles in product(("user", "assistant", "system"), repeat=size):
+            users = [i for i, role in enumerate(roles) if role == "user"]
+            for enabled, ttl, width in product(
+                (False, True), (None, "5m", "1h"), (1, 2)
+            ):
+                messages: list[dict] = [
+                    {
+                        "role": role,
+                        "content": "hi"
+                        if role == "assistant"
+                        else [
+                            {"type": "text", "text": f"turn {i} block {j} 日本語"}
+                            for j in range(width)
+                        ],
+                    }
+                    for i, role in enumerate(roles)
+                ]
+                expected = deepcopy(messages)
+                if enabled and len(users) >= 2:
+                    control = {"type": "ephemeral"} | (
+                        {} if ttl is None else {"ttl": ttl}
+                    )
+                    for i in users[-2:]:
+                        expected[i]["content"][-1]["cache_control"] = control
+                maybe_set_cache_points(messages, enabled, ttl)
+                assert messages == expected, (roles, enabled, ttl, width)
 
 
 @pytest.mark.parametrize(
@@ -524,201 +525,6 @@ def test_build_slack_user_prefixed_text(reply, text, expected):
     result = build_slack_user_prefixed_text(reply, text)
 
     assert result == expected
-
-
-@pytest.mark.parametrize(
-    "prompt_caching_enabled, prompt_caching_ttl, input_messages, expected_messages",
-    [
-        (
-            False,
-            None,
-            [
-                {"role": "user", "content": [{"type": "text", "text": "a"}]},
-                {"role": "user", "content": [{"type": "text", "text": "b"}]},
-                {"role": "user", "content": [{"type": "text", "text": "c"}]},
-            ],
-            [
-                {"role": "user", "content": [{"type": "text", "text": "a"}]},
-                {"role": "user", "content": [{"type": "text", "text": "b"}]},
-                {"role": "user", "content": [{"type": "text", "text": "c"}]},
-            ],
-        ),
-        (
-            True,
-            None,
-            [
-                {"role": "user", "content": [{"type": "text", "text": "a"}]},
-            ],
-            [
-                {"role": "user", "content": [{"type": "text", "text": "a"}]},
-            ],
-        ),
-        (
-            True,
-            None,
-            [
-                {"role": "user", "content": [{"type": "text", "text": "a"}]},
-                {"role": "user", "content": [{"type": "text", "text": "b"}]},
-            ],
-            [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "a",
-                            "cache_control": {"type": "ephemeral"},
-                        }
-                    ],
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "b",
-                            "cache_control": {"type": "ephemeral"},
-                        }
-                    ],
-                },
-            ],
-        ),
-        (
-            True,
-            None,
-            [
-                {"role": "user", "content": [{"type": "text", "text": "a"}]},
-                {"role": "user", "content": [{"type": "text", "text": "b"}]},
-                {"role": "user", "content": [{"type": "text", "text": "c"}]},
-            ],
-            [
-                {"role": "user", "content": [{"type": "text", "text": "a"}]},
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "b",
-                            "cache_control": {"type": "ephemeral"},
-                        }
-                    ],
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "c",
-                            "cache_control": {"type": "ephemeral"},
-                        }
-                    ],
-                },
-            ],
-        ),
-        (
-            True,
-            None,
-            [
-                {"role": "user", "content": [{"type": "text", "text": "x"}]},
-                {"role": "assistant", "content": "hi"},
-                {"role": "user", "content": [{"type": "text", "text": "y"}]},
-            ],
-            [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "x",
-                            "cache_control": {"type": "ephemeral"},
-                        }
-                    ],
-                },
-                {"role": "assistant", "content": "hi"},
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "y",
-                            "cache_control": {"type": "ephemeral"},
-                        }
-                    ],
-                },
-            ],
-        ),
-        (
-            True,
-            None,
-            [
-                {"role": "user", "content": [{"type": "text", "text": "a"}]},
-                {"role": "assistant", "content": "ignored"},
-                {"role": "user", "content": [{"type": "text", "text": "b"}]},
-                {"role": "user", "content": [{"type": "text", "text": "c"}]},
-            ],
-            [
-                {"role": "user", "content": [{"type": "text", "text": "a"}]},
-                {"role": "assistant", "content": "ignored"},
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "b",
-                            "cache_control": {"type": "ephemeral"},
-                        }
-                    ],
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "c",
-                            "cache_control": {"type": "ephemeral"},
-                        }
-                    ],
-                },
-            ],
-        ),
-        (
-            True,
-            "1h",
-            [
-                {"role": "user", "content": [{"type": "text", "text": "a"}]},
-                {"role": "user", "content": [{"type": "text", "text": "b"}]},
-            ],
-            [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "a",
-                            "cache_control": {"type": "ephemeral", "ttl": "1h"},
-                        }
-                    ],
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": "b",
-                            "cache_control": {"type": "ephemeral", "ttl": "1h"},
-                        }
-                    ],
-                },
-            ],
-        ),
-    ],
-)
-def test_maybe_set_cache_points(
-    prompt_caching_enabled, prompt_caching_ttl, input_messages, expected_messages
-):
-    maybe_set_cache_points(input_messages, prompt_caching_enabled, prompt_caching_ttl)
-
-    assert input_messages == expected_messages
 
 
 @pytest.mark.parametrize(
