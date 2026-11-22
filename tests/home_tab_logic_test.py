@@ -1,3 +1,5 @@
+from itertools import product
+
 import pytest
 from slack_sdk.models.blocks import ActionsBlock, HeaderBlock, SectionBlock
 from slack_sdk.models.blocks.basic_components import MarkdownTextObject, PlainTextObject
@@ -597,3 +599,35 @@ def test_build_home_tab_view_with_error_message():
     )
 
     assert result == expected
+
+
+def test_oauth_server_state_follows_its_session_and_fetched_tools():
+    # A server is enabled once it has a session and its tools are fetched,
+    # even when the server offers none, and is fetching while the tools are
+    # missing.
+    config = {
+        "servers": [
+            {
+                "name": "GitHubServer",
+                "url": "http://test",
+                "auth_type": "user_federation",
+                "agentcore_provider": "github",
+            }
+        ]
+    }
+    session = {"token": "token", "expires_at": 9999999999}
+    for has_session, tools in product((False, True), (None, [], [{"name": "a"}])):
+        blocks = build_home_tab_blocks(
+            mcp_config=config,
+            user_oauth_urls={},
+            user_oauth_verification_codes={},
+            user_oauth_sessions={"GitHubServer": session} if has_session else {},
+            user_oauth_tools={} if tools is None else {"GitHubServer": tools},
+            user_tz="UTC",
+        )
+        rendered = repr([block.to_dict() for block in blocks])
+        state = (has_session, tools)
+        assert ("disable_mcp_oauth_0" in rendered) == (
+            has_session and tools is not None
+        ), state
+        assert ("Fetching tools" in rendered) == (has_session and tools is None), state

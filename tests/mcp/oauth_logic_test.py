@@ -60,6 +60,10 @@ def test_get_oauth_servers(config, expected):
             True,
         ),
         ({"token": "test_token", "expires_at": 1}, 1000000000, False),
+        # A session is still valid the second before it expires, and is not
+        # at the moment it does.
+        ({"token": "test_token", "expires_at": 1000}, 999, True),
+        ({"token": "test_token", "expires_at": 1000}, 1000, False),
         (None, 1000000000, False),
         ({"token": "test_token"}, 1000000000, False),
         ({}, 1000000000, False),
