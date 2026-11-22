@@ -401,28 +401,28 @@ def test_maybe_redact_string(
     assert result == expected_output
 
 
-@pytest.mark.parametrize(
-    "content, expected",
-    [
-        (
-            """#include &lt;stdio.h&gt;
-int main(int argc, char *argv[])
-{
-    printf("Hello, world!\n");
-    return 0;
-}""",
-            """#include <stdio.h>
-int main(int argc, char *argv[])
-{
-    printf("Hello, world!\n");
-    return 0;
-}""",
-        ),
-    ],
-)
-def test_unescape_slack_formatting(content, expected):
-    result = unescape_slack_formatting(content)
-    assert result == expected
+def test_unescape_slack_formatting_reverses_slacks_escaping():
+    # Slack escapes &, <, and > in message text, & first. Text that already
+    # reads like an escape, as &lt; typed by a user does, has to come back as
+    # typed rather than unescaped twice.
+    pieces = (
+        "&",
+        "<",
+        ">",
+        "&lt;",
+        "&gt;",
+        "&amp;",
+        "a;",
+        "日本語",
+        '#include <stdio.h>\nint main(int argc, char *argv[])\n{\n    printf("Hello, world!\\n");\n}',
+    )
+    for size in range(4):
+        for selected in product(pieces, repeat=size):
+            text = "".join(selected)
+            escaped = (
+                text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            )
+            assert unescape_slack_formatting(escaped) == text, text
 
 
 @pytest.mark.parametrize(
@@ -684,3 +684,32 @@ def test_convert_markdown_to_mrkdwn(content, expected):
     result = convert_markdown_to_mrkdwn(content)
 
     assert result == expected
+
+
+def test_mrkdwn_spaces_formatting_and_code_only_next_to_wide_characters():
+    # Slack does not render formatting that touches a wide or fullwidth
+    # character, so a space goes between them, and nowhere else.
+    wide = {"日", "Ａ", "，", "「"}
+    neighbors = ("", " ", "a", "1", ".", "ｶ", *sorted(wide))
+    tokens = {
+        "`code`": "`code`",
+        "```block```": "```block```",
+        "**b**": "*b*",
+        "_i_": "_i_",
+        "~~s~~": "~s~",
+    }
+    for before, (token, converted), after in product(
+        neighbors, tokens.items(), neighbors
+    ):
+        expected = (
+            before
+            + (" " if before in wide else "")
+            + converted
+            + (" " if after in wide else "")
+            + after
+        )
+        assert convert_markdown_to_mrkdwn(before + token + after) == expected, (
+            before,
+            token,
+            after,
+        )

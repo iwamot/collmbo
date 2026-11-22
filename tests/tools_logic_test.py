@@ -4,12 +4,14 @@ from itertools import product
 
 import pytest
 
+from app.mcp.tools_logic import build_mcp_tool_name
 from app.tools_logic import (
     DecodedToolCall,
     RejectedToolCall,
     collect_tool_names,
     decode_tool_call,
     format_rejected_tool_calls,
+    is_mcp_tool_name,
     load_classic_tools,
     split_classic_tools_by_mcp_collision,
     split_classic_tools_by_reserved_name,
@@ -188,3 +190,19 @@ def test_rejected_tool_calls_explain_why_they_cannot_be_dispatched(
 )
 def test_format_rejected_tool_calls(reasons, expected):
     assert format_rejected_tool_calls(reasons) == expected
+
+
+def test_mcp_tool_names_carry_a_known_auth_and_a_server_index():
+    known = {"n", "u", "b"}
+    indexes = {"0", "12"}
+    for auth, index, spec in product(
+        ("n", "u", "b", "x", "N", ""), ("0", "12", "a", "", "-1"), ("search", "a_b", "")
+    ):
+        name = f"{auth}_{index}_{spec}"
+        assert is_mcp_tool_name(name) == (auth in known and index in indexes), name
+    for auth_type, index, spec in product(
+        ("none", "user_federation", "bearer"), (0, 12), ("search", "get_weather")
+    ):
+        assert is_mcp_tool_name(build_mcp_tool_name(spec, auth_type, index))
+    for name in ("search", "get_weather", "", "n_0"):
+        assert not is_mcp_tool_name(name), name
