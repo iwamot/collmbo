@@ -164,7 +164,7 @@ wheels = [
 
 [[package]]
 name = "bedrock-agentcore"
-version = "1.26.1"
+version = "1.27.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "boto3" },
@@ -176,37 +176,37 @@ dependencies = [
     { name = "uvicorn" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c9/6e/2ae1b64d72dfe1d89eaa8ff8e250cd8886e0444b66a8f2958184e9de5c9d/bedrock_agentcore-1.26.1.tar.gz", hash = "sha256:b9ba2e28dc47f0cf12f9a5511b6d4cafc0ddefd0cd38e392a2b48fafe21c421a", size = 1324665, upload-time = "2026-11-18T20:25:56.058Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bc/4b/7a1493c622a873e9cba56569161a8ae2db5b4988b6371e2b11184b242265/bedrock_agentcore-1.27.0.tar.gz", hash = "sha256:b18134cc15a769d441e40f720115dc0274f82aa7ec657d650cffcd859aea6f10", size = 1325735, upload-time = "2026-11-20T21:32:48.814Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/49/bf/ad91160dafafe36bca17197cf01ac44cb56bfed3d48eb158cc79e6a1925f/bedrock_agentcore-1.26.1-py3-none-any.whl", hash = "sha256:075c454e10d58257fa9d3242651d73e309d63f194709946f0793bde6f93b40ae", size = 553091, upload-time = "2026-11-18T20:25:54.13Z" },
+    { url = "https://files.pythonhosted.org/packages/5e/24/48ee46f596c8d2dfe52799254fb561b227fcdb9988e126b8295f6d8f75b3/bedrock_agentcore-1.27.0-py3-none-any.whl", hash = "sha256:fef5dfea7028ac66b94124e727d04bbeff789157834ed718ee7634770bf8fa09", size = 553635, upload-time = "2026-11-20T21:32:47.099Z" },
 ]
 
 [[package]]
 name = "boto3"
-version = "1.44.0"
+version = "1.44.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "botocore" },
     { name = "jmespath" },
     { name = "s3transfer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e7/b4/da0e5fd912f51d04e9f019fea50cbb859a4ba07947c6e28262ff59c98360/boto3-1.44.0.tar.gz", hash = "sha256:5d311d2988ae560f83e5fb8a284cb57b48e2c8d444ecb78a6d6752ae1740e04a", size = 112741, upload-time = "2026-11-10T20:22:34.536Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/24/43/993eec3594eab145ec751af0ef1dadbad0beb01b304b99d7ed0b68c31a71/boto3-1.44.9.tar.gz", hash = "sha256:da4199076833547445a7181e38e833f476808142df95084b2b46c8b2a107aa66", size = 112771, upload-time = "2026-11-21T01:33:36.737Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e2/53/9c2ca547dc9fa1e9e2a0fec0096b9e25277f6864faba580ace75e0db5585/boto3-1.44.0-py3-none-any.whl", hash = "sha256:ae3009db1294fd4ca2e30d9592ead8ab56f0e270bcad0b95e555f03f7875716d", size = 140153, upload-time = "2026-11-10T20:22:31.736Z" },
+    { url = "https://files.pythonhosted.org/packages/9e/66/73c8c57119a8acf3688dfbe95c4648e8b3e4d6a7a3783b0619b65d201f02/boto3-1.44.9-py3-none-any.whl", hash = "sha256:aff889e8ca6f6006f0b5658b712941471d21e4675d6d48421974a20a5a17a918", size = 140157, upload-time = "2026-11-21T01:33:34.542Z" },
 ]
 
 [[package]]
 name = "botocore"
-version = "1.44.0"
+version = "1.44.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jmespath" },
     { name = "python-dateutil" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4d/92/480a2c685a9b02a947541a217ae615d5e78f287d833cc1b9f23dfc39e313/botocore-1.44.0.tar.gz", hash = "sha256:224efbd3ee978856da460585533ebf1b97831960e575857ca2424f33e554917b", size = 16577303, upload-time = "2026-11-10T20:22:28.42Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/04/10/cf5cb95dee4b956eb785e5225aa47054872bbcf263241e926fa796c388ce/botocore-1.44.9.tar.gz", hash = "sha256:1f783e0b31f0053f41f4239b7a7e2e73957f25cdc6b2f45d113f1b575a4db10b", size = 17206061, upload-time = "2026-11-21T01:33:31.469Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c1/0f/82dd92901fdc21a3444eba19e23e0a8584046f8c7d6f9ae171e38ecd7dda/botocore-1.44.0-py3-none-any.whl", hash = "sha256:9055745fc16400377ac7e825ac63b8f77af17305e1c77c9a5519a648d7b2e87c", size = 16277656, upload-time = "2026-11-10T20:22:24.273Z" },
+    { url = "https://files.pythonhosted.org/packages/20/ad/f8143d7a78503c3b67d135589cd1da82d3867ed1f37149e64d6f9bef6cfb/botocore-1.44.9-py3-none-any.whl", hash = "sha256:6966752d38514a8e457ea062ea171b2b320c55bad23c8ae4f74f88296e00890d", size = 16905925, upload-time = "2026-11-21T01:33:28.733Z" },
 ]
 
 [[package]]
@@ -403,7 +403,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bedrock-agentcore", specifier = "==1.26.1" },
+    { name = "bedrock-agentcore", specifier = "==1.27.0" },
     { name = "httpx", specifier = "==0.28.1" },
     { name = "litellm", specifier = "==1.110.2" },
     { name = "pillow", specifier = "==13.0.0" },
