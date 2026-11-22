@@ -251,6 +251,12 @@ def unescape_slack_formatting(content: str) -> str:
     return content.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
 
 
+# A formatting marker opens and closes only where no letter or digit sits on
+# its outer side. Markers and punctuation may, so _*bold italic*_ still nests.
+_OPEN = r"(?<![^\W_])"
+_CLOSE = r"(?![^\W_])"
+
+
 def maybe_slack_to_markdown(content: str, slack_formatting_enabled: bool) -> str:
     """
     Convert Slack mrkdwn to Markdown format.
@@ -267,17 +273,21 @@ def maybe_slack_to_markdown(content: str, slack_formatting_enabled: bool) -> str
     if not slack_formatting_enabled:
         return content
 
-    # Split the input string into parts based on code blocks and inline code
-    parts = re.split(r"(?s)(```.+?```|`[^`\n]+?`)", content)
+    # Split the input string into code blocks, inline code, and the <...>
+    # links, mentions, and channel references Slack writes, none of which
+    # carry formatting.
+    parts = re.split(r"(?s)(```.+?```|`[^`\n]+?`|<[^<>\n]*>)", content)
 
-    # Apply the bold, italic, and strikethrough formatting to text not within code
+    # Apply the bold, italic, and strikethrough formatting to the text between
+    # them. A marker with a letter or digit on its outer side is part of a
+    # word, as in snake_case or 2*3*4, and Slack leaves it as it is.
     result = ""
     for part in parts:
-        if not part.startswith("```") and not part.startswith("`"):
+        if not part.startswith(("```", "`", "<")):
             for o, n in [
-                (r"\*(?!\s)([^\*\n]+?)(?<!\s)\*", r"**\1**"),  # *bold* to **bold**
-                (r"_(?!\s)([^_\n]+?)(?<!\s)_", r"*\1*"),  # _italic_ to *italic*
-                (r"~(?!\s)([^~\n]+?)(?<!\s)~", r"~~\1~~"),  # ~strike~ to ~~strike~~
+                (rf"{_OPEN}\*(?!\s)([^\*\n]+?)(?<!\s)\*{_CLOSE}", r"**\1**"),
+                (rf"{_OPEN}_(?!\s)([^_\n]+?)(?<!\s)_{_CLOSE}", r"*\1*"),
+                (rf"{_OPEN}~(?!\s)([^~\n]+?)(?<!\s)~{_CLOSE}", r"~~\1~~"),
             ]:
                 part = re.sub(o, n, part)
         result += part
