@@ -252,9 +252,16 @@ def unescape_slack_formatting(content: str) -> str:
 
 
 # A formatting marker opens and closes only where no letter or digit sits on
-# its outer side. Markers and punctuation may, so _*bold italic*_ still nests.
+# its outer side. Other markers and punctuation may, so _*bold italic*_ still
+# nests, but the same marker may not: Slack shows **text** and __text__ as
+# typed, so a doubled marker is text rather than formatting.
 _OPEN = r"(?<![^\W_])"
 _CLOSE = r"(?![^\W_])"
+
+
+def _slack_formatting(marker: str) -> str:
+    m = re.escape(marker)
+    return rf"{_OPEN}(?<!{m}){m}(?!\s)([^{m}\n]+?)(?<!\s){m}(?!{m}){_CLOSE}"
 
 
 def maybe_slack_to_markdown(content: str, slack_formatting_enabled: bool) -> str:
@@ -285,9 +292,9 @@ def maybe_slack_to_markdown(content: str, slack_formatting_enabled: bool) -> str
     for part in parts:
         if not part.startswith(("```", "`", "<")):
             for o, n in [
-                (rf"{_OPEN}\*(?!\s)([^\*\n]+?)(?<!\s)\*{_CLOSE}", r"**\1**"),
-                (rf"{_OPEN}_(?!\s)([^_\n]+?)(?<!\s)_{_CLOSE}", r"*\1*"),
-                (rf"{_OPEN}~(?!\s)([^~\n]+?)(?<!\s)~{_CLOSE}", r"~~\1~~"),
+                (_slack_formatting("*"), r"**\1**"),
+                (_slack_formatting("_"), r"*\1*"),
+                (_slack_formatting("~"), r"~~\1~~"),
             ]:
                 part = re.sub(o, n, part)
         result += part
