@@ -165,7 +165,7 @@ def test_cache_points_change_only_the_last_blocks_of_the_last_two_user_turns():
             },
         ),
         (
-            "~~bye~~ {bot_user_id}",
+            "~bye~ {bot_user_id}",
             "U00000",
             True,
             False,
@@ -175,7 +175,7 @@ def test_cache_points_change_only_the_last_blocks_of_the_last_two_user_turns():
                 "content": [
                     {
                         "type": "text",
-                        "text": "~~~bye~~~ U00000",
+                        "text": "~~bye~~ U00000",
                     }
                 ],
             },
@@ -523,6 +523,11 @@ def test_slack_to_markdown_converts_formatting_and_nothing_else():
         "<#C1|gen_eral>": "<#C1|gen_eral>",
         "snake_case_name": "snake_case_name",
         "_lead_ing": "_lead_ing",
+        "**dbl**": "**dbl**",
+        "__dbl__": "__dbl__",
+        "~~dbl~~": "~~dbl~~",
+        "*dbl**": "*dbl**",
+        "__dbl_": "__dbl_",
         "2*3*4": "2*3*4",
         "a~b~c": "a~b~c",
         "日本語_強調_です": "日本語_強調_です",
