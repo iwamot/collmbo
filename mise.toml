@@ -15,7 +15,7 @@ python = "3.14.10"
 "aqua:astral-sh/uv" = "0.13.9"
 
 [tools."pipx:uv-override-prune"]
-version = "1.0.1"
+version = "1.0.2"
 minimum_release_age = "0d"
 
 [task_config]

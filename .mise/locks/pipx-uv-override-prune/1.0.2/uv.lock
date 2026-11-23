@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "uv-override-prune", specifier = "==1.0.1" }]
+requires-dist = [{ name = "uv-override-prune", specifier = "==1.0.2" }]
 
 [[package]]
 name = "packaging"
@@ -33,13 +33,13 @@ wheels = [
 
 [[package]]
 name = "uv-override-prune"
-version = "1.0.1"
+version = "1.0.2"
 source = { registry = "https://pypi.org/simple/" }
 dependencies = [
     { name = "packaging" },
     { name = "tomlkit" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cd/33/54ea0827775ba564f6cbdb4e314d24f440f683bdf890cf764508497d69e9/uv_override_prune-1.0.1.tar.gz", hash = "sha256:78dabc9143f30c3af8822367864f94874bac294e3730d5bf838ceed3a12d214f", size = 24163, upload-time = "2026-10-20T15:50:14.96Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/05/1d/72969fe2e336b79cd34b668209a23a0aa400fe41e0eeb519f2a09bca154f/uv_override_prune-1.0.2.tar.gz", hash = "sha256:822e21c38243d5c815962ce2b01e473cfb02f7d4a3dba9c18989732d86957913", size = 28360, upload-time = "2026-11-23T15:04:57.004Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/10/ba/e9170acda6230eb46b9d25890d35f5076f3b8ae3016a862bdc64d39ffcf7/uv_override_prune-1.0.1-py3-none-any.whl", hash = "sha256:55c1ea00aab0ab05734abfa780f1968071aff4d00418864bd6319b16cfd0793c", size = 13891, upload-time = "2026-10-20T15:50:13.844Z" },
+    { url = "https://files.pythonhosted.org/packages/51/19/29f1a5efca88ff8df12f74200a0834df8cfd83032e477c14bc67ae03ffee/uv_override_prune-1.0.2-py3-none-any.whl", hash = "sha256:737f5e0497ee87e3957ce2ede4d64aa94e1711eb593781b4c9b8eae0fe3b4144", size = 13891, upload-time = "2026-11-23T15:04:55.862Z" },
 ]
