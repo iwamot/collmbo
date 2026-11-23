@@ -260,8 +260,12 @@ _CLOSE = r"(?![^\W_])"
 
 
 def _slack_formatting(marker: str) -> str:
+    # A marker right after a backtick is literal in Slack, and so is a `*` or
+    # `~` right before one, though a `_` there still closes its italic
+    # (measured 2026-11-23 and 2026-11-24).
     m = re.escape(marker)
-    return rf"{_OPEN}(?<!{m}){m}(?!\s)([^{m}\n]+?)(?<!\s){m}(?!{m}){_CLOSE}"
+    close = rf"(?!{m}|`)" if marker in "*~" else rf"(?!{m})"
+    return rf"{_OPEN}(?<!{m}|`){m}(?!\s)([^{m}\n]+?)(?<!\s){m}{close}{_CLOSE}"
 
 
 def maybe_slack_to_markdown(content: str, slack_formatting_enabled: bool) -> str:
@@ -282,15 +286,17 @@ def maybe_slack_to_markdown(content: str, slack_formatting_enabled: bool) -> str
 
     # Split the input string into code blocks, inline code, and the <...>
     # links, mentions, and channel references Slack writes, none of which
-    # carry formatting.
+    # carry formatting. The split captures them, so they sit at the odd
+    # indexes; a part at an even index is text even when it opens on a
+    # backtick nothing closes.
     parts = re.split(r"(?s)(```.+?```|`[^`\n]+?`|<[^<>\n]*>)", content)
 
     # Apply the bold, italic, and strikethrough formatting to the text between
     # them. A marker with a letter or digit on its outer side is part of a
     # word, as in snake_case or 2*3*4, and Slack leaves it as it is.
     result = ""
-    for part in parts:
-        if not part.startswith(("```", "`", "<")):
+    for index, part in enumerate(parts):
+        if index % 2 == 0:
             for o, n in [
                 (_slack_formatting("*"), r"**\1**"),
                 (_slack_formatting("_"), r"*\1*"),

@@ -505,12 +505,41 @@ else:
             False,
             "Code block ```*text*, _text_ and ~text~``` shouldn't be changed.",
         ),
+        # Backticks as Slack rendered them on 2026-11-23 and 2026-11-24: one
+        # that nothing closes leaves the rest formatted, a marker opening
+        # right after one is literal, and so is a `*` or `~` closing right
+        # before one, though a `_` there is italic.
+        ("`a *b*", True, "`a **b**"),
+        ("``` *b*", True, "``` **b**"),
+        ("`x``y *b*", True, "`x``y **b**"),
+        ("`*b*", True, "`*b*"),
+        ("x `*b*", True, "x `*b*"),
+        ("x `_i_", True, "x `_i_"),
+        ("x `~s~", True, "x `~s~"),
+        ("*b*` x", True, "*b*` x"),
+        ("~s~` x", True, "~s~` x"),
+        ("_i_` x", True, "*i*` x"),
     ],
 )
 def test_maybe_slack_to_markdown(content, slack_formatting_enabled, expected):
     result = maybe_slack_to_markdown(content, slack_formatting_enabled)
 
     assert result == expected
+
+
+def test_text_reads_the_same_after_code_a_link_or_a_backtick_nothing_closes():
+    # Code, a link, and a stray backtick end before the text does, and the
+    # space after them is what the text would otherwise start against: none
+    # of them changes how the text after them reads.
+    tokens = ("*", "_", "~", "a", " ", "日", "\n")
+    leads = ("` ", "``` ", "`code` ", "```code``` ", "`a ` ", "<@U1> ")
+    for length in range(6):
+        for body in map("".join, product(tokens, repeat=length)):
+            converted = maybe_slack_to_markdown(body, True)
+            for lead in leads:
+                assert maybe_slack_to_markdown(lead + body, True) == (
+                    lead + converted
+                ), (lead, body)
 
 
 def test_slack_to_markdown_converts_formatting_and_nothing_else():
