@@ -543,13 +543,15 @@ def test_text_reads_the_same_after_code_a_link_or_a_backtick_nothing_closes():
 
 
 def test_slack_to_markdown_converts_formatting_and_nothing_else():
-    # Each token maps to what it becomes: links, mentions, code, and markers
-    # inside a word stay as written, and formatting at word boundaries turns
-    # into Markdown.
+    # Each token maps to what it becomes: links, mentions, code, markers
+    # inside a word, and markers across a line break stay as written, and
+    # formatting at word boundaries turns into Markdown.
     tokens = {
         "<https://example.com/foo_bar_baz>": "<https://example.com/foo_bar_baz>",
         "<@U123>": "<@U123>",
         "<#C1|gen_eral>": "<#C1|gen_eral>",
+        "<https://example.com/_a_>": "<https://example.com/_a_>",
+        "*a\nb*": "*a\nb*",
         "snake_case_name": "snake_case_name",
         "_lead_ing": "_lead_ing",
         "**dbl**": "**dbl**",
