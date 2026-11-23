@@ -13,4 +13,4 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.job }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
-    uses: iwamot/workflows/.github/workflows/dependabot-auto-merge.yml@a180a0bcae83bb6eede088999024bc2e3862c16c # v8.22.0
+    uses: iwamot/workflows/.github/workflows/dependabot-auto-merge.yml@825e9b230f1a6230ab98fec77129a16634f8f589 # v8.23.0
