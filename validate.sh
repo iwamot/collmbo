@@ -7,7 +7,7 @@ mise fmt
 mise install
 
 # Python
-uv sync
+uv sync --locked
 mise run licenses python --ignore-package tiktoken
 # tiktoken declares no License-Expression or license classifier, and its
 # License field holds the full MIT text, which exact matching cannot compare.
