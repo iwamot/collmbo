@@ -7,6 +7,7 @@ import time
 from strands.tools.mcp.mcp_client import MCPClient
 from strands.types.exceptions import MCPClientInitializationError
 
+from app.mcp.client_service import list_all_tools
 from app.mcp.config_service import get_oauth_server, get_oauth_server_index
 from app.mcp.oauth_tools_logic import create_bearer_auth_headers, is_session_not_expired
 from app.mcp.tools_logic import render_tool_result, transform_mcp_spec_to_classic_tool
@@ -206,7 +207,7 @@ async def fetch_mcp_oauth_tools(
 
     client = MCPClient(url=server_url, headers=headers)
     with client:
-        mcp_tools = client.list_tools_sync()
+        mcp_tools = list_all_tools(client)
 
     for mcp_tool in mcp_tools:
         tool_spec = mcp_tool.tool_spec

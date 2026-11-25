@@ -9,6 +9,7 @@ import time
 
 from strands.tools.mcp.mcp_client import MCPClient
 
+from app.mcp.client_service import list_all_tools
 from app.mcp.config_logic import build_bearer_headers
 from app.mcp.config_service import get_bearer_servers, get_no_auth_servers
 from app.mcp.tools_logic import render_tool_result, transform_mcp_spec_to_classic_tool
@@ -41,7 +42,7 @@ def _load_server_tools(
     """
     client = MCPClient(url=url, headers=headers)
     with client:
-        tools = client.list_tools_sync()
+        tools = list_all_tools(client)
     return [
         transform_mcp_spec_to_classic_tool(
             mcp_spec=tool.tool_spec,
