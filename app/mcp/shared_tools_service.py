@@ -9,7 +9,6 @@ import time
 
 from strands.tools.mcp.mcp_client import MCPClient
 
-from app.env import LLM_MODEL
 from app.mcp.config_logic import build_bearer_headers
 from app.mcp.config_service import get_bearer_servers, get_no_auth_servers
 from app.mcp.tools_logic import render_tool_result, transform_mcp_spec_to_classic_tool
@@ -48,7 +47,6 @@ def _load_server_tools(
             mcp_spec=tool.tool_spec,
             auth_type=auth_type,
             server_index=server_index,
-            model=LLM_MODEL,
         )
         for tool in tools
     ]
