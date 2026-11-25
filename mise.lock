@@ -926,10 +926,10 @@ url_api = "https://api.github.com/repos/jdx/jactionlint/releases/assets/74051606
 provenance = "github-attestations"
 
 [[tools."pipx:uv-override-prune"]]
-version = "1.0.2"
+version = "1.0.3"
 backend = "pipx:uv-override-prune"
-specifiers = ["1.0.2"]
-uv = { path = ".mise/locks/pipx-uv-override-prune/1.0.2", digest = "sha256:b1a4a1fe38c33d8c5c3b92dc906c9b97aaf97c7f39c9c66ec05905143d6c7495" }
+specifiers = ["1.0.3"]
+uv = { path = ".mise/locks/pipx-uv-override-prune/1.0.3", digest = "sha256:d3df55ca9e4677b07de32bf0ae54d35fd2b3d24b7f277c766c256bf91cfe54ff" }
 
 [[tools.python]]
 version = "3.14.10"
