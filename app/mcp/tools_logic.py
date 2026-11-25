@@ -33,7 +33,6 @@ def transform_mcp_spec_to_classic_tool(
     mcp_spec: ToolSpec,
     auth_type: str,
     server_index: int,
-    model: str,
 ) -> dict:
     """
     Transform an MCP tool specification to a classic tool format.
@@ -42,7 +41,6 @@ def transform_mcp_spec_to_classic_tool(
         mcp_spec (dict): The MCP tool specification.
         auth_type (str): The authentication type (none, user_federation, bearer).
         server_index (int): The index of the MCP server.
-        model (str): The model name, used to determine if specific properties should be removed.
 
     Returns:
         dict: The transformed tool in classic format.
@@ -54,12 +52,6 @@ def transform_mcp_spec_to_classic_tool(
         parameters["type"] = "object"
     if "properties" not in parameters:
         parameters["properties"] = {}
-
-    # Remove invalid "format" property for Gemini models
-    if model.startswith("gemini/"):
-        for prop in parameters.get("properties", {}).values():
-            if "format" in prop and prop["format"] not in ("date-time", "enum"):
-                prop.pop("format")
 
     return {
         "type": "function",

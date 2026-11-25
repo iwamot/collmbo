@@ -87,7 +87,7 @@ def test_is_mcp_tool_name(name, expected):
 
 
 @pytest.mark.parametrize(
-    "mcp_spec, auth_type, server_index, model, expected",
+    "mcp_spec, auth_type, server_index, expected",
     [
         (
             {
@@ -102,7 +102,6 @@ def test_is_mcp_tool_name(name, expected):
             },
             "none",
             0,
-            "gpt-4",
             {
                 "type": "function",
                 "function": {
@@ -130,7 +129,6 @@ def test_is_mcp_tool_name(name, expected):
             },
             "none",
             0,
-            "gemini/gemini-pro",
             {
                 "type": "function",
                 "function": {
@@ -138,7 +136,9 @@ def test_is_mcp_tool_name(name, expected):
                     "description": "Test tool",
                     "parameters": {
                         "type": "object",
-                        "properties": {"param": {"type": "string"}},
+                        "properties": {
+                            "param": {"type": "string", "format": "invalid"}
+                        },
                     },
                 },
             },
@@ -158,7 +158,6 @@ def test_is_mcp_tool_name(name, expected):
             },
             "none",
             0,
-            "gemini/gemini-pro",
             {
                 "type": "function",
                 "function": {
@@ -181,7 +180,6 @@ def test_is_mcp_tool_name(name, expected):
             },
             "none",
             0,
-            "gpt-4",
             {
                 "type": "function",
                 "function": {
@@ -202,7 +200,6 @@ def test_is_mcp_tool_name(name, expected):
             },
             "none",
             0,
-            "gpt-4",
             {
                 "type": "function",
                 "function": {
@@ -215,13 +212,12 @@ def test_is_mcp_tool_name(name, expected):
     ],
 )
 def test_transform_mcp_spec_to_classic_tool(
-    mcp_spec, auth_type, server_index, model, expected
+    mcp_spec, auth_type, server_index, expected
 ):
     result = transform_mcp_spec_to_classic_tool(
         mcp_spec=mcp_spec,
         auth_type=auth_type,
         server_index=server_index,
-        model=model,
     )
 
     assert result == expected
