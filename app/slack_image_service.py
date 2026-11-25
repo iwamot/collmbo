@@ -3,9 +3,6 @@ This module provides functionality to handle images from Slack files.
 """
 
 import logging
-from io import BytesIO
-
-from PIL import Image
 
 from app.message_logic import build_image_url_item
 from app.slack_file_service import get_slack_file_content
@@ -49,19 +46,6 @@ def build_image_url_items_from_slack_files(
             token=bot_token,
             expected_content_types=SUPPORTED_IMAGE_MIME_TYPES,
         )
-        try:
-            image = Image.open(BytesIO(image_bytes))
-        except Exception as e:
-            raise RuntimeError(f"Failed to open an image data: {e}") from e
-        if image.format is None:
-            logger.warning(f"Skipped image with unknown format (url: {file_url})")
-            continue
-        if image.format.lower() not in SUPPORTED_IMAGE_FORMATS:
-            logger.info(
-                f"Skipped unsupported image (url: {file_url}, format: {image.format})"
-            )
-            continue
-
         image_url_item = build_image_url_item(mime_type, image_bytes)
         image_url_items.append(image_url_item)
 
