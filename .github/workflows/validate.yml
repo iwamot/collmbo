@@ -22,4 +22,4 @@ jobs:
     concurrency:
       group: ${{ github.workflow }}-${{ github.job }}-${{ github.event.pull_request.number || github.sha }}
       cancel-in-progress: true
-    uses: iwamot/workflows/.github/workflows/validate-with-coverage.yml@825e9b230f1a6230ab98fec77129a16634f8f589 # v8.23.0
+    uses: iwamot/workflows/.github/workflows/validate-with-coverage.yml@b393f83d1bb294145aa8670ec24fe6c39906bc67 # v8.23.1
