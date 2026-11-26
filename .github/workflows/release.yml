@@ -21,7 +21,7 @@ jobs:
     uses: iwamot/workflows/.github/workflows/release-ghcr.yml@825e9b230f1a6230ab98fec77129a16634f8f589 # v8.23.0
     with:
       tag: ${{ inputs.tag || '' }}
-      allowed_endpoints: 'pypi.org:443'
+      allowed_endpoints: 'pypi.org:443 docker-images-prod.s3.dualstack.us-east-1.amazonaws.com:443'
     permissions:
       checks: read  # allow the shared release workflow to inspect required CI
       statuses: read  # allow inspection of required legacy commit statuses
