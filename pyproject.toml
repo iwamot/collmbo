@@ -12,7 +12,7 @@ dependencies = [
     "litellm==1.111.0",
     "httpx==0.28.1",
     "bedrock-agentcore==1.27.0",
-    "strands-agents==1.66.0",
+    "strands-agents==1.67.0",
 ]
 
 # The dev group is included by `uv sync` and `uv run` by default, and
