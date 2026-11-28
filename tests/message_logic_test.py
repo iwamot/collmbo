@@ -8,6 +8,8 @@ from app.message_logic import (
     build_assistant_message,
     build_image_url_item,
     build_pdf_file_item,
+    build_reply_from_post,
+    build_reply_text,
     build_slack_user_prefixed_text,
     build_system_message,
     build_tool_message,
@@ -18,9 +20,7 @@ from app.message_logic import (
     is_reply_from_bot,
     maybe_redact_string,
     maybe_set_cache_points,
-    maybe_slack_to_markdown,
     remove_bot_mention,
-    unescape_slack_formatting,
 )
 
 
@@ -401,179 +401,114 @@ def test_maybe_redact_string(
     assert result == expected_output
 
 
-def test_unescape_slack_formatting_reverses_slacks_escaping():
-    # Slack escapes &, <, and > in message text, & first. Text that already
-    # reads like an escape, as &lt; typed by a user does, has to come back as
-    # typed rather than unescaped twice.
-    pieces = (
-        "&",
-        "<",
-        ">",
-        "&lt;",
-        "&gt;",
-        "&amp;",
-        "a;",
-        "日本語",
-        '#include <stdio.h>\nint main(int argc, char *argv[])\n{\n    printf("Hello, world!\\n");\n}',
-    )
-    for size in range(4):
-        for selected in product(pieces, repeat=size):
-            text = "".join(selected)
-            escaped = (
-                text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-            )
-            assert unescape_slack_formatting(escaped) == text, text
-
-
-@pytest.mark.parametrize(
-    "content, slack_formatting_enabled, expected",
-    [
-        (
-            "Sentence with *bold text*, _italic text_ and ~strikethrough text~.",
-            True,
-            "Sentence with **bold text**, *italic text* and ~~strikethrough text~~.",
-        ),
-        (
-            "Sentence with _*bold and italic text*_ and *_bold and italic text_*.",
-            True,
-            "Sentence with ***bold and italic text*** and ***bold and italic text***.",
-        ),
-        (
-            "Code block ```*text*, _text_ and ~text~``` shouldn't be changed.",
-            True,
-            "Code block ```*text*, _text_ and ~text~``` shouldn't be changed.",
-        ),
-        (
-            "Inline code `*text*, _text_ and ~text~` shouldn't be changed.",
-            True,
-            "Inline code `*text*, _text_ and ~text~` shouldn't be changed.",
-        ),
-        (
-            "```Some `*bold text* inside inline code` inside a code block``` shouldn't be changed.",
-            True,
-            "```Some `*bold text* inside inline code` inside a code block``` shouldn't be changed.",
-        ),
-        (
-            "* bullets shouldn't\n* be changed",
-            True,
-            "* bullets shouldn't\n* be changed",
-        ),
-        (
-            "* not bold*, *not bold *, * not bold *, **, * *, *  *, *   *",
-            True,
-            "* not bold*, *not bold *, * not bold *, **, * *, *  *, *   *",
-        ),
-        (
-            "_ not italic_, _not italic _, _ not italic _, __, _ _, _  _, _   _",
-            True,
-            "_ not italic_, _not italic _, _ not italic _, __, _ _, _  _, _   _",
-        ),
-        (
-            "~ not strikethrough~, ~not strikethrough ~, ~ not strikethrough ~, ~~, ~ ~, ~  ~, ~   ~",
-            True,
-            "~ not strikethrough~, ~not strikethrough ~, ~ not strikethrough ~, ~~, ~ ~, ~  ~, ~   ~",
-        ),
-        (
-            """The following multiline code block shouldn't be translated:
-```
-if 4*q + r - t < n*t:
-    q, r, t, k, n, l = 10*q, 10*(r-n*t), t, k, (10*(3*q+r))//t - 10*n, l
-else:
-    q, r, t, k, n, l = q*l, (2*q+r)*l, t*l, k+1, (q*(7*k+2)+r*l)//(t*l), l+2
-```""",
-            True,
-            """The following multiline code block shouldn't be translated:
-```
-if 4*q + r - t < n*t:
-    q, r, t, k, n, l = 10*q, 10*(r-n*t), t, k, (10*(3*q+r))//t - 10*n, l
-else:
-    q, r, t, k, n, l = q*l, (2*q+r)*l, t*l, k+1, (q*(7*k+2)+r*l)//(t*l), l+2
-```""",
-        ),
-        (
-            "Sentence with *bold text*, _italic text_ and ~strikethrough text~.",
-            False,
-            "Sentence with *bold text*, _italic text_ and ~strikethrough text~.",
-        ),
-        (
-            "Sentence with _*bold and italic text*_ and *_bold and italic text_*.",
-            False,
-            "Sentence with _*bold and italic text*_ and *_bold and italic text_*.",
-        ),
-        (
-            "Code block ```*text*, _text_ and ~text~``` shouldn't be changed.",
-            False,
-            "Code block ```*text*, _text_ and ~text~``` shouldn't be changed.",
-        ),
-        # Backticks as Slack rendered them on 2026-11-23 and 2026-11-24: one
-        # that nothing closes leaves the rest formatted, a marker opening
-        # right after one is literal, and so is a `*` or `~` closing right
-        # before one, though a `_` there is italic.
-        ("`a *b*", True, "`a **b**"),
-        ("``` *b*", True, "``` **b**"),
-        ("`x``y *b*", True, "`x``y **b**"),
-        ("`*b*", True, "`*b*"),
-        ("x `*b*", True, "x `*b*"),
-        ("x `_i_", True, "x `_i_"),
-        ("x `~s~", True, "x `~s~"),
-        ("*b*` x", True, "*b*` x"),
-        ("~s~` x", True, "~s~` x"),
-        ("_i_` x", True, "*i*` x"),
-    ],
-)
-def test_maybe_slack_to_markdown(content, slack_formatting_enabled, expected):
-    result = maybe_slack_to_markdown(content, slack_formatting_enabled)
-
-    assert result == expected
-
-
-def test_text_reads_the_same_after_code_a_link_or_a_backtick_nothing_closes():
-    # Code, a link, and a stray backtick end before the text does, and the
-    # space after them is what the text would otherwise start against: none
-    # of them changes how the text after them reads.
-    tokens = ("*", "_", "~", "a", " ", "日", "\n")
-    leads = ("` ", "``` ", "`code` ", "```code``` ", "`a ` ", "<@U1> ")
-    for length in range(6):
-        for body in map("".join, product(tokens, repeat=length)):
-            converted = maybe_slack_to_markdown(body, True)
-            for lead in leads:
-                assert maybe_slack_to_markdown(lead + body, True) == (
-                    lead + converted
-                ), (lead, body)
-
-
-def test_slack_to_markdown_converts_formatting_and_nothing_else():
-    # Each token maps to what it becomes: links, mentions, code, markers
-    # inside a word, and markers across a line break stay as written, and
-    # formatting at word boundaries turns into Markdown.
-    tokens = {
-        "<https://example.com/foo_bar_baz>": "<https://example.com/foo_bar_baz>",
-        "<@U123>": "<@U123>",
-        "<#C1|gen_eral>": "<#C1|gen_eral>",
-        "<https://example.com/_a_>": "<https://example.com/_a_>",
-        "*a\nb*": "*a\nb*",
-        "snake_case_name": "snake_case_name",
-        "_lead_ing": "_lead_ing",
-        "**dbl**": "**dbl**",
-        "__dbl__": "__dbl__",
-        "~~dbl~~": "~~dbl~~",
-        "*dbl**": "*dbl**",
-        "__dbl_": "__dbl_",
-        "2*3*4": "2*3*4",
-        "a~b~c": "a~b~c",
-        "日本語_強調_です": "日本語_強調_です",
-        "`*code*`": "`*code*`",
-        "```_block_```": "```_block_```",
-        "*b*": "**b**",
-        "_i_": "*i*",
-        "~s~": "~~s~~",
+def test_a_post_forwarding_a_message_is_read_with_what_it_forwards():
+    # A forwarded message is an attachment holding the original's blocks;
+    # the post's text says only what the forwarder wrote.
+    payload = {
+        "text": "<@UBOT> list the headings",
+        "blocks": [
+            {
+                "type": "rich_text",
+                "elements": [
+                    {
+                        "type": "rich_text_section",
+                        "elements": [
+                            {"type": "user", "user_id": "UBOT"},
+                            {"type": "text", "text": " list the headings"},
+                        ],
+                    }
+                ],
+            }
+        ],
+        "attachments": [
+            {
+                "is_share": True,
+                "is_msg_unfurl": True,
+                "text": "Plan",
+                "blocks": [
+                    {
+                        "type": "rich_text",
+                        "elements": [
+                            {
+                                "type": "rich_text_header",
+                                "level": 2,
+                                "elements": [{"type": "text", "text": "Plan"}],
+                            }
+                        ],
+                    }
+                ],
+                "from_url": "https://example.slack.com/archives/C1/p1",
+            }
+        ],
     }
-    for size in range(1, 4):
-        for selected in product(tokens, repeat=size):
-            content = " ".join(selected)
-            expected = " ".join(tokens[t] for t in selected)
-            assert maybe_slack_to_markdown(content, True) == expected, content
-            assert maybe_slack_to_markdown(content, False) == content
+    reply = build_reply_from_post(payload, "U123")
+
+    assert build_reply_text(
+        reply, "UBOT", redact_patterns=[], redaction_enabled=False
+    ) == (
+        "<@U123>: list the headings\n\n## Plan\n\n"
+        "https://example.slack.com/archives/C1/p1"
+    )
+
+
+def test_build_reply_text_reads_the_blocks_then_removes_and_redacts():
+    # A representative message: the bot's mention, a heading and a list in
+    # the blocks, and an address that only the blocks hold in full.
+    reply = {
+        "user": "U123",
+        "text": "<@UBOT> Plan ...",
+        "blocks": [
+            {
+                "type": "rich_text",
+                "elements": [
+                    {
+                        "type": "rich_text_section",
+                        "elements": [
+                            {"type": "user", "user_id": "UBOT"},
+                            {"type": "text", "text": " see the plan\n"},
+                        ],
+                    },
+                    {
+                        "type": "rich_text_header",
+                        "level": 2,
+                        "elements": [{"type": "text", "text": "Plan"}],
+                    },
+                    {
+                        "type": "rich_text_list",
+                        "style": "bullet",
+                        "indent": 0,
+                        "elements": [
+                            {
+                                "type": "rich_text_section",
+                                "elements": [
+                                    {"type": "text", "text": "mail "},
+                                    {
+                                        "type": "text",
+                                        "text": "a@example.com",
+                                        "style": {"bold": True},
+                                    },
+                                ],
+                            }
+                        ],
+                    },
+                ],
+            }
+        ],
+    }
+    patterns = [(r"\b[\w.]+@[\w.]+\b", "[EMAIL]")]
+
+    assert (
+        build_reply_text(
+            reply, "UBOT", redact_patterns=patterns, redaction_enabled=True
+        )
+        == "<@U123>: see the plan\n## Plan\n- mail **[EMAIL]**"
+    )
+    assert (
+        build_reply_text(
+            reply, "UBOT", redact_patterns=patterns, redaction_enabled=False
+        )
+        == "<@U123>: see the plan\n## Plan\n- mail **a@example.com**"
+    )
 
 
 @pytest.mark.parametrize(

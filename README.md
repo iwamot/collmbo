@@ -102,7 +102,7 @@ Collmbo does not serve endpoints and can run in any environment with internet ac
 - **[Vector Store](docs/features/vector-store.md)** - Retrieves context from a knowledge base (RAG).
 - **[Custom Callbacks](docs/features/custom-callbacks.md)** - Hooks into requests and responses for custom processing.
 - **[Redaction](docs/features/redaction.md)** - Masks sensitive information before sending requests.
-- **[Slack-friendly Formatting](docs/features/slack-friendly-formatting.md)** - Formats messages for better readability in Slack.
+- **[Slack-friendly Formatting](docs/features/slack-friendly-formatting.md)** - Formats replies for better readability in Slack (deprecated).
 - **[Image Input](docs/features/image-input.md)** - Enables AI models to analyze uploaded images.
 - **[PDF Input](docs/features/pdf-input.md)** - Enables AI models to analyze uploaded PDFs.
 - **[Prompt Caching](docs/features/prompt-caching.md)** - May help reduce costs by reusing context (Anthropic Claude, Amazon Bedrock).
