@@ -98,6 +98,15 @@ SLACK_UPDATE_TEXT_BUFFER_SIZE = get_env("SLACK_UPDATE_TEXT_BUFFER_SIZE", 20)
 SLACK_LOADING_CHARACTER = get_env("SLACK_LOADING_CHARACTER", " ... :writing_hand:")
 USE_SLACK_LOCALE = get_env("USE_SLACK_LOCALE", "true") == "true"
 SLACK_FORMATTING_ENABLED = get_env("SLACK_FORMATTING_ENABLED", "false") == "true"
+# Messages in the thread are read as Markdown whatever this is set to; it now
+# decides only how replies are formatted (and so how the system prompt asks for
+# them), and goes once replies are posted as Markdown.
+if "SLACK_FORMATTING_ENABLED" in os.environ or "TRANSLATE_MARKDOWN" in os.environ:
+    warnings.warn(
+        "SLACK_FORMATTING_ENABLED is deprecated: it now affects only how replies "
+        "are formatted, and will be removed when replies are posted as Markdown",
+        stacklevel=1,
+    )
 
 # Input
 IMAGE_INPUT_ENABLED = get_env("IMAGE_INPUT_ENABLED", "false") == "true"

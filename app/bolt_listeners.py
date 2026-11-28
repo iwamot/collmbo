@@ -47,16 +47,13 @@ from app.mcp.oauth_control_service import (
 from app.mcp.oauth_tools_service import expire_old_oauth_sessions
 from app.message_logic import (
     build_assistant_message,
-    build_slack_user_prefixed_text,
+    build_reply_from_post,
+    build_reply_text,
     build_system_message,
     build_user_message,
     filter_replies_after_last_marker,
     is_reply_from_bot,
-    maybe_redact_string,
     maybe_set_cache_points,
-    maybe_slack_to_markdown,
-    remove_bot_mention,
-    unescape_slack_formatting,
 )
 from app.slack_image_service import build_image_url_items_from_slack_files
 from app.slack_pdf_service import build_pdf_file_items_from_slack_files
@@ -322,14 +319,7 @@ def get_replies(
     if thread_ts is not None:
         return get_thread_replies(client, channel_id, thread_ts)
     # In a channel (not in a thread), with a mention to the bot
-    return [
-        {
-            "text": payload["text"],
-            "user": user_id,
-            "bot_id": payload.get("bot_id"),
-            "files": payload.get("files"),
-        }
-    ]
+    return [build_reply_from_post(payload, user_id)]
 
 
 def get_thread_replies(
@@ -404,15 +394,12 @@ def convert_replies_to_messages(
 
     # Process replies in reverse order to prioritize recent PDFs and avoid unnecessary downloads
     for reply in reversed(replies):
-        text = remove_bot_mention(reply.get("text", ""), context.bot_user_id)
-        text = maybe_redact_string(
-            input_string=text,
-            patterns=REDACT_PATTERNS,
+        text = build_reply_text(
+            reply,
+            context.bot_user_id,
+            redact_patterns=REDACT_PATTERNS,
             redaction_enabled=REDACTION_ENABLED,
         )
-        text = unescape_slack_formatting(text)
-        text = maybe_slack_to_markdown(text, SLACK_FORMATTING_ENABLED)
-        text = build_slack_user_prefixed_text(reply, text)
 
         if is_reply_from_bot(reply, context.bot_user_id):
             messages.append(build_assistant_message(text))

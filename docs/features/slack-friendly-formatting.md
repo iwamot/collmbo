@@ -2,7 +2,12 @@
 
 ## Usage
 
-To enable Slack-friendly formatting, set the environment variable `SLACK_FORMATTING_ENABLED` to `true`.
+To format replies for Slack, set the environment variable `SLACK_FORMATTING_ENABLED` to `true`. Collmbo then converts the Markdown the model writes into Slack's mrkdwn before posting.
+
+Messages in the thread are always read as Markdown, whatever this setting is: their blocks, attachments and mrkdwn text are converted before the model sees them.
+
+> [!NOTE]
+> `SLACK_FORMATTING_ENABLED` is deprecated. It will be removed when Collmbo posts replies as Markdown, which Slack renders without conversion.
 
 ```sh
 $ cat env

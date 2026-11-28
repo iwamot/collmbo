@@ -6,6 +6,8 @@ import base64
 import re
 import unicodedata
 
+from slack_as_markdown import message_as_markdown, mrkdwn_as_markdown
+
 
 def is_reply_from_bot(reply: dict, bot_user_id: str | None) -> bool:
     """
@@ -85,7 +87,8 @@ def build_system_message(
     Args:
         - system_prompt_template (str): The template for the system prompt.
         - bot_user_id (Optional[str]): The bot's user ID.
-        - slack_formatting_enabled (bool): Flag indicating whether to convert Slack mrkdwn to Markdown.
+        - slack_formatting_enabled (bool): Whether replies are converted to
+          Slack's mrkdwn, which is what decides how the template is read.
         - prompt_caching_enabled (bool): Flag indicating if prompt caching is enabled.
         - prompt_caching_ttl (Optional[str]): TTL for prompt caching (e.g., "5m", "1h").
 
@@ -93,7 +96,12 @@ def build_system_message(
         - dict: The system message as a dictionary with "role" and "content" keys.
     """
     system_text = system_prompt_template.format(bot_user_id=bot_user_id)
-    system_text = maybe_slack_to_markdown(system_text, slack_formatting_enabled)
+    # The default template tells the model to write Slack's mrkdwn. Where
+    # replies are converted from Markdown to mrkdwn, it is read as Markdown,
+    # so the model writes what the conversion expects; where they are posted
+    # as written, it is left as mrkdwn, so the model writes what Slack shows.
+    if slack_formatting_enabled:
+        system_text = mrkdwn_as_markdown(system_text)
     content: list[dict[str, str | dict]] = [
         {
             "type": "text",
@@ -235,76 +243,61 @@ def maybe_redact_string(
     return output_string
 
 
-def unescape_slack_formatting(content: str) -> str:
+def build_reply_from_post(payload: dict, user_id: str) -> dict:
     """
-    Unescape Slack formatting characters.
+    Take a post that mentioned the bot outside a thread as a reply to read.
 
-    Unescape &, < and >, since Slack replaces these with their HTML equivalents.
-    See also: https://api.slack.com/reference/surfaces/formatting#escaping
+    The blocks and attachments travel with the text: they hold what the post
+    shows, a forwarded message included, where the text is only Slack's
+    summary of it.
 
     Args:
-        content (str): The input string containing Slack formatting.
+        payload (dict): The event payload of the post.
+        user_id (str): The ID of the user who made the post.
 
     Returns:
-        str: The unescaped string.
+        dict: The post in the shape of a reply from the thread.
     """
-    return content.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
+    return {
+        "text": payload["text"],
+        "blocks": payload.get("blocks"),
+        "attachments": payload.get("attachments"),
+        "user": user_id,
+        "bot_id": payload.get("bot_id"),
+        "files": payload.get("files"),
+    }
 
 
-# A formatting marker opens and closes only where no letter or digit sits on
-# its outer side. Other markers and punctuation may, so _*bold italic*_ still
-# nests, but the same marker may not: Slack shows **text** and __text__ as
-# typed, so a doubled marker is text rather than formatting.
-_OPEN = r"(?<![^\W_])"
-_CLOSE = r"(?![^\W_])"
-
-
-def _slack_formatting(marker: str) -> str:
-    # A marker right after a backtick is literal in Slack, and so is a `*` or
-    # `~` right before one, though a `_` there still closes its italic
-    # (measured 2026-11-23 and 2026-11-24).
-    m = re.escape(marker)
-    close = rf"(?!{m}|`)" if marker in "*~" else rf"(?!{m})"
-    return rf"{_OPEN}(?<!{m}|`){m}(?!\s)([^{m}\n]+?)(?<!\s){m}{close}{_CLOSE}"
-
-
-def maybe_slack_to_markdown(content: str, slack_formatting_enabled: bool) -> str:
+def build_reply_text(
+    reply: dict,
+    bot_user_id: str | None,
+    *,
+    redact_patterns: list[tuple[str, str]],
+    redaction_enabled: bool,
+) -> str:
     """
-    Convert Slack mrkdwn to Markdown format.
+    Read a reply in the thread as the text the model receives.
 
-    See also: https://api.slack.com/reference/surfaces/formatting#basics
+    The reply is read as the Markdown it shows, blocks and attachments
+    included, before the bot's own mention is removed and the redaction
+    patterns are applied, so that both reach everything the model reads.
 
     Args:
-        content (str): The input string in Slack mrkdwn format.
-        slack_formatting_enabled (bool): Flag indicating whether to perform the conversion.
+        reply (dict): A message from the thread.
+        bot_user_id (str | None): The bot's user ID.
+        redact_patterns (list[tuple[str, str]]): (regex, replacement) pairs.
+        redaction_enabled (bool): Whether to apply the patterns.
 
     Returns:
-        str: The converted string in Markdown format.
+        str: The reply's text behind its sender's mention.
     """
-    if not slack_formatting_enabled:
-        return content
-
-    # Split the input string into code blocks, inline code, and the <...>
-    # links, mentions, and channel references Slack writes, none of which
-    # carry formatting. The split captures them, so they sit at the odd
-    # indexes; a part at an even index is text even when it opens on a
-    # backtick nothing closes.
-    parts = re.split(r"(?s)(```.+?```|`[^`\n]+?`|<[^<>\n]*>)", content)
-
-    # Apply the bold, italic, and strikethrough formatting to the text between
-    # them. A marker with a letter or digit on its outer side is part of a
-    # word, as in snake_case or 2*3*4, and Slack leaves it as it is.
-    result = ""
-    for index, part in enumerate(parts):
-        if index % 2 == 0:
-            for o, n in [
-                (_slack_formatting("*"), r"**\1**"),
-                (_slack_formatting("_"), r"*\1*"),
-                (_slack_formatting("~"), r"~~\1~~"),
-            ]:
-                part = re.sub(o, n, part)
-        result += part
-    return result
+    text = remove_bot_mention(message_as_markdown(reply), bot_user_id)
+    text = maybe_redact_string(
+        input_string=text,
+        patterns=redact_patterns,
+        redaction_enabled=redaction_enabled,
+    )
+    return build_slack_user_prefixed_text(reply, text)
 
 
 def build_slack_user_prefixed_text(reply: dict, text: str) -> str:

@@ -10,6 +10,9 @@ resolution-markers = [
 exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
 exclude-newer-span = "P1D"
 
+[options.exclude-newer-package]
+slack-as-markdown = { timestamp = "0001-01-01T00:00:00Z", span = "PT0S" }
+
 [[package]]
 name = "aiohappyeyeballs"
 version = "2.7.1"
@@ -388,6 +391,7 @@ dependencies = [
     { name = "bedrock-agentcore" },
     { name = "httpx" },
     { name = "litellm" },
+    { name = "slack-as-markdown" },
     { name = "slack-bolt" },
     { name = "slack-sdk" },
     { name = "strands-agents" },
@@ -405,6 +409,7 @@ requires-dist = [
     { name = "bedrock-agentcore", specifier = "==1.28.0" },
     { name = "httpx", specifier = "==0.29.0" },
     { name = "litellm", specifier = "==1.111.0" },
+    { name = "slack-as-markdown", specifier = "==0.1.0" },
     { name = "slack-bolt", specifier = "==1.30.0" },
     { name = "slack-sdk", specifier = "==3.48.0" },
     { name = "strands-agents", specifier = "==1.67.0" },
@@ -1831,6 +1836,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031, upload-time = "2024-12-04T17:35:28.174Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050, upload-time = "2024-12-04T17:35:26.475Z" },
+]
+
+[[package]]
+name = "slack-as-markdown"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a4/7b/28c10695af58b946babfefa50278966ffb4447889f8e08dc97f213bf69d4/slack_as_markdown-0.1.0.tar.gz", hash = "sha256:fd272d03916eff13f82838846f9eab72c1119e8cc8ea4c4850bb1f6661246db7", size = 35426, upload-time = "2026-11-28T13:23:17.83Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d5/fc/3c83351e191d0720e1c63c1588844df3613d44906999d3477660dc36f613/slack_as_markdown-0.1.0-py3-none-any.whl", hash = "sha256:610890e5d8dab3c5cbf1dc0e8394c81f3ad55e4bb48365ddc6c799559730b595", size = 16587, upload-time = "2026-11-28T13:23:16.607Z" },
 ]
 
 [[package]]
